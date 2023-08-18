@@ -1,0 +1,25 @@
+{
+  "name": "map-sdk",
+  "version": "1.0.0",
+  "description": "Map SDK for Amap(Gaode)、Baidu、Tencent、Off-line Map",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yquanmei/map-sdk.git"
+  },
+  "keywords":  [
+    "map",
+    "Baidu Map",
+    "Amap",
+    "Tencent Map"
+  ],
+  "author": "yanquanmei",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yquanmei/map-sdk/issues"
+  },
+  "homepage": "https://github.com/yquanmei/map-sdk#readme"
+}
