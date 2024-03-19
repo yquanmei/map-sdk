@@ -23,6 +23,7 @@ const env = process.env.NODE_ENV;
 
 export default [
   {
+    context: "MapSDK",
     input: "src/index.ts",
     // output: {
     //   dir: "lib",
@@ -30,16 +31,18 @@ export default [
     //   sourcemap: true,
     //   exports: "named",
     // },
-    output: {
-      file: "dist/index.umd.js",
-      format: "umd", // UMD 模块化方案
-      name: "MapSdk", // UMD 模块化方案需要指定全局变量名称
-      globalObject: "this",
-    },
+    output: [
+      {
+        file: "dist/index.umd.js",
+        format: "umd", // UMD 模块化方案
+        name: "MapSDK", // UMD 模块化方案需要指定全局变量名称
+        // globalObject: "this",
+      },
+    ],
     //告诉rollup不要将此lodash打包，而作为外部依赖
     external: ["lodash"],
     // 是否开启代码分割
-    experimentalCodeSplitting: true,
+    // experimentalCodeSplitting: true,
     plugins: [
       // 将声明文件拷贝到输出目录
       copy({

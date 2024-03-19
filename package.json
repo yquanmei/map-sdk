@@ -52,6 +52,7 @@
     "tslib": "^2.6.2"
   },
   "devDependencies": {
+    "eslint-config-mourner": "^3.0.0",
     "rollup-plugin-commonjs": "^10.1.0"
   }
 }
