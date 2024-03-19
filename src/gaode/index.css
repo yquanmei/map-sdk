@@ -1,0 +1,10 @@
+.amap-marker-label {
+  margin: 0;
+  padding: 0;
+  width: auto;
+  height: height;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
