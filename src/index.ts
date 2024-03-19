@@ -1,7 +1,7 @@
 import GaodeMap from "./gaode/index";
 import OpenLayerMap from "./openlayer/index";
 // import OpenlayerInstance from './openlayerMap'
-import { MapOptions, IconOptions, InfoWindowOptions, PolyLineOptions, AnimationOptions } from "./index.d";
+import { MapOptions, IconOptions, InfoWindowOptions, PolyLineOptions, AnimationOptions } from "./types";
 
 enum Strategy {
   GAODE = "gaode",

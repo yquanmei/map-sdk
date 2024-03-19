@@ -9,7 +9,7 @@ import { Vector as VectorSource } from "ol/source";
 import { merge } from "lodash";
 import Overlay from "ol/Overlay";
 import { Point, LineString } from "ol/geom";
-import { MapImplements, AnimationStatus } from "../index.d";
+import { MapImplements, AnimationStatus } from "../types";
 import { extend as extentExtend } from "ol/extent";
 import { getDistance } from "ol/sphere";
 import * as ol from "openlayers";

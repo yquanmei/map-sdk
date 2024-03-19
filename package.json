@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Map SDK (JS API) for Amap(Gaode)、Baidu、Tencent、Off-line Map",
   "main": "index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "rollup -c"
@@ -49,5 +50,8 @@
     "rollup-plugin-typescript2": "^0.36.0",
     "rollup-plugin-uglify": "^6.0.4",
     "tslib": "^2.6.2"
+  },
+  "devDependencies": {
+    "rollup-plugin-commonjs": "^10.1.0"
   }
 }

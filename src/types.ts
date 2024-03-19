@@ -1,4 +1,4 @@
-interface MapOptions {
+export interface MapOptions {
   container: string;
   key: string;
   token: string;
@@ -9,14 +9,14 @@ interface MapOptions {
   center?: [number, number];
   viewMode: "2D" | "3D";
 }
-enum AnimationStatus {
+export enum AnimationStatus {
   INIT = "INIT",
   PLAYING = "PLAYING",
   PAUSE = "PAUSE",
   RESUME = "RESUME",
   END = "END",
 }
-interface IconOptions {
+export interface IconOptions {
   position: [number, number]; // 容器位置，经纬度
   image: {
     src: string; // 图片url地址
@@ -28,26 +28,26 @@ interface IconOptions {
   };
   onClick: () => void;
 }
-interface InfoWindowOptions {
+export interface InfoWindowOptions {
   content: HTMLElement;
   position: [number, number]; // 经度、维度
   open?: boolean; // 创建信息窗体时是否自动打开
 }
-interface InfoWindowMarker {
+export interface InfoWindowMarker {
   [key: string]: any;
   openWindow: () => void;
   closeInfoWindow: () => void;
 }
-interface PolyLineOptions {
+export interface PolyLineOptions {
   path: [number, number][];
   color: string;
   opacity?: number;
   width: number;
 }
-interface LineMarker {
+export interface LineMarker {
   [key: string]: any;
 }
-interface AnimationOptions {
+export interface AnimationOptions {
   line: PolyLineOptions;
   passedLine: PolyLineOptions;
   marker: IconOptions;
@@ -60,11 +60,11 @@ interface AnimationOptions {
   onMoveEnd: () => void;
   onMoveAlong: () => void;
 }
-interface MapInfo {
+export interface MapInfo {
   path: [number, number][];
   animationStatus: string;
 }
-interface Marker {
+export interface Marker {
   [key: string]: any;
   start: (time: number) => void;
   pause: () => void;
@@ -75,7 +75,7 @@ interface Marker {
   getInfo: () => MapInfo;
   setLabelContent: () => void;
 }
-interface MapImplements {
+export interface MapImplements {
   setFitView(): void;
   setCenter(center: [number, number], immediately?: boolean, duration?: number): void;
   setZoomAndCenter(zoom: number, center: [number, number], immediately: boolean, duration?: number): void;
@@ -88,15 +88,17 @@ interface MapImplements {
   addAnimation(options: AnimationOptions): Marker;
 }
 
-export {
-  MapOptions,
-  AnimationStatus,
-  IconOptions,
-  InfoWindowOptions,
-  InfoWindowMarker,
-  PolyLineOptions,
-  LineMarker,
-  AnimationOptions,
-  Marker,
-  MapImplements,
-};
+// export {
+//   MapOptions,
+//   AnimationStatus,
+//   IconOptions,
+//   InfoWindowOptions,
+//   InfoWindowMarker,
+//   PolyLineOptions,
+//   LineMarker,
+//   AnimationOptions,
+//   Marker,
+//   MapImplements,
+// };
+
+// export type { MapOptions };

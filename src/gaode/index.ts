@@ -1,7 +1,9 @@
 import AMapLoader from "@amap/amap-jsapi-loader";
 import "@amap/amap-jsapi-types";
-import type { MapOptions, AnimationStatus, MapImplements } from "../index.d.ts";
-import type { CurrentPoint } from "./index.d.ts";
+import { MapOptions } from "../types";
+import { MapImplements } from "../types";
+import { AnimationStatus } from "../types.js";
+import type { CurrentPoint } from "./types.js";
 import { merge } from "lodash";
 
 const pickNotEmptyObject = (data) => {
