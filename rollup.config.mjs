@@ -8,12 +8,17 @@ import commonjs from "@rollup/plugin-commonjs";
 
 export default {
   input: "src/index.ts",
-  output: {
-    file: "dist/index.umd.js",
-    format: "umd",
-    name: "MapSdk",
-    sourcemap: true,
-  },
+  output: [
+    {
+      file: "dist/index.esm.js",
+      format: "esm", // ES6 模块化方案
+    },
+    {
+      file: "dist/index.umd.js",
+      format: "umd",
+      name: "MapSdk",
+    },
+  ],
   plugins: [
     typescript(),
     resolve(),
