@@ -17,5 +17,6 @@ declare class GaodeMap implements MapImplements {
     clearInfoWindow(): void;
     addLines(options: any): any;
     addAnimation(animationOptions: any): any;
+    getAddressList(keywords: string, city: string): Promise<unknown>;
 }
 export default GaodeMap;

@@ -14,5 +14,6 @@ declare class Map {
     clearInfoWindow(): any;
     addLines(options: PolyLineOptions): any;
     addAnimation(options: AnimationOptions): any;
+    getAddressList(keywords: string, city: string): any;
 }
 export default Map;

@@ -20,7 +20,9 @@ export default {
     },
   ],
   plugins: [
-    typescript(),
+    typescript({
+      sourceMap: false,
+    }),
     resolve(),
     postcss({
       extract: false,

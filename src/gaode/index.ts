@@ -26,6 +26,7 @@ class GaodeMap implements MapImplements {
       onSuccess: () => {},
       center: [0, 0],
       viewMode: "2D",
+      resizeEnable: true,
     };
     this.options = merge(defaultOptions, options);
     this.loadMap();
@@ -54,6 +55,11 @@ class GaodeMap implements MapImplements {
       mapStyle: this.options.mapStyle,
       center: this.options.center,
       viewMode: this.options.viewMode,
+      resizeEnable: this.options.resizeEnable,
+      rotateEnable: this.options.rotateEnable,
+      pitchEnable: this.options.pitchEnable,
+      pitch: this.options.pitch,
+      rotation: this.options.rotation,
     });
     this._mapInstance = new this._mapLoader.Map(this.options.container, mergedMapOptions);
     this._complete();
@@ -78,8 +84,9 @@ class GaodeMap implements MapImplements {
   addIcon(iconOptions) {
     const defaultOptions = {
       image: {
-        size: [0, 0],
-        offset: [0, 0],
+        src: "//a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-default.png",
+        size: [25, 34],
+        offset: [-13, -30],
       },
       label: null,
     };
@@ -123,6 +130,8 @@ class GaodeMap implements MapImplements {
       open: false,
     };
     const mergedOptions = merge(defaultOptions, infoWindowOptions);
+    console.log(`%c yqm log, this._mapLoader::: `, "color: pink;", this._mapLoader);
+    console.log(`%c yqm log, mergedOptions.content::: `, "color: pink;", mergedOptions.content);
     const infoWindow = new this._mapLoader.InfoWindow({
       isCustom: true,
       content: mergedOptions.content,
@@ -399,6 +408,35 @@ class GaodeMap implements MapImplements {
       };
     };
     return marker;
+  }
+  getAddressList(keywords: string, city: string) {
+    const defaultOptions = {
+      city: "全国",
+      allData: false,
+    };
+    const mergedOptions = merge(defaultOptions, {
+      keywords,
+      city,
+    });
+    const autoOptions = {
+      city: mergedOptions.city,
+    };
+    const autoComplete = new this._mapLoader.AutoComplete(autoOptions);
+    return new Promise((resolve) => {
+      autoComplete.search(mergedOptions.keywords, (_, result) => {
+        result?.tips?.map((item) => {
+          const detailedAddress = item.district + item.address + item.name;
+          resolve(
+            {
+              value: detailedAddress,
+              label: detailedAddress,
+              lat: item.location.lat,
+              lng: item.location.lng,
+            } ?? []
+          );
+        });
+      });
+    });
   }
 }
 export default GaodeMap;
