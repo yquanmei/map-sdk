@@ -77,6 +77,10 @@ class Map {
   addAnimation(options: AnimationOptions) {
     return this._strategy.addAnimation(options);
   }
+  // ============================ 获取详细地址ip的对象数组 =============================
+  getAddressList(keywords: string, city: string) {
+    return this._strategy.getAddressList(keywords, city);
+  }
 }
 
 export default Map;

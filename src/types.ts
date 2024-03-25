@@ -8,6 +8,11 @@ export interface MapOptions {
   onSuccess?: () => void;
   center?: [number, number];
   viewMode: "2D" | "3D";
+  resizeEnable?: boolean;
+  rotateEnable?: boolean;
+  pitchEnable?: boolean;
+  pitch?: number;
+  rotation?: number;
 }
 export enum AnimationStatus {
   INIT = "INIT",
@@ -29,7 +34,7 @@ export interface IconOptions {
   onClick: () => void;
 }
 export interface InfoWindowOptions {
-  content: HTMLElement;
+  content: string;
   position: [number, number]; // 经度、维度
   open?: boolean; // 创建信息窗体时是否自动打开
 }

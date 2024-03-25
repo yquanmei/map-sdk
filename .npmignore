@@ -7,3 +7,5 @@ package-lock.json
 pnpm-lock.yaml
 tsconfig.json
 rollup.config.js
+rollup.config.mjs
+src/
