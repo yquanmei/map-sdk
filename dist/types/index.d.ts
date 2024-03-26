@@ -1,4 +1,4 @@
-import { MapOptions, IconOptions, InfoWindowOptions, PolyLineOptions, AnimationOptions } from "./types";
+import { MapOptions, IconOptions, InfoWindowOptions, PolyLineOptions, AnimationOptions, ListResultItem, GeoOptions } from "./types";
 declare class Map {
     _strategy: any;
     constructor(strategy: string, options: MapOptions);
@@ -14,6 +14,8 @@ declare class Map {
     clearInfoWindow(): any;
     addLines(options: PolyLineOptions): any;
     addAnimation(options: AnimationOptions): any;
-    getAddressList(keywords: string, city: string): any;
+    getAddressLists(keywords: string, geoOptions: GeoOptions): ListResultItem[];
+    getAddress(position: [number, number], geoOptions: GeoOptions): any;
+    getMap(): any;
 }
 export default Map;

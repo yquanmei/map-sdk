@@ -1,9 +1,7 @@
 import AMapLoader from "@amap/amap-jsapi-loader";
 import "@amap/amap-jsapi-types";
-import { MapOptions } from "../types";
-import { MapImplements } from "../types";
-import { AnimationStatus } from "../types.js";
-import type { CurrentPoint } from "./types.js";
+import { MapOptions, MapImplements, AnimationStatus, GeoOptions } from "../types";
+import type { CurrentPoint } from "./types";
 import { merge } from "lodash";
 
 const pickNotEmptyObject = (data) => {
@@ -130,8 +128,6 @@ class GaodeMap implements MapImplements {
       open: false,
     };
     const mergedOptions = merge(defaultOptions, infoWindowOptions);
-    console.log(`%c yqm log, this._mapLoader::: `, "color: pink;", this._mapLoader);
-    console.log(`%c yqm log, mergedOptions.content::: `, "color: pink;", mergedOptions.content);
     const infoWindow = new this._mapLoader.InfoWindow({
       isCustom: true,
       content: mergedOptions.content,
@@ -409,34 +405,65 @@ class GaodeMap implements MapImplements {
     };
     return marker;
   }
-  getAddressList(keywords: string, city: string) {
+  getAddressLists(keywords: string, geoOptions: GeoOptions) {
     const defaultOptions = {
       city: "全国",
-      allData: false,
     };
     const mergedOptions = merge(defaultOptions, {
       keywords,
-      city,
+      city: geoOptions?.city,
     });
     const autoOptions = {
       city: mergedOptions.city,
     };
-    const autoComplete = new this._mapLoader.AutoComplete(autoOptions);
+    const that = this;
+    //异步加载 AutoComplete 插件
     return new Promise((resolve) => {
-      autoComplete.search(mergedOptions.keywords, (_, result) => {
-        result?.tips?.map((item) => {
-          const detailedAddress = item.district + item.address + item.name;
-          resolve(
-            {
-              value: detailedAddress,
-              label: detailedAddress,
-              lat: item.location.lat,
-              lng: item.location.lng,
-            } ?? []
-          );
+      that._mapLoader.plugin("AMap.AutoComplete", function () {
+        const autoComplete = new that._mapLoader.AutoComplete(autoOptions);
+        autoComplete.search(mergedOptions.keywords, (_, result) => {
+          const lists = result?.tips?.map((item) => {
+            const detailedAddress = item.district + item.address + item.name;
+            return (
+              {
+                address: detailedAddress,
+                lng: item.location.lng,
+                lat: item.location.lat,
+              } ?? []
+            );
+          });
+          resolve(lists);
         });
       });
     });
+  }
+  getAddress(position: [number, number], geoOptions: GeoOptions) {
+    const defaultOptions = {
+      city: "全国",
+      // radius: 500,
+    };
+    const mergedOptions = merge(defaultOptions, {
+      city: geoOptions?.city,
+      radius: geoOptions?.radius,
+    });
+    var geocoder = new this._mapLoader.Geocoder({
+      city: mergedOptions.city,
+      radius: mergedOptions.radius,
+    });
+
+    return new Promise((resolve, reject) => {
+      geocoder.getAddress(position, function (status, result) {
+        if (status === "complete" && result.regeocode) {
+          var address = result.regeocode.formattedAddress;
+          resolve(address);
+        } else {
+          reject("根据经纬度查询地址失败");
+        }
+      });
+    });
+  }
+  getMap() {
+    return this._mapInstance;
   }
 }
 export default GaodeMap;

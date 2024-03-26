@@ -1,6 +1,5 @@
 import "@amap/amap-jsapi-types";
-import { MapOptions } from "../types";
-import { MapImplements } from "../types";
+import { MapOptions, MapImplements, GeoOptions } from "../types";
 declare class GaodeMap implements MapImplements {
     options: MapOptions;
     _mapLoader: any;
@@ -17,6 +16,8 @@ declare class GaodeMap implements MapImplements {
     clearInfoWindow(): void;
     addLines(options: any): any;
     addAnimation(animationOptions: any): any;
-    getAddressList(keywords: string, city: string): Promise<unknown>;
+    getAddressLists(keywords: string, geoOptions: GeoOptions): Promise<unknown>;
+    getAddress(position: [number, number], geoOptions: GeoOptions): Promise<unknown>;
+    getMap(): any;
 }
 export default GaodeMap;

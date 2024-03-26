@@ -1,7 +1,7 @@
 import GaodeMap from "./gaode/index";
 import OpenLayerMap from "./openlayer/index";
 // import OpenlayerInstance from './openlayerMap'
-import { MapOptions, IconOptions, InfoWindowOptions, PolyLineOptions, AnimationOptions } from "./types";
+import { MapOptions, IconOptions, InfoWindowOptions, PolyLineOptions, AnimationOptions, ListResultItem, GeoOptions } from "./types";
 
 enum Strategy {
   GAODE = "gaode",
@@ -78,8 +78,16 @@ class Map {
     return this._strategy.addAnimation(options);
   }
   // ============================ 获取详细地址ip的对象数组 =============================
-  getAddressList(keywords: string, city: string) {
-    return this._strategy.getAddressList(keywords, city);
+  getAddressLists(keywords: string, geoOptions: GeoOptions): ListResultItem[] {
+    return this._strategy.getAddressLists(keywords, geoOptions);
+  }
+  // ============================ 根据坐标获取地址 =============================
+  getAddress(position: [number, number], geoOptions: GeoOptions) {
+    return this._strategy.getAddress(position, geoOptions);
+  }
+
+  getMap() {
+    return this._strategy.getMap();
   }
 }
 
