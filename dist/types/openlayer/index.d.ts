@@ -1,7 +1,7 @@
 import "ol/ol.css";
 import Feature from "ol/Feature";
 import { LineString } from "ol/geom";
-import { MapImplements } from "../types";
+import { MapImplements, GeoOptions } from "../types";
 import { Options, OverlaysArr } from "./index.d";
 declare class OpenLayerMap implements MapImplements {
     private _mapInstance;
@@ -23,5 +23,8 @@ declare class OpenLayerMap implements MapImplements {
     clearInfoWindow(): void;
     addLines(options: any): Feature<LineString>;
     addAnimation(animationOptions: any): any;
+    getAddressLists(keywords: string, geoOptions: GeoOptions): void;
+    getAddress(position: [number, number], geoOptions: GeoOptions): void;
+    getMap(): void;
 }
 export default OpenLayerMap;

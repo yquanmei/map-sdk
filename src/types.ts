@@ -2,12 +2,13 @@ export interface MapOptions {
   container: string;
   key: string;
   token: string;
-  zoom?: number; // 地图级别
   plugins?: string[]; // 地图插件
+  zoom?: number; // 地图级别
   mapStyle?: string;
   onSuccess?: () => void;
   center?: [number, number];
-  viewMode: "2D" | "3D";
+  // viewMode?: "2D" | "3D";
+  viewMode?: string;
   resizeEnable?: boolean;
   rotateEnable?: boolean;
   pitchEnable?: boolean;
@@ -93,17 +94,13 @@ export interface MapImplements {
   addAnimation(options: AnimationOptions): Marker;
 }
 
-// export {
-//   MapOptions,
-//   AnimationStatus,
-//   IconOptions,
-//   InfoWindowOptions,
-//   InfoWindowMarker,
-//   PolyLineOptions,
-//   LineMarker,
-//   AnimationOptions,
-//   Marker,
-//   MapImplements,
-// };
+export interface GeoOptions {
+  city: string;
+  radius?: number;
+}
 
-// export type { MapOptions };
+export interface ListResultItem {
+  address: string;
+  lng: number | undefined;
+  lat: number | undefined;
+}

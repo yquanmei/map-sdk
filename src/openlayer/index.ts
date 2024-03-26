@@ -9,7 +9,7 @@ import { Vector as VectorSource } from "ol/source";
 import { merge } from "lodash";
 import Overlay from "ol/Overlay";
 import { Point, LineString } from "ol/geom";
-import { MapImplements, AnimationStatus } from "../types";
+import { MapImplements, AnimationStatus, GeoOptions } from "../types";
 import { extend as extentExtend } from "ol/extent";
 import { getDistance } from "ol/sphere";
 import * as ol from "openlayers";
@@ -643,6 +643,13 @@ class OpenLayerMap implements MapImplements {
     };
     return marker;
   }
+  getAddressLists(keywords: string, geoOptions: GeoOptions) {
+    console.log(`%c TODO::: `, "color: pink;", keywords, geoOptions);
+  }
+  getAddress(position: [number, number], geoOptions: GeoOptions) {
+    console.log(`%c TODO::: `, "color: pink;", position, geoOptions);
+  }
+  getMap() {}
 }
 
 export default OpenLayerMap;

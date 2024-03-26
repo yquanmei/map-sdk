@@ -2,12 +2,12 @@ export interface MapOptions {
     container: string;
     key: string;
     token: string;
-    zoom?: number;
     plugins?: string[];
+    zoom?: number;
     mapStyle?: string;
     onSuccess?: () => void;
     center?: [number, number];
-    viewMode: "2D" | "3D";
+    viewMode?: string;
     resizeEnable?: boolean;
     rotateEnable?: boolean;
     pitchEnable?: boolean;
@@ -90,4 +90,13 @@ export interface MapImplements {
     clearInfoWindow(): void;
     addLines(options: PolyLineOptions): LineMarker;
     addAnimation(options: AnimationOptions): Marker;
+}
+export interface GeoOptions {
+    city: string;
+    radius?: number;
+}
+export interface ListResultItem {
+    address: string;
+    lng: number | undefined;
+    lat: number | undefined;
 }
