@@ -22,7 +22,7 @@ class GaodeMap implements MapImplements {
       zoom: 10,
       mapStyle: "",
       onSuccess: () => {},
-      center: [0, 0],
+      center: [116.397389, 39.909466],
       viewMode: "2D",
       resizeEnable: true,
     };
