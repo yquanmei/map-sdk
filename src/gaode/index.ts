@@ -22,11 +22,12 @@ class GaodeMap implements MapImplements {
       zoom: 10,
       mapStyle: "",
       onSuccess: () => {},
-      center: [0, 0],
+      center: [116.397389, 39.909466],
       viewMode: "2D",
       resizeEnable: true,
     };
     this.options = merge(defaultOptions, options);
+    console.log(`%c yqm log, this.options::: `, "color: pink;", this.options);
     this.loadMap();
   }
   async loadMap() {
@@ -80,6 +81,10 @@ class GaodeMap implements MapImplements {
     this._mapInstance && this._mapInstance.clearMap();
   }
   addIcon(iconOptions) {
+    if (!iconOptions?.position?.[0] || !iconOptions?.position?.[1]) {
+      console.error("请补充自定义图标的坐标position");
+      return;
+    }
     const defaultOptions = {
       image: {
         src: "//a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-default.png",
@@ -89,6 +94,7 @@ class GaodeMap implements MapImplements {
       label: null,
     };
     const mergedOptions = merge(defaultOptions, iconOptions);
+    console.log(`%c yqm log, mergedOptions::: `, "color: pink;", mergedOptions);
     // 创建一个icon
     const icon = new this._mapLoader.Icon({
       image: mergedOptions.image.src,
@@ -112,11 +118,9 @@ class GaodeMap implements MapImplements {
       const mergedLabelOptions = merge(defaultLabelOptions, labelOptions);
       marker.setLabel({
         content: mergedLabelOptions.content,
-        // offset: new this._mapLoader.Pixel(mergedLabelOptions.offset[0], mergedLabelOptions.offset[1])
       });
     };
     iconOptions.label && marker.setLabelContent(iconOptions.label);
-    // setLabelContent()
     marker.on("click", (e) => {
       typeof iconOptions.onClick === "function" && iconOptions.onClick(e.target.getPosition());
     });

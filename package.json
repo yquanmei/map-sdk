@@ -1,6 +1,6 @@
 {
   "name": "map-sdk",
-  "version": "1.0.2",
+  "version": "1.0.5",
   "description": "Map SDK (JS API) for Amap(Gaode)、Baidu、Tencent、Off-line Map",
   "main": "dist/index.umd.js",
   "module": "./dist/index.esm.js",
@@ -28,15 +28,22 @@
   "dependencies": {
     "@amap/amap-jsapi-loader": "^1.0.1",
     "@amap/amap-jsapi-types": "^0.0.13",
+    "@types/openlayers": "^4.6.23",
+    "amap": "^1.0.7",
+    "lodash": "^4.17.21",
+    "ol": "^8.2.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-babel": "^6.0.4",
     "@rollup/plugin-commonjs": "^25.0.7",
     "@rollup/plugin-typescript": "^11.1.5",
-    "@types/openlayers": "^4.6.23",
-    "amap": "^1.0.7",
     "cssnano": "^6.0.1",
     "fast-glob": "^3.3.2",
-    "lodash": "^4.17.21",
-    "ol": "^8.2.0",
+    "eslint-config-mourner": "^3.0.0",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-import-css": "^3.5.0",
     "postcss-cssnext": "^3.1.1",
     "postcss-nested": "^6.0.1",
     "rollup": "^4.6.1",
@@ -51,12 +58,5 @@
     "rollup-plugin-typescript2": "^0.36.0",
     "rollup-plugin-uglify": "^6.0.4",
     "tslib": "^2.6.2"
-  },
-  "devDependencies": {
-    "@rollup/plugin-node-resolve": "^15.2.3",
-    "@rollup/plugin-terser": "^0.4.4",
-    "eslint-config-mourner": "^3.0.0",
-    "rollup-plugin-commonjs": "^10.1.0",
-    "rollup-plugin-import-css": "^3.5.0"
   }
 }
