@@ -27,7 +27,6 @@ class GaodeMap implements MapImplements {
       resizeEnable: true,
     };
     this.options = merge(defaultOptions, options);
-    console.log(`%c yqm log, this.options::: `, "color: pink;", this.options);
     this.loadMap();
   }
   async loadMap() {
@@ -94,7 +93,6 @@ class GaodeMap implements MapImplements {
       label: null,
     };
     const mergedOptions = merge(defaultOptions, iconOptions);
-    console.log(`%c yqm log, mergedOptions::: `, "color: pink;", mergedOptions);
     // 创建一个icon
     const icon = new this._mapLoader.Icon({
       image: mergedOptions.image.src,
