@@ -17,5 +17,6 @@ declare class Map {
     getAddressLists(keywords: string, geoOptions: GeoOptions): ListResultItem[];
     getAddress(position: [number, number], geoOptions: GeoOptions): any;
     getMap(): any;
+    destroyMap(): any;
 }
 export default Map;

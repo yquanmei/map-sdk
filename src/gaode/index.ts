@@ -467,5 +467,8 @@ class GaodeMap implements MapImplements {
   getMap() {
     return this._mapInstance;
   }
+  destroyMap() {
+    this._mapInstance && this._mapInstance.destroy();
+  }
 }
 export default GaodeMap;
