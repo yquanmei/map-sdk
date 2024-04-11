@@ -39,6 +39,8 @@ class GaodeMap implements MapImplements {
       },
     };
 
+    (AMapLoader as any).reset();
+
     this._mapLoader = await AMapLoader.load({
       ...defaultLoadOptions,
       plugins: this.options?.plugins,
