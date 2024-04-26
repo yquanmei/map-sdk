@@ -470,7 +470,18 @@ class GaodeMap implements MapImplements {
     return this._mapInstance;
   }
   destroyMap() {
+    this._destroyWebGL();
     this._mapInstance && this._mapInstance.destroy();
+  }
+  private _destroyWebGL() {
+    const canvas = document.querySelector("canvas.amap-layer") as HTMLCanvasElement;
+    if (canvas instanceof HTMLCanvasElement) {
+      let gl = canvas.getContext("webgl");
+      gl?.getExtension("WEBGL_lose_context")?.loseContext();
+      gl = null;
+    } else {
+      console.error("找不到指定的canvas");
+    }
   }
 }
 export default GaodeMap;
