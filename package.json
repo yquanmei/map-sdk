@@ -1,6 +1,6 @@
 {
   "name": "map-sdk",
-  "version": "1.0.5",
+  "version": "1.0.8",
   "description": "Map SDK (JS API) for Amap(Gaode)、Baidu、Tencent、Off-line Map",
   "main": "dist/index.umd.js",
   "module": "./dist/index.esm.js",

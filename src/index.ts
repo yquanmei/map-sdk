@@ -85,9 +85,12 @@ class Map {
   getAddress(position: [number, number], geoOptions: GeoOptions) {
     return this._strategy.getAddress(position, geoOptions);
   }
-
+  // ============================ 地图方法 =============================
   getMap() {
     return this._strategy.getMap();
+  }
+  destroyMap() {
+    return this._strategy.destroyMap();
   }
 }
 

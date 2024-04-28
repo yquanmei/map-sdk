@@ -19,5 +19,6 @@ declare class GaodeMap implements MapImplements {
     getAddressLists(keywords: string, geoOptions: GeoOptions): Promise<unknown>;
     getAddress(position: [number, number], geoOptions: GeoOptions): Promise<unknown>;
     getMap(): any;
+    destroyMap(): void;
 }
 export default GaodeMap;

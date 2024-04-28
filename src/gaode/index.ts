@@ -27,7 +27,6 @@ class GaodeMap implements MapImplements {
       resizeEnable: true,
     };
     this.options = merge(defaultOptions, options);
-    console.log(`%c yqm log, this.options::: `, "color: pink;", this.options);
     this.loadMap();
   }
   async loadMap() {
@@ -39,6 +38,8 @@ class GaodeMap implements MapImplements {
         plugins: [],
       },
     };
+
+    (AMapLoader as any).reset();
 
     this._mapLoader = await AMapLoader.load({
       ...defaultLoadOptions,
@@ -94,7 +95,6 @@ class GaodeMap implements MapImplements {
       label: null,
     };
     const mergedOptions = merge(defaultOptions, iconOptions);
-    console.log(`%c yqm log, mergedOptions::: `, "color: pink;", mergedOptions);
     // 创建一个icon
     const icon = new this._mapLoader.Icon({
       image: mergedOptions.image.src,
@@ -468,6 +468,20 @@ class GaodeMap implements MapImplements {
   }
   getMap() {
     return this._mapInstance;
+  }
+  destroyMap() {
+    this._destroyWebGL();
+    this._mapInstance && this._mapInstance.destroy();
+  }
+  private _destroyWebGL() {
+    const canvas = document.querySelector("canvas.amap-layer") as HTMLCanvasElement;
+    if (canvas instanceof HTMLCanvasElement) {
+      let gl = canvas.getContext("webgl");
+      gl?.getExtension("WEBGL_lose_context")?.loseContext();
+      gl = null;
+    } else {
+      console.error("找不到指定的canvas");
+    }
   }
 }
 export default GaodeMap;
