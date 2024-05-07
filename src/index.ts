@@ -58,9 +58,6 @@ class Map {
   getCenter(){
     return this._strategy.getCenter()
   }
-  destroy(){
-    return this._strategy.destroy()
-  }
   setZoomAndCenter(zoom: number, center: [number, number], time: number) {
     this._strategy.setZoomAndCenter(zoom, center, time);
   }

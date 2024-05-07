@@ -87,9 +87,6 @@ class GaodeMap implements MapImplements {
   getCenter(){
     return  this._mapInstance.getCenter()
   }
-  destroy(){
-    return  this._mapInstance.destroy()
-  }
   addIcon(iconOptions) {
     if (!iconOptions?.position?.[0] || !iconOptions?.position?.[1]) {
       console.error("请补充自定义图标的坐标position");

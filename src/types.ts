@@ -94,7 +94,6 @@ export interface MapImplements {
   addAnimation(options: AnimationOptions): Marker;
   getBounds():any;
   getCenter():any;
-  destroy(): void;
 }
 
 export interface GeoOptions {
