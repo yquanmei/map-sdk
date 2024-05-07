@@ -92,6 +92,8 @@ export interface MapImplements {
   clearInfoWindow(): void;
   addLines(options: PolyLineOptions): LineMarker;
   addAnimation(options: AnimationOptions): Marker;
+  getBounds():any;
+  getCenter():any;
 }
 
 export interface GeoOptions {
