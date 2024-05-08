@@ -1,7 +1,7 @@
 import AMapLoader from "@amap/amap-jsapi-loader";
 import "@amap/amap-jsapi-types";
 import { MapOptions, MapImplements, AnimationStatus, GeoOptions } from "../types";
-import type { CurrentPoint } from "./types";
+import type { LoaderOptions, CurrentPoint } from "./types";
 import { merge } from "lodash";
 
 const pickNotEmptyObject = (data) => {
@@ -11,63 +11,59 @@ const pickNotEmptyObject = (data) => {
 };
 
 class GaodeMap implements MapImplements {
-  options: MapOptions;
+  // options: MapOptions;
+  shouldReset: boolean;
+  container: string;
   _mapLoader: any;
   private _mapInstance: any;
-  constructor(options: MapOptions) {
+  constructor(options: LoaderOptions) {
+    this.shouldReset = false;
+    this.container = "container";
     const defaultOptions = {
-      container: "",
       key: "",
-      token: "",
-      zoom: 10,
-      mapStyle: "",
-      onSuccess: () => {},
-      center: [116.397389, 39.909466],
-      viewMode: "2D",
-      resizeEnable: true,
     };
-    this.options = merge(defaultOptions, options);
-    this.loadMap();
+    const loaderOptions = merge(defaultOptions, options);
+    this.loadMap(loaderOptions);
   }
-  async loadMap() {
+  async loadMap(options) {
     const defaultLoadOptions = {
-      key: this.options.key, // 申请好的Web端开发者Key，首次调用 load 时必填
       version: "2.0", // 指定要加载的 JSAPI 的版本，缺省时默认为 1.4.15
       AMapUI: {
         version: "1.1",
         plugins: [],
       },
     };
-
-    (AMapLoader as any).reset();
+    const mergedOptions = merge(defaultLoadOptions, {
+      key: options.key, // 申请好的Web端开发者Key，首次调用 load 时必填
+    });
 
     this._mapLoader = await AMapLoader.load({
-      ...defaultLoadOptions,
-      plugins: this.options?.plugins,
+      ...mergedOptions,
     });
+  }
+  createMap(options: MapOptions) {
+    this.shouldReset = false;
     const defaultMapOptions = {
       pitchEnable: true,
       pitch: 40,
       rotation: -15,
     };
-    const mergedMapOptions = merge(defaultMapOptions, {
-      zoom: this.options.zoom,
-      mapStyle: this.options.mapStyle,
-      center: this.options.center,
-      viewMode: this.options.viewMode,
-      resizeEnable: this.options.resizeEnable,
-      rotateEnable: this.options.rotateEnable,
-      pitchEnable: this.options.pitchEnable,
-      pitch: this.options.pitch,
-      rotation: this.options.rotation,
+    const mergedOptions = merge(defaultMapOptions, {
+      zoom: options.zoom,
+      mapStyle: options.mapStyle,
+      center: options.center,
+      viewMode: options.viewMode,
+      resizeEnable: options.resizeEnable,
+      rotateEnable: options.rotateEnable,
+      pitchEnable: options.pitchEnable,
+      pitch: options.pitch,
+      rotation: options.rotation,
     });
-    this._mapInstance = new this._mapLoader.Map(this.options.container, mergedMapOptions);
-    this._complete();
-  }
-  private _complete(): void {
+    this._mapInstance = new this._mapLoader.Map(options.container, mergedOptions);
     this._mapInstance.on("complete", () => {
-      typeof this.options.onSuccess === "function" && this.options.onSuccess();
+      typeof options.onSuccess === "function" && options.onSuccess();
     });
+    this.container = options.container || "container";
   }
   setFitView() {
     this._mapInstance.setFitView();
@@ -429,19 +425,20 @@ class GaodeMap implements MapImplements {
     const that = this;
     //异步加载 AutoComplete 插件
     return new Promise((resolve) => {
-      that._mapLoader.plugin("AMap.AutoComplete", function () {
+      that._mapLoader.plugin("AMap.AutoComplete", () => {
         const autoComplete = new that._mapLoader.AutoComplete(autoOptions);
         autoComplete.search(mergedOptions.keywords, (_, result) => {
-          const lists = result?.tips?.map((item) => {
-            const detailedAddress = item.district + item.address + item.name;
-            return (
-              {
+          const lists = result?.tips
+            ?.map((item) => {
+              const detailedAddress = item.district + item.address + item.name;
+              if (!item.location) return;
+              return {
                 address: detailedAddress,
                 lng: item.location.lng,
                 lat: item.location.lat,
-              } ?? []
-            );
-          });
+              };
+            })
+            .filter(Boolean);
           resolve(lists);
         });
       });
@@ -456,31 +453,41 @@ class GaodeMap implements MapImplements {
       city: geoOptions?.city,
       radius: geoOptions?.radius,
     });
-    var geocoder = new this._mapLoader.Geocoder({
-      city: mergedOptions.city,
-      radius: mergedOptions.radius,
-    });
-
     return new Promise((resolve, reject) => {
-      geocoder.getAddress(position, function (status, result) {
-        if (status === "complete" && result.regeocode) {
-          var address = result.regeocode.formattedAddress;
-          resolve(address);
-        } else {
-          reject("根据经纬度查询地址失败");
-        }
+      this._mapLoader.plugin(["AMap.Geocoder"], () => {
+        const geocoder = new this._mapLoader.Geocoder({
+          city: mergedOptions.city,
+          radius: mergedOptions.radius,
+        });
+        geocoder.getAddress(position, function (status, result) {
+          if (status === "complete" && result.regeocode) {
+            var address = result.regeocode.formattedAddress;
+            resolve(address);
+          } else {
+            reject("根据经纬度查询地址失败");
+          }
+        });
       });
     });
   }
   getMap() {
     return this._mapInstance;
   }
+  resetLoader() {
+    this.shouldReset = true;
+  }
   destroyMap() {
+    if (this.shouldReset) {
+      this._clearScripts();
+    }
     this._destroyWebGL();
     this._mapInstance && this._mapInstance.destroy();
   }
+  clearOverlays() {
+    this._mapInstance.remove(this._mapInstance.getLayers(), this._mapInstance.getAllOverlays());
+  }
   private _destroyWebGL() {
-    const canvas = document.querySelector("canvas.amap-layer") as HTMLCanvasElement;
+    const canvas = document.querySelector(`#${this.container} canvas.amap-layer`) as HTMLCanvasElement;
     if (canvas instanceof HTMLCanvasElement) {
       let gl = canvas.getContext("webgl");
       gl?.getExtension("WEBGL_lose_context")?.loseContext();
@@ -488,6 +495,12 @@ class GaodeMap implements MapImplements {
     } else {
       console.error("找不到指定的canvas");
     }
+  }
+  private _clearScripts() {
+    const scriptTags = document.querySelectorAll('script[src*="webapi.amap.com/"]');
+    scriptTags.forEach((item) => {
+      item.parentNode!.removeChild(item);
+    });
   }
 }
 export default GaodeMap;

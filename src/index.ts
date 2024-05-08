@@ -2,6 +2,7 @@ import GaodeMap from "./gaode/index";
 import OpenLayerMap from "./openlayer/index";
 // import OpenlayerInstance from './openlayerMap'
 import { MapOptions, IconOptions, InfoWindowOptions, PolyLineOptions, AnimationOptions, ListResultItem, GeoOptions } from "./types";
+import { LoaderOptions } from "./gaode/types";
 
 enum Strategy {
   GAODE = "gaode",
@@ -9,10 +10,10 @@ enum Strategy {
 }
 class Map {
   _strategy: any;
-  constructor(strategy: string, options: MapOptions) {
+  constructor(strategy: string, options: MapOptions | LoaderOptions) {
     this._setStrategy(strategy, options);
   }
-  private _setStrategy(strategy: string, options: MapOptions) {
+  private _setStrategy(strategy: string, options) {
     switch (strategy) {
       case Strategy.GAODE: {
         this._strategy = this._createGaodeMap(options);
@@ -28,7 +29,7 @@ class Map {
       }
     }
   }
-  private _createGaodeMap(options: MapOptions) {
+  private _createGaodeMap(options: LoaderOptions) {
     if (!options.token) {
       console.error("请添加您的token");
       return;
@@ -45,6 +46,12 @@ class Map {
   }
   private _createOpenLayerMap(options: MapOptions) {
     return new OpenLayerMap(options);
+  }
+  resetLoader() {
+    this._strategy.resetLoader();
+  }
+  createMap(options: MapOptions) {
+    this._strategy.createMap(options);
   }
   setFitView() {
     this._strategy.setFitView();

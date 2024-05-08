@@ -5,10 +5,9 @@ import { MapImplements, GeoOptions } from "../types";
 import { Options, OverlaysArr } from "./index.d";
 declare class OpenLayerMap implements MapImplements {
     private _mapInstance;
-    options: Options;
     overlaysArr: OverlaysArr;
     constructor(options: Options);
-    _initMap(): void;
+    _initMap(options: any): void;
     setFitView(): void;
     setZoomAndCenter(zoom: any, center: any): void;
     setCenter(...arg: any[]): void;
@@ -26,5 +25,7 @@ declare class OpenLayerMap implements MapImplements {
     getAddressLists(keywords: string, geoOptions: GeoOptions): void;
     getAddress(position: [number, number], geoOptions: GeoOptions): void;
     getMap(): void;
+    getBounds(): void;
+    getCenter(): void;
 }
 export default OpenLayerMap;

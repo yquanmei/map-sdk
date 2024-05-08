@@ -1,8 +1,5 @@
 export interface MapOptions {
-  container: string;
-  key: string;
-  token: string;
-  plugins?: string[]; // 地图插件
+  container?: string;
   zoom?: number; // 地图级别
   mapStyle?: string;
   onSuccess?: () => void;
@@ -14,6 +11,7 @@ export interface MapOptions {
   pitchEnable?: boolean;
   pitch?: number;
   rotation?: number;
+  shouldReset?: boolean;
 }
 export enum AnimationStatus {
   INIT = "INIT",
@@ -82,6 +80,7 @@ export interface Marker {
   setLabelContent: () => void;
 }
 export interface MapImplements {
+  createMap?(options: MapOptions): void;
   setFitView(): void;
   setCenter(center: [number, number], immediately?: boolean, duration?: number): void;
   setZoomAndCenter(zoom: number, center: [number, number], immediately: boolean, duration?: number): void;
