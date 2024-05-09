@@ -9,11 +9,11 @@ import { Vector as VectorSource } from "ol/source";
 import { merge } from "lodash";
 import Overlay from "ol/Overlay";
 import { Point, LineString } from "ol/geom";
-import { MapImplements, AnimationStatus, GeoOptions } from "../types";
+import { MapImplements, AnimationStatus, GeoOptions, MapOptions } from "../types";
 import { extend as extentExtend } from "ol/extent";
 import { getDistance } from "ol/sphere";
 import * as ol from "openlayers";
-import { CurrentPoint, Options, OverlaysArr } from "./index.d";
+import { LoaderOptions, CurrentPoint, OverlaysArr } from "./types";
 
 interface Polyline {
   path: [number, number][];
@@ -86,39 +86,45 @@ class Observer {
 class OpenLayerMap implements MapImplements {
   private _mapInstance: any;
   overlaysArr: OverlaysArr;
-  constructor(options: Options) {
-    const defaultOptions = {
-      container: "container",
-      zoom: 18,
-      center: [104.06, 30.67],
-      url: "http://webrd01.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scale=1&style=8",
-    };
-    const mergedOptions = merge(defaultOptions, options);
+  private _openStreetMapLayer: any;
+  constructor(options: LoaderOptions) {
+    // const mergedOptions = merge(defaultOptions, options);
     this.overlaysArr = {
       iconArr: [],
       infoWindowArr: [],
       labelInfoWindowArr: [],
       lineArr: [],
     };
-    this._initMap(mergedOptions);
+    this.loadMap(options);
   }
-  _initMap(options) {
-    const openStreetMapLayer = new TileLayer({
+  loadMap(options: LoaderOptions) {
+    const defaultOptions = {
+      url: "http://webrd01.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scale=1&style=8",
+    };
+    const mergedOptions = merge(defaultOptions, options);
+    this._openStreetMapLayer = new TileLayer({
       source: new XYZ({
-        url: options.url,
+        url: mergedOptions.url,
       }),
     });
-
+  }
+  createMap(options: MapOptions): void {
+    const defaultOptions = {
+      container: "container",
+      zoom: 18,
+      center: [104.06, 30.67],
+    };
+    const mergedOptions = merge(defaultOptions, options);
     this._mapInstance = new Map({
-      layers: [openStreetMapLayer],
+      layers: [this._openStreetMapLayer],
       view: new View({
-        center: options.center,
+        center: mergedOptions.center,
         projection: "EPSG:4326",
-        zoom: options.zoom,
+        zoom: mergedOptions.zoom,
         minZoom: 6, // 最小缩放级别
         maxZoom: 18, // 最大缩放级别
       }),
-      target: options?.container,
+      target: mergedOptions?.container,
       controls: [],
     });
   }
@@ -553,11 +559,9 @@ class OpenLayerMap implements MapImplements {
     marker._moveAlong = (path, options) => {
       const duration = options.duration;
       let movingPoint;
-      // let movingIndex
       const timer = 10;
       const movingPath = path;
       let currentIndex = 0;
-      // movingIndex = currentPoint.routeIndex
       //计时器开始
       const timeStart = () => {
         movingPoint = movingPath[currentIndex];
@@ -565,8 +569,6 @@ class OpenLayerMap implements MapImplements {
         const time = () => {
           if (timeout) return;
           if (currentIndex + 1 >= movingPath.length) {
-            //从头开始
-            // currentPoint.routeIndex = 0;
             //移除要素
             animation.emit("movealong");
             currentIndex = 0;

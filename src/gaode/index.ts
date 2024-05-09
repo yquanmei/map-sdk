@@ -11,7 +11,6 @@ const pickNotEmptyObject = (data) => {
 };
 
 class GaodeMap implements MapImplements {
-  // options: MapOptions;
   shouldReset: boolean;
   container: string;
   _mapLoader: any;
@@ -19,21 +18,17 @@ class GaodeMap implements MapImplements {
   constructor(options: LoaderOptions) {
     this.shouldReset = false;
     this.container = "container";
-    const defaultOptions = {
-      key: "",
-    };
-    const loaderOptions = merge(defaultOptions, options);
-    this.loadMap(loaderOptions);
+    this.loadMap(options);
   }
   async loadMap(options) {
-    const defaultLoadOptions = {
+    const defaultOptions = {
       version: "2.0", // 指定要加载的 JSAPI 的版本，缺省时默认为 1.4.15
       AMapUI: {
         version: "1.1",
         plugins: [],
       },
     };
-    const mergedOptions = merge(defaultLoadOptions, {
+    const mergedOptions = merge(defaultOptions, {
       key: options.key, // 申请好的Web端开发者Key，首次调用 load 时必填
     });
 
@@ -77,11 +72,11 @@ class GaodeMap implements MapImplements {
   clearMap() {
     this._mapInstance && this._mapInstance.clearMap();
   }
-  getBounds(){
-    return  this._mapInstance.getBounds()
+  getBounds() {
+    return this._mapInstance.getBounds();
   }
-  getCenter(){
-    return  this._mapInstance.getCenter()
+  getCenter() {
+    return this._mapInstance.getCenter();
   }
   addIcon(iconOptions) {
     if (!iconOptions?.position?.[0] || !iconOptions?.position?.[1]) {
