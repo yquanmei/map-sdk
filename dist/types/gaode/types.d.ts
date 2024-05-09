@@ -1,6 +1,7 @@
-export interface LoadOptions {
+export interface LoaderOptions {
     key: string;
-    version: string;
+    version?: string;
+    token: string;
 }
 interface PositionWithR {
     lng: number;

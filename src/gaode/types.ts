@@ -1,6 +1,7 @@
-export interface LoadOptions {
+export interface LoaderOptions {
   key: string;
-  version: string;
+  version?: string;
+  token: string;
 }
 
 interface PositionWithR {
@@ -8,17 +9,17 @@ interface PositionWithR {
   lat: number;
 }
 
-type PossiblePosition = (PositionWithR | [number, number] | [number, number, number])[]
+type PossiblePosition = (PositionWithR | [number, number] | [number, number, number])[];
 
 export interface CurrentPoint {
-  betweenTwoPoint: boolean,
-  path: PossiblePosition,
-  pathWithRInfo: PossiblePosition,
-  allPath: [number, number][],
-  animationPath: PossiblePosition,
-  shouldConcatBefore: boolean,
-  oldPath: PossiblePosition | [],
-  animationStatus: string,
-  duration: number,
-  directResume: boolean,
+  betweenTwoPoint: boolean;
+  path: PossiblePosition;
+  pathWithRInfo: PossiblePosition;
+  allPath: [number, number][];
+  animationPath: PossiblePosition;
+  shouldConcatBefore: boolean;
+  oldPath: PossiblePosition | [];
+  animationStatus: string;
+  duration: number;
+  directResume: boolean;
 }

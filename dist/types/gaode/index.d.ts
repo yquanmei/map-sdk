@@ -1,16 +1,20 @@
 import "@amap/amap-jsapi-types";
 import { MapOptions, MapImplements, GeoOptions } from "../types";
+import type { LoaderOptions } from "./types";
 declare class GaodeMap implements MapImplements {
-    options: MapOptions;
+    shouldReset: boolean;
+    container: string;
     _mapLoader: any;
     private _mapInstance;
-    constructor(options: MapOptions);
-    loadMap(): Promise<void>;
-    private _complete;
+    constructor(options: LoaderOptions);
+    loadMap(options: any): Promise<void>;
+    createMap(options: MapOptions): void;
     setFitView(): void;
     setCenter(center: any, immediately?: boolean, duration?: number): void;
     setZoomAndCenter(zoom: any, center: any, immediately: any, duration?: any): void;
     clearMap(): void;
+    getBounds(): any;
+    getCenter(): any;
     addIcon(iconOptions: any): any;
     addInfoWindow(infoWindowOptions: any): any;
     clearInfoWindow(): void;
@@ -19,6 +23,10 @@ declare class GaodeMap implements MapImplements {
     getAddressLists(keywords: string, geoOptions: GeoOptions): Promise<unknown>;
     getAddress(position: [number, number], geoOptions: GeoOptions): Promise<unknown>;
     getMap(): any;
+    resetLoader(): void;
     destroyMap(): void;
+    clearOverlays(): void;
+    private _destroyWebGL;
+    private _clearScripts;
 }
 export default GaodeMap;

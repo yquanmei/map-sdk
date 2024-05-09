@@ -85,7 +85,6 @@ class Observer {
 
 class OpenLayerMap implements MapImplements {
   private _mapInstance: any;
-  options: Options;
   overlaysArr: OverlaysArr;
   constructor(options: Options) {
     const defaultOptions = {
@@ -95,32 +94,31 @@ class OpenLayerMap implements MapImplements {
       url: "http://webrd01.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scale=1&style=8",
     };
     const mergedOptions = merge(defaultOptions, options);
-    this.options = mergedOptions;
     this.overlaysArr = {
       iconArr: [],
       infoWindowArr: [],
       labelInfoWindowArr: [],
       lineArr: [],
     };
-    this._initMap();
+    this._initMap(mergedOptions);
   }
-  _initMap() {
+  _initMap(options) {
     const openStreetMapLayer = new TileLayer({
       source: new XYZ({
-        url: this.options.url,
+        url: options.url,
       }),
     });
 
     this._mapInstance = new Map({
       layers: [openStreetMapLayer],
       view: new View({
-        center: this.options.center,
+        center: options.center,
         projection: "EPSG:4326",
-        zoom: this.options.zoom,
+        zoom: options.zoom,
         minZoom: 6, // 最小缩放级别
         maxZoom: 18, // 最大缩放级别
       }),
-      target: this.options.container,
+      target: options?.container,
       controls: [],
     });
   }
@@ -650,6 +648,8 @@ class OpenLayerMap implements MapImplements {
     console.log(`%c TODO::: `, "color: pink;", position, geoOptions);
   }
   getMap() {}
+  getBounds() {}
+  getCenter() {}
 }
 
 export default OpenLayerMap;
