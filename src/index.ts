@@ -3,6 +3,7 @@ import OpenLayerMap from "./openlayer/index";
 // import OpenlayerInstance from './openlayerMap'
 import { MapOptions, IconOptions, InfoWindowOptions, PolyLineOptions, AnimationOptions, ListResultItem, GeoOptions } from "./types";
 import { LoaderOptions } from "./gaode/types";
+import { LoaderOptions as OpenlayerLoaderOptions } from "./openlayer/types";
 
 enum Strategy {
   GAODE = "gaode",
@@ -44,7 +45,7 @@ class Map {
     };
     return new GaodeMap(options);
   }
-  private _createOpenLayerMap(options: MapOptions) {
+  private _createOpenLayerMap(options: OpenlayerLoaderOptions) {
     return new OpenLayerMap(options);
   }
   resetLoader() {
@@ -59,11 +60,11 @@ class Map {
   setCenter(center: [number, number]) {
     this._strategy.setCenter(center);
   }
-  getBounds(){
-    return this._strategy.getBounds()
+  getBounds() {
+    return this._strategy.getBounds();
   }
-  getCenter(){
-    return this._strategy.getCenter()
+  getCenter() {
+    return this._strategy.getCenter();
   }
   setZoomAndCenter(zoom: number, center: [number, number], time: number) {
     this._strategy.setZoomAndCenter(zoom, center, time);

@@ -3,11 +3,6 @@ export interface LoadOptions {
   version: string;
 }
 
-// interface PositionWithR {
-//   lng: number;
-//   lat: number;
-// }
-// type positionItem = PositionWithR | [number, number] | [number, number, number]
 type positionItem =
   | {
       lng: number;
@@ -31,10 +26,7 @@ export interface CurrentPoint {
   directResume: boolean;
 }
 
-export interface Options {
-  container?: string;
-  zoom?: number;
-  center?: [number, number];
+export interface LoaderOptions {
   url?: string;
 }
 

@@ -4,7 +4,6 @@ export interface MapOptions {
   mapStyle?: string;
   onSuccess?: () => void;
   center?: [number, number];
-  // viewMode?: "2D" | "3D";
   viewMode?: string;
   resizeEnable?: boolean;
   rotateEnable?: boolean;
@@ -91,8 +90,8 @@ export interface MapImplements {
   clearInfoWindow(): void;
   addLines(options: PolyLineOptions): LineMarker;
   addAnimation(options: AnimationOptions): Marker;
-  getBounds():any;
-  getCenter():any;
+  getBounds(): any;
+  getCenter(): any;
 }
 
 export interface GeoOptions {

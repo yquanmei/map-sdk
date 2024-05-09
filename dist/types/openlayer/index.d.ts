@@ -1,13 +1,15 @@
 import "ol/ol.css";
 import Feature from "ol/Feature";
 import { LineString } from "ol/geom";
-import { MapImplements, GeoOptions } from "../types";
-import { Options, OverlaysArr } from "./index.d";
+import { MapImplements, GeoOptions, MapOptions } from "../types";
+import { LoaderOptions, OverlaysArr } from "./types";
 declare class OpenLayerMap implements MapImplements {
     private _mapInstance;
     overlaysArr: OverlaysArr;
-    constructor(options: Options);
-    _initMap(options: any): void;
+    private _openStreetMapLayer;
+    constructor(options: LoaderOptions);
+    loadMap(options: LoaderOptions): void;
+    createMap(options: MapOptions): void;
     setFitView(): void;
     setZoomAndCenter(zoom: any, center: any): void;
     setCenter(...arg: any[]): void;
