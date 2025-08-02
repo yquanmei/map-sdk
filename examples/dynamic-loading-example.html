@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Map SDK - 动态加载示例</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .info-box {
+      background: #e3f2fd;
+      border: 1px solid #2196f3;
+      border-radius: 6px;
+      padding: 15px;
+      margin: 20px 0;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 6px;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .control-group label {
+      font-weight: bold;
+      font-size: 12px;
+      color: #666;
+    }
+
+    select,
+    input,
+    button {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .map-container {
+      width: 100%;
+      height: 400px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      margin: 20px 0;
+      position: relative;
+    }
+
+    .map-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      background: #f8f9fa;
+      color: #666;
+      font-size: 16px;
+    }
+
+    .log {
+      background: #f8f9fa;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 15px;
+      max-height: 200px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 12px;
+    }
+
+    .log-entry {
+      margin: 2px 0;
+      padding: 2px 0;
+    }
+
+    .log-success {
+      color: #28a745;
+    }
+
+    .log-error {
+      color: #dc3545;
+    }
+
+    .log-info {
+      color: #17a2b8;
+    }
+
+    .log-warning {
+      color: #ffc107;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🗺️ Map SDK - 动态加载示例</h1>
+      <p>演示如何自动动态加载不同地图服务商的SDK</p>
+    </div>
+
+    <div class="info-box">
+      <h3>✨ 动态加载特性</h3>
+      <ul>
+        <li><strong>自动加载</strong>: 无需手动引入地图SDK，系统会自动加载</li>
+        <li><strong>按需加载</strong>: 只加载需要的地图服务商SDK</li>
+        <li><strong>错误处理</strong>: 完善的加载失败处理机制</li>
+        <li><strong>缓存机制</strong>: 避免重复加载相同的SDK</li>
+      </ul>
+    </div>
+
+    <div class="controls">
+      <div class="control-group">
+        <label>地图服务商</label>
+        <select id="provider">
+          <option value="amap">高德地图 (AMap)</option>
+          <option value="google">Google Maps</option>
+          <option value="openlayers">OpenLayers</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label>API密钥</label>
+        <input type="text" id="apiKey" placeholder="输入API密钥 (可选)">
+      </div>
+
+      <div class="control-group">
+        <label>经度</label>
+        <input type="number" id="lng" value="116.397428" step="0.000001">
+      </div>
+
+      <div class="control-group">
+        <label>纬度</label>
+        <input type="number" id="lat" value="39.90923" step="0.000001">
+      </div>
+
+      <div class="control-group">
+        <label>缩放级别</label>
+        <input type="number" id="zoom" value="11" min="1" max="20">
+      </div>
+
+      <div class="control-group">
+        <label>操作</label>
+        <button onclick="initMap()">初始化地图</button>
+      </div>
+
+      <div class="control-group">
+        <label>标记点</label>
+        <button onclick="addMarker()" id="addMarkerBtn" disabled>添加标记点</button>
+      </div>
+
+      <div class="control-group">
+        <label>地图控制</label>
+        <button onclick="clearMarkers()" id="clearMarkersBtn" disabled>清除标记点</button>
+      </div>
+    </div>
+
+    <div id="map-container" class="map-container">
+      <div class="map-placeholder">
+        请选择地图服务商并点击"初始化地图"
+      </div>
+    </div>
+
+    <div class="log" id="log">
+      <div class="log-entry log-info">等待初始化...</div>
+    </div>
+  </div>
+
+  <script type="module">
+    // 模拟MapSDK类（实际使用时需要引入构建后的文件）
+    class MockMapSDK {
+      constructor(provider) {
+        this.provider = provider;
+        this.initialized = false;
+        this.markers = [];
+        this.sdkLoaded = false;
+      }
+
+      async loadSDK(apiKey) {
+        if (this.sdkLoaded) return;
+
+        log(`开始动态加载 ${this.provider} SDK...`, 'info');
+
+        // 模拟动态加载过程
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        // 模拟不同SDK的加载URL
+        const sdkUrls = {
+          'amap': `https://webapi.amap.com/maps?v=2.0&key=${apiKey || ''}&plugin=AMap.Marker`,
+          'google': `https://maps.googleapis.com/maps/api/js?key=${apiKey || ''}&libraries=geometry,places`,
+          'openlayers': 'https://cdn.jsdelivr.net/npm/ol@v7.4.0/dist/ol.js'
+        };
+
+        const url = sdkUrls[this.provider];
+        log(`✅ 动态加载脚本: ${url}`, 'success');
+
+        this.sdkLoaded = true;
+      }
+
+      async init(config) {
+        try {
+          // 首先动态加载SDK
+          await this.loadSDK(config.apiKey);
+
+          // 模拟初始化过程
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+          this.initialized = true;
+          this.config = config;
+          log(`地图初始化成功 (${this.provider})`, 'success');
+        } catch (error) {
+          log(`SDK加载失败: ${error.message}`, 'error');
+          throw error;
+        }
+      }
+
+      async addMarker(config) {
+        if (!this.initialized) {
+          throw new Error('Map is not initialized. Call init() first.');
+        }
+
+        const marker = {
+          id: `marker_${Date.now()}`,
+          position: config.position,
+          title: config.title,
+          content: config.content
+        };
+
+        this.markers.push(marker);
+        log(`添加标记点: ${marker.title} (${marker.position.join(', ')})`, 'success');
+        return marker;
+      }
+
+      clearMarkers() {
+        if (!this.initialized) {
+          throw new Error('Map is not initialized. Call init() first.');
+        }
+
+        const count = this.markers.length;
+        this.markers = [];
+        log(`清除 ${count} 个标记点`, 'success');
+      }
+
+      getMarkers() {
+        return this.markers;
+      }
+
+      destroy() {
+        this.initialized = false;
+        this.markers = [];
+        this.sdkLoaded = false;
+        log('地图已销毁', 'info');
+      }
+    }
+
+    let mapSDK = null;
+
+    function log(message, type = 'info') {
+      const logElement = document.getElementById('log');
+      const entry = document.createElement('div');
+      entry.className = `log-entry log-${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logElement.appendChild(entry);
+      logElement.scrollTop = logElement.scrollHeight;
+    }
+
+    function updateButtons(initialized) {
+      document.getElementById('addMarkerBtn').disabled = !initialized;
+      document.getElementById('clearMarkersBtn').disabled = !initialized;
+    }
+
+    window.initMap = async function () {
+      try {
+        const provider = document.getElementById('provider').value;
+        const apiKey = document.getElementById('apiKey').value;
+        const lng = parseFloat(document.getElementById('lng').value);
+        const lat = parseFloat(document.getElementById('lat').value);
+        const zoom = parseInt(document.getElementById('zoom').value);
+
+        log(`开始初始化 ${provider} 地图...`, 'info');
+
+        // 创建地图实例
+        mapSDK = new MockMapSDK(provider);
+
+        // 初始化地图
+        await mapSDK.init({
+          provider,
+          container: 'map-container',
+          center: [lng, lat],
+          zoom,
+          apiKey
+        });
+
+        updateButtons(true);
+
+        // 更新地图容器显示
+        const mapContainer = document.getElementById('map-container');
+        mapContainer.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #e9ecef; color: #495057; font-size: 16px;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 24px; margin-bottom: 10px;">🗺️</div>
+                        <div>${provider.toUpperCase()} 地图已加载</div>
+                        <div style="font-size: 12px; margin-top: 5px; color: #6c757d;">
+                            中心点: ${lng.toFixed(6)}, ${lat.toFixed(6)} | 缩放: ${zoom}
+                        </div>
+                        <div style="font-size: 10px; margin-top: 10px; color: #28a745;">
+                            ✅ SDK已动态加载
+                        </div>
+                    </div>
+                </div>`;
+
+      } catch (error) {
+        log(`地图初始化失败: ${error.message}`, 'error');
+        updateButtons(false);
+      }
+    };
+
+    window.addMarker = async function () {
+      try {
+        if (!mapSDK) {
+          throw new Error('地图未初始化');
+        }
+
+        const lng = parseFloat(document.getElementById('lng').value);
+        const lat = parseFloat(document.getElementById('lat').value);
+
+        // 添加一些随机偏移
+        const randomLng = lng + (Math.random() - 0.5) * 0.01;
+        const randomLat = lat + (Math.random() - 0.5) * 0.01;
+
+        const marker = await mapSDK.addMarker({
+          position: [randomLng, randomLat],
+          title: `标记点 ${mapSDK.getMarkers().length + 1}`,
+          content: `这是第 ${mapSDK.getMarkers().length + 1} 个标记点`
+        });
+
+        log(`标记点已添加: ${marker.title}`, 'success');
+
+      } catch (error) {
+        log(`添加标记点失败: ${error.message}`, 'error');
+      }
+    };
+
+    window.clearMarkers = function () {
+      try {
+        if (!mapSDK) {
+          throw new Error('地图未初始化');
+        }
+
+        mapSDK.clearMarkers();
+        log('所有标记点已清除', 'success');
+
+      } catch (error) {
+        log(`清除标记点失败: ${error.message}`, 'error');
+      }
+    };
+
+    // 初始化页面
+    updateButtons(false);
+    log('页面已加载，演示动态加载功能', 'info');
+  </script>
+</body>
+
+</html>
