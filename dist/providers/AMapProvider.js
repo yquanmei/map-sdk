@@ -14,7 +14,7 @@ export class AMapProvider extends BaseMapProvider {
             // 创建script标签
             const script = document.createElement('script');
             script.type = 'text/javascript';
-            script.src = `https://webapi.amap.com/maps?v=2.0&key=${apiKey || ''}&plugin=AMap.Marker`;
+            script.src = `https://webapi.amap.com/maps?v=2.0&key=${apiKey || ''}&plugin=AMap.Marker,AMap.MarkerCluster`;
             script.async = true;
             script.defer = true;
             // 加载成功回调
@@ -100,11 +100,95 @@ export class AMapProvider extends BaseMapProvider {
         this.addMarkerToCollection(marker);
         return marker;
     }
+    async addMarkerCluster(points, options) {
+        if (!this.map) {
+            throw new Error('Map not initialized');
+        }
+        const clusterId = this.generateClusterId();
+        const defaultOptions = {
+            gridSize: 60,
+            maxZoom: 18,
+            renderClusterMarker: '<div style="background-color: #ff6b6b; color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold;">{count}</div>',
+            renderMarker: {
+                position: [0, 0], // 占位符，实际位置会从 point 中获取
+                icon: 'https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png'
+            },
+            ...options
+        };
+        // 创建标记点数组
+        const markers = [];
+        points.forEach(point => {
+            const { position: _, ...renderMarkerConfig } = defaultOptions.renderMarker;
+            const { position: pointPosition, ...pointConfig } = point;
+            const marker = new this.AMap.Marker({
+                position: pointPosition,
+                ...renderMarkerConfig,
+                ...pointConfig
+            });
+            markers.push(marker);
+        });
+        // 创建聚合插件
+        const cluster = new this.AMap.MarkerCluster(this.map, markers, {
+            gridSize: defaultOptions.gridSize,
+            maxZoom: defaultOptions.maxZoom,
+            renderClusterMarker: (context) => {
+                const count = context.count;
+                const div = document.createElement('div');
+                div.innerHTML = defaultOptions.renderClusterMarker.replace('{count}', count.toString());
+                return div.firstChild;
+            }
+        });
+        const markerCluster = {
+            id: clusterId,
+            points: [...points],
+            amapCluster: cluster,
+            amapMarkers: markers,
+            addPoint: (point) => {
+                const { position: _, ...renderMarkerConfig } = defaultOptions.renderMarker;
+                const { position: pointPosition, ...pointConfig } = point;
+                const marker = new this.AMap.Marker({
+                    position: pointPosition,
+                    ...renderMarkerConfig,
+                    ...pointConfig
+                });
+                markers.push(marker);
+                markerCluster.points.push(point);
+                cluster.addMarker(marker);
+            },
+            removePoint: (point) => {
+                const index = markerCluster.points.findIndex(p => p.position[0] === point.position[0] && p.position[1] === point.position[1]);
+                if (index !== -1) {
+                    const marker = markers[index];
+                    cluster.removeMarker(marker);
+                    markers.splice(index, 1);
+                    markerCluster.points.splice(index, 1);
+                }
+            },
+            clear: () => {
+                markers.forEach(marker => cluster.removeMarker(marker));
+                markers.length = 0;
+                markerCluster.points.length = 0;
+            },
+            remove: () => {
+                cluster.setMap(null);
+                this.removeClusterFromCollection(clusterId);
+            }
+        };
+        this.addClusterToCollection(markerCluster);
+        return markerCluster;
+    }
     removeMarker(marker) {
         const amapMarker = marker.amapMarker;
         if (amapMarker) {
             this.map.remove(amapMarker);
             this.removeMarkerFromCollection(marker.id);
+        }
+    }
+    removeMarkerCluster(cluster) {
+        const amapCluster = cluster.amapCluster;
+        if (amapCluster) {
+            amapCluster.setMap(null);
+            this.removeClusterFromCollection(cluster.id);
         }
     }
     setCenter(position) {
@@ -123,5 +207,6 @@ export class AMapProvider extends BaseMapProvider {
             this.map = null;
         }
         this.clearMarkers();
+        this.clearMarkerClusters();
     }
 }

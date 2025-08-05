@@ -1,4 +1,4 @@
-import { MapProvider, MapSDKConfig, MarkerConfig, IMarker } from './types';
+import { MapProvider, MapSDKConfig, MarkerConfig, IMarker, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster } from './types';
 import { IMapProvider } from './types';
 export declare class MapSDK {
     private provider;
@@ -20,6 +20,18 @@ export declare class MapSDK {
      * @param marker 标记点实例
      */
     removeMarker(marker: IMarker): void;
+    /**
+     * 添加标记点聚合
+     * @param points 坐标点数组
+     * @param options 聚合选项
+     * @returns 标记点聚合实例
+     */
+    addMarkerCluster(points: MarkerClusterPoint[], options?: MarkerClusterOptions): Promise<IMarkerCluster>;
+    /**
+     * 移除标记点聚合
+     * @param cluster 标记点聚合实例
+     */
+    removeMarkerCluster(cluster: IMarkerCluster): void;
     /**
      * 设置地图中心点
      * @param position 中心点坐标 [经度, 纬度]

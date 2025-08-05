@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google 地图标记点聚合示例</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .map-container {
+      width: 100%;
+      height: 500px;
+      border: 1px solid #ccc;
+      margin: 20px 0;
+    }
+
+    .controls {
+      margin: 20px 0;
+      padding: 20px;
+      background: #f5f5f5;
+      border-radius: 5px;
+    }
+
+    .control-group {
+      margin: 10px 0;
+    }
+
+    label {
+      display: inline-block;
+      width: 150px;
+      font-weight: bold;
+    }
+
+    input,
+    select {
+      padding: 5px;
+      margin: 5px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    .info {
+      margin: 10px 0;
+      padding: 10px;
+      background: #e7f3ff;
+      border-left: 4px solid #007bff;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Google 地图标记点聚合示例</h1>
+
+    <div class="info">
+      <strong>说明：</strong> 使用 Google 地图时，需要在初始化时通过 plugins 参数启用 cluster 功能才能使用标记点聚合。
+    </div>
+
+    <div class="controls">
+      <div class="control-group">
+        <label>Google Maps API Key:</label>
+        <input type="text" id="apiKey" placeholder="请输入Google Maps API密钥">
+      </div>
+
+      <div class="control-group">
+        <label>启用聚合插件:</label>
+        <input type="checkbox" id="enableCluster" checked>
+        <span>（勾选后会在初始化时加载 MarkerClusterer 库）</span>
+      </div>
+
+      <div class="control-group">
+        <label>聚合距离:</label>
+        <input type="number" id="gridSize" value="60" min="10" max="200">
+        <span>像素</span>
+      </div>
+
+      <div class="control-group">
+        <label>最大聚合层级:</label>
+        <input type="number" id="maxZoom" value="18" min="10" max="20">
+      </div>
+
+      <div class="control-group">
+        <button onclick="initMap()">初始化地图</button>
+        <button onclick="addCluster()">添加聚合标记点</button>
+        <button onclick="clearClusters()">清除聚合</button>
+      </div>
+    </div>
+
+    <div class="map-container" id="map"></div>
+
+    <div class="info">
+      <strong>使用示例：</strong><br>
+      <code>
+                // 初始化时启用 cluster 插件<br>
+                await map.init({<br>
+                &nbsp;&nbsp;container: 'map',<br>
+                &nbsp;&nbsp;center: [116.397428, 39.90923],<br>
+                &nbsp;&nbsp;zoom: 12,<br>
+                &nbsp;&nbsp;apiKey: 'your-api-key',<br>
+                &nbsp;&nbsp;plugins: ['cluster'] // 启用聚合插件<br>
+                });
+            </code>
+    </div>
+  </div>
+
+  <script type="module">
+    import { MapSDK, MapProvider } from '../src/index.js';
+
+    let mapSDK = null;
+    let currentCluster = null;
+
+    // 示例坐标点数据
+    const samplePoints = [
+      { position: [116.397428, 39.90923], title: '天安门广场' },
+      { position: [116.407428, 39.91923], title: '故宫博物院' },
+      { position: [116.417428, 39.92923], title: '景山公园' },
+      { position: [116.427428, 39.93923], title: '北海公园' },
+      { position: [116.437428, 39.94923], title: '什刹海' },
+      { position: [116.447428, 39.95923], title: '南锣鼓巷' },
+      { position: [116.457428, 39.96923], title: '雍和宫' },
+      { position: [116.467428, 39.97923], title: '地坛公园' }
+    ];
+
+    window.initMap = async function () {
+      try {
+        const apiKey = document.getElementById('apiKey').value;
+        const enableCluster = document.getElementById('enableCluster').checked;
+
+        if (!apiKey) {
+          alert('请输入 Google Maps API 密钥');
+          return;
+        }
+
+        // 创建地图SDK实例
+        mapSDK = new MapSDK(MapProvider.GOOGLE);
+
+        // 准备初始化配置
+        const initConfig = {
+          container: 'map',
+          center: [116.397428, 39.90923],
+          zoom: 12,
+          apiKey: apiKey
+        };
+
+        // 如果启用了聚合插件，添加到配置中
+        if (enableCluster) {
+          initConfig.plugins = ['cluster'];
+        }
+
+        // 初始化地图
+        await mapSDK.init(initConfig);
+
+        console.log('地图初始化成功');
+        console.log('插件配置:', enableCluster ? ['cluster'] : []);
+        alert('地图初始化成功！');
+
+      } catch (error) {
+        console.error('地图初始化失败:', error);
+        alert('地图初始化失败: ' + error.message);
+      }
+    };
+
+    window.addCluster = async function () {
+      if (!mapSDK) {
+        alert('请先初始化地图');
+        return;
+      }
+
+      try {
+        const gridSize = parseInt(document.getElementById('gridSize').value);
+        const maxZoom = parseInt(document.getElementById('maxZoom').value);
+
+        // 添加聚合标记点
+        currentCluster = await mapSDK.addMarkerCluster(samplePoints, {
+          gridSize: gridSize,
+          maxZoom: maxZoom,
+          renderClusterMarker: '<div style="background-color: #4CAF50; color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold;">{count}</div>',
+          renderMarker: {
+            position: [0, 0], // 占位符
+            icon: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
+          }
+        });
+
+        console.log('聚合标记点添加成功:', currentCluster);
+        alert('聚合标记点添加成功！');
+
+      } catch (error) {
+        console.error('添加聚合标记点失败:', error);
+        alert('添加聚合标记点失败: ' + error.message);
+
+        if (error.message.includes('Cluster plugin is not enabled')) {
+          alert('提示：请确保在初始化时启用了 cluster 插件');
+        }
+      }
+    };
+
+    window.clearClusters = function () {
+      if (currentCluster) {
+        mapSDK.removeMarkerCluster(currentCluster);
+        currentCluster = null;
+        console.log('聚合标记点已清除');
+        alert('聚合标记点已清除！');
+      } else {
+        alert('没有可清除的聚合标记点');
+      }
+    };
+
+    // 页面加载完成后的提示
+    window.addEventListener('load', () => {
+      console.log('Google 地图聚合示例已加载');
+      console.log('请确保输入有效的 Google Maps API 密钥');
+    });
+  </script>
+</body>
+
+</html>

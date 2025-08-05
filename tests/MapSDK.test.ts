@@ -1,4 +1,4 @@
-import { MapSDK, MapProvider, MapSDKConfig, MarkerConfig } from '../src/index';
+import { MapSDK, MapProvider, MapSDKConfig, MarkerConfig, MarkerClusterPoint, MarkerClusterOptions } from '../src/index';
 
 // Mock DOM environment for testing
 const mockContainer = document.createElement('div');
@@ -242,6 +242,129 @@ describe('MapSDK', () => {
     it('should not throw when destroying already destroyed map', () => {
       mapSDK.destroy();
       expect(() => mapSDK.destroy()).not.toThrow();
+    });
+  });
+
+  describe('Marker Cluster Operations', () => {
+    beforeEach(async () => {
+      mapSDK = new MapSDK(MapProvider.AMAP);
+      const config: MapSDKConfig = {
+        provider: MapProvider.AMAP,
+        container: mockContainer,
+        center: [116.397428, 39.90923],
+        zoom: 11
+      };
+      await mapSDK.init(config);
+    });
+
+    it('should add marker cluster successfully', async () => {
+      const points: MarkerClusterPoint[] = [
+        { position: [116.397428, 39.90923] },
+        { position: [116.407428, 39.91923] },
+        { position: [116.417428, 39.92923] }
+      ];
+
+      const clusterOptions: MarkerClusterOptions = {
+        gridSize: 60,
+        maxZoom: 18,
+        renderClusterMarker: '<div>{count}</div>',
+        renderMarker: {
+          position: [0, 0],
+          icon: 'test-icon.png'
+        }
+      };
+
+      const cluster = await mapSDK.addMarkerCluster(points, clusterOptions);
+      
+      expect(cluster).toBeDefined();
+      expect(cluster.id).toBeDefined();
+      expect(cluster.points).toEqual(points);
+      expect(cluster.points.length).toBe(3);
+    });
+
+    it('should throw error when adding cluster without initialization', async () => {
+      const uninitializedMap = new MapSDK(MapProvider.AMAP);
+      const points: MarkerClusterPoint[] = [
+        { position: [116.397428, 39.90923] }
+      ];
+
+      await expect(uninitializedMap.addMarkerCluster(points))
+        .rejects.toThrow('Map is not initialized. Call init() first.');
+    });
+
+    it('should remove marker cluster successfully', async () => {
+      const points: MarkerClusterPoint[] = [
+        { position: [116.397428, 39.90923] },
+        { position: [116.407428, 39.91923] }
+      ];
+
+      const cluster = await mapSDK.addMarkerCluster(points);
+      expect(() => mapSDK.removeMarkerCluster(cluster)).not.toThrow();
+    });
+
+    it('should throw error when removing cluster without initialization', async () => {
+      const uninitializedMap = new MapSDK(MapProvider.AMAP);
+      const mockCluster = {
+        id: 'test-cluster',
+        points: [],
+        addPoint: jest.fn(),
+        removePoint: jest.fn(),
+        clear: jest.fn(),
+        remove: jest.fn()
+      };
+
+      expect(() => uninitializedMap.removeMarkerCluster(mockCluster))
+        .toThrow('Map is not initialized. Call init() first.');
+    });
+
+    it('should add point to existing cluster', async () => {
+      const points: MarkerClusterPoint[] = [
+        { position: [116.397428, 39.90923] }
+      ];
+
+      const cluster = await mapSDK.addMarkerCluster(points);
+      const newPoint: MarkerClusterPoint = {
+        position: [116.407428, 39.91923]
+      };
+
+      expect(() => cluster.addPoint(newPoint)).not.toThrow();
+      expect(cluster.points.length).toBe(2);
+    });
+
+    it('should remove point from existing cluster', async () => {
+      const points: MarkerClusterPoint[] = [
+        { position: [116.397428, 39.90923] },
+        { position: [116.407428, 39.91923] }
+      ];
+
+      const cluster = await mapSDK.addMarkerCluster(points);
+      const pointToRemove = points[0];
+
+      expect(() => cluster.removePoint(pointToRemove)).not.toThrow();
+      expect(cluster.points.length).toBe(1);
+    });
+
+    it('should clear cluster points', async () => {
+      const points: MarkerClusterPoint[] = [
+        { position: [116.397428, 39.90923] },
+        { position: [116.407428, 39.91923] }
+      ];
+
+      const cluster = await mapSDK.addMarkerCluster(points);
+      
+      expect(() => cluster.clear()).not.toThrow();
+      expect(cluster.points.length).toBe(0);
+    });
+
+    it('should use default options when no options provided', async () => {
+      const points: MarkerClusterPoint[] = [
+        { position: [116.397428, 39.90923] }
+      ];
+
+      const cluster = await mapSDK.addMarkerCluster(points);
+      
+      expect(cluster).toBeDefined();
+      expect(cluster.points).toEqual(points);
     });
   });
 

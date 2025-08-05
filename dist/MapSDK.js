@@ -40,6 +40,28 @@ export class MapSDK {
         this.provider.removeMarker(marker);
     }
     /**
+     * 添加标记点聚合
+     * @param points 坐标点数组
+     * @param options 聚合选项
+     * @returns 标记点聚合实例
+     */
+    async addMarkerCluster(points, options) {
+        if (!this.isInitialized) {
+            throw new Error('Map is not initialized. Call init() first.');
+        }
+        return await this.provider.addMarkerCluster(points, options);
+    }
+    /**
+     * 移除标记点聚合
+     * @param cluster 标记点聚合实例
+     */
+    removeMarkerCluster(cluster) {
+        if (!this.isInitialized) {
+            throw new Error('Map is not initialized. Call init() first.');
+        }
+        this.provider.removeMarkerCluster(cluster);
+    }
+    /**
      * 设置地图中心点
      * @param position 中心点坐标 [经度, 纬度]
      */

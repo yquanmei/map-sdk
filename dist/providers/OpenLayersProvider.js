@@ -117,11 +117,126 @@ export class OpenLayersProvider extends BaseMapProvider {
         this.addMarkerToCollection(marker);
         return marker;
     }
+    async addMarkerCluster(points, options) {
+        if (!this.map) {
+            throw new Error('Map not initialized');
+        }
+        const clusterId = this.generateClusterId();
+        const defaultOptions = {
+            gridSize: 60,
+            maxZoom: 18,
+            renderClusterMarker: '<div style="background-color: #ff6b6b; color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold;">{count}</div>',
+            renderMarker: {
+                position: [0, 0], // 占位符
+                icon: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="8" fill="red"/></svg>'
+            },
+            ...options
+        };
+        // 创建聚合源
+        const clusterSource = new this.ol.source.Vector();
+        // 创建要素数组
+        const features = [];
+        points.forEach(point => {
+            const feature = new this.ol.Feature({
+                geometry: new this.ol.geom.Point(this.ol.proj.fromLonLat(point.position))
+            });
+            // 设置样式
+            const markerStyle = new this.ol.style.Style({
+                image: new this.ol.style.Icon({
+                    src: defaultOptions.renderMarker?.icon || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="8" fill="red"/></svg>',
+                    scale: 1
+                })
+            });
+            feature.setStyle(markerStyle);
+            features.push(feature);
+            clusterSource.addFeature(feature);
+        });
+        // 创建聚合图层
+        const clusterLayer = new this.ol.layer.Vector({
+            source: clusterSource,
+            style: (feature) => {
+                const features = feature.get('features');
+                if (features && features.length > 1) {
+                    // 聚合样式
+                    const count = features.length;
+                    const div = document.createElement('div');
+                    div.innerHTML = defaultOptions.renderClusterMarker.replace('{count}', count.toString());
+                    const element = div.firstChild;
+                    return new this.ol.style.Style({
+                        image: new this.ol.style.Icon({
+                            src: 'data:image/svg+xml;utf8,' + element.outerHTML,
+                            scale: 1
+                        })
+                    });
+                }
+                else {
+                    // 单个标记点样式
+                    return new this.ol.style.Style({
+                        image: new this.ol.style.Icon({
+                            src: defaultOptions.renderMarker?.icon || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="8" fill="red"/></svg>',
+                            scale: 1
+                        })
+                    });
+                }
+            }
+        });
+        // 添加到地图
+        this.map.addLayer(clusterLayer);
+        const markerCluster = {
+            id: clusterId,
+            points: [...points],
+            olClusterSource: clusterSource,
+            olClusterLayer: clusterLayer,
+            olFeatures: features,
+            addPoint: (point) => {
+                const feature = new this.ol.Feature({
+                    geometry: new this.ol.geom.Point(this.ol.proj.fromLonLat(point.position))
+                });
+                const markerStyle = new this.ol.style.Style({
+                    image: new this.ol.style.Icon({
+                        src: defaultOptions.renderMarker?.icon || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="8" fill="red"/></svg>',
+                        scale: 1
+                    })
+                });
+                feature.setStyle(markerStyle);
+                features.push(feature);
+                markerCluster.points.push(point);
+                clusterSource.addFeature(feature);
+            },
+            removePoint: (point) => {
+                const index = markerCluster.points.findIndex(p => p.position[0] === point.position[0] && p.position[1] === point.position[1]);
+                if (index !== -1) {
+                    const feature = features[index];
+                    clusterSource.removeFeature(feature);
+                    features.splice(index, 1);
+                    markerCluster.points.splice(index, 1);
+                }
+            },
+            clear: () => {
+                features.forEach(feature => clusterSource.removeFeature(feature));
+                features.length = 0;
+                markerCluster.points.length = 0;
+            },
+            remove: () => {
+                this.map.removeLayer(clusterLayer);
+                this.removeClusterFromCollection(clusterId);
+            }
+        };
+        this.addClusterToCollection(markerCluster);
+        return markerCluster;
+    }
     removeMarker(marker) {
         const olMarker = marker.olFeature;
         if (olMarker && this.vectorLayer) {
             this.vectorLayer.getSource().removeFeature(olMarker);
             this.removeMarkerFromCollection(marker.id);
+        }
+    }
+    removeMarkerCluster(cluster) {
+        const olCluster = cluster.olClusterLayer;
+        if (olCluster) {
+            this.map.removeLayer(olCluster);
+            this.removeClusterFromCollection(cluster.id);
         }
     }
     setCenter(position) {
@@ -140,5 +255,6 @@ export class OpenLayersProvider extends BaseMapProvider {
             this.map = null;
         }
         this.clearMarkers();
+        this.clearMarkerClusters();
     }
 }

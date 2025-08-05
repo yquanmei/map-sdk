@@ -1,5 +1,5 @@
 export { MapSDK } from './MapSDK';
-export { MapProvider, MapConfig, MarkerConfig, IMarker, IMapProvider, MapSDKConfig } from './types';
+export { MapProvider, MapConfig, MarkerConfig, IMarker, IMapProvider, MapSDKConfig, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster } from './types';
 export { AMapProvider } from './providers/AMapProvider';
 export { GoogleMapProvider } from './providers/GoogleMapProvider';
 export { OpenLayersProvider } from './providers/OpenLayersProvider';

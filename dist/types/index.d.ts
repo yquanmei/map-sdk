@@ -19,10 +19,32 @@ export interface MarkerConfig {
     draggable?: boolean;
     [key: string]: any;
 }
+export interface MarkerClusterPoint {
+    position: [number, number];
+    [key: string]: any;
+}
+export interface MarkerClusterOptions {
+    gridSize?: number;
+    renderClusterMarker?: string;
+    renderMarker?: MarkerConfig;
+    maxZoom?: number;
+    [key: string]: any;
+}
+export interface IMarkerCluster {
+    id: string;
+    points: MarkerClusterPoint[];
+    addPoint(point: MarkerClusterPoint): void;
+    removePoint(point: MarkerClusterPoint): void;
+    clear(): void;
+    remove(): void;
+    [key: string]: any;
+}
 export interface IMapProvider {
     init(config: MapConfig): Promise<void>;
     addMarker(config: MarkerConfig): Promise<IMarker>;
     removeMarker(marker: IMarker): void;
+    addMarkerCluster(points: MarkerClusterPoint[], options?: MarkerClusterOptions): Promise<IMarkerCluster>;
+    removeMarkerCluster(cluster: IMarkerCluster): void;
     setCenter(position: [number, number]): void;
     setZoom(zoom: number): void;
     destroy(): void;

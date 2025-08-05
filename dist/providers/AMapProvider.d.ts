@@ -1,5 +1,5 @@
 import { BaseMapProvider } from './BaseMapProvider';
-import { IMarker, MapConfig, MarkerConfig } from '../types';
+import { IMarker, MapConfig, MarkerConfig, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster } from '../types';
 export declare class AMapProvider extends BaseMapProvider {
     private AMap;
     /**
@@ -9,7 +9,9 @@ export declare class AMapProvider extends BaseMapProvider {
     private loadAMapSDK;
     init(config: MapConfig): Promise<void>;
     addMarker(config: MarkerConfig): Promise<IMarker>;
+    addMarkerCluster(points: MarkerClusterPoint[], options?: MarkerClusterOptions): Promise<IMarkerCluster>;
     removeMarker(marker: IMarker): void;
+    removeMarkerCluster(cluster: IMarkerCluster): void;
     setCenter(position: [number, number]): void;
     setZoom(zoom: number): void;
     destroy(): void;

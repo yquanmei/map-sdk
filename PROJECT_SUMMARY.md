@@ -73,19 +73,37 @@ const marker = await map.addMarker({
   title: '北京天安门',
   content: '这是天安门广场'
 });
+
+// 标记点聚合操作
+const cluster = await map.addMarkerCluster([
+  { position: [116.397428, 39.90923] },
+  { position: [116.407428, 39.91923] },
+  { position: [116.417428, 39.92923] }
+], {
+  gridSize: 60,
+  maxZoom: 18,
+  renderClusterMarker: '<div style="background-color: #ff6b6b; color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold;">{count}</div>'
+});
 ```
 
-### 2. 可扩展架构
+### 2. 标记点聚合功能
+- 支持大量标记点的聚合显示
+- 可配置聚合距离和最大聚合层级
+- 自定义聚合图标样式
+- 动态添加/移除聚合点
+- 支持多种地图服务商的聚合实现
+
+### 3. 可扩展架构
 - 支持动态注册新的地图提供者
 - 基类 `BaseMapProvider` 提供了通用的功能
 - 工厂模式支持插拔式的地图服务商
 
-### 3. 类型安全
+### 4. 类型安全
 - 完整的TypeScript类型定义
 - 接口约束确保实现的一致性
 - 编译时错误检查
 
-### 4. 错误处理
+### 5. 错误处理
 - 完善的错误处理机制
 - 详细的错误信息
 - 状态检查防止误操作

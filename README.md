@@ -41,6 +41,17 @@ const marker = await map.addMarker({
   content: '这是天安门广场'
 });
 
+// 添加标记点聚合
+const cluster = await map.addMarkerCluster([
+  { position: [116.397428, 39.90923] },
+  { position: [116.407428, 39.91923] },
+  { position: [116.417428, 39.92923] }
+], {
+  gridSize: 60,
+  maxZoom: 18,
+  renderClusterMarker: '<div style="background-color: #ff6b6b; color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold;">{count}</div>'
+});
+
 // 设置地图中心点
 map.setCenter([116.407428, 39.91923]);
 
@@ -146,6 +157,26 @@ new MapSDK(provider: MapProvider)
 
 清除所有标记点。
 
+##### `addMarkerCluster(points: MarkerClusterPoint[], options?: MarkerClusterOptions): Promise<IMarkerCluster>`
+
+添加标记点聚合。
+
+**参数：**
+- `points`: 坐标点数组
+  - `position`: 位置坐标 `[经度, 纬度]`
+  - 其他自定义属性
+- `options`: 聚合选项（可选）
+  - `gridSize`: 聚合距离（像素），默认 60
+  - `renderClusterMarker`: 聚合图标HTML字符串，支持 `{count}` 占位符
+  - `renderMarker`: 单个标记点配置
+  - `maxZoom`: 最大聚合层级，默认 18
+
+**返回：** 标记点聚合实例
+
+##### `removeMarkerCluster(cluster: IMarkerCluster): void`
+
+移除标记点聚合。
+
 ##### `destroy(): void`
 
 销毁地图实例。
@@ -183,6 +214,22 @@ new MapSDK(provider: MapProvider)
 - `setTitle(title: string): void`: 设置标题
 - `setContent(content: string): void`: 设置内容
 - `remove(): void`: 移除标记点
+
+### IMarkerCluster
+
+标记点聚合接口。
+
+#### 属性
+
+- `id: string`: 聚合ID
+- `points: MarkerClusterPoint[]`: 坐标点数组
+
+#### 方法
+
+- `addPoint(point: MarkerClusterPoint): void`: 添加坐标点
+- `removePoint(point: MarkerClusterPoint): void`: 移除坐标点
+- `clear(): void`: 清空所有坐标点
+- `remove(): void`: 移除聚合
 
 ## 扩展新的地图服务商
 

@@ -1,4 +1,4 @@
-import { MapProvider, MapSDKConfig, MarkerConfig, IMarker } from './types';
+import { MapProvider, MapSDKConfig, MarkerConfig, IMarker, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster } from './types';
 import { MapProviderFactory } from './providers/MapProviderFactory';
 import { IMapProvider } from './types';
 
@@ -49,6 +49,32 @@ export class MapSDK {
     }
 
     this.provider.removeMarker(marker);
+  }
+
+  /**
+   * 添加标记点聚合
+   * @param points 坐标点数组
+   * @param options 聚合选项
+   * @returns 标记点聚合实例
+   */
+  async addMarkerCluster(points: MarkerClusterPoint[], options?: MarkerClusterOptions): Promise<IMarkerCluster> {
+    if (!this.isInitialized) {
+      throw new Error('Map is not initialized. Call init() first.');
+    }
+
+    return await this.provider.addMarkerCluster(points, options);
+  }
+
+  /**
+   * 移除标记点聚合
+   * @param cluster 标记点聚合实例
+   */
+  removeMarkerCluster(cluster: IMarkerCluster): void {
+    if (!this.isInitialized) {
+      throw new Error('Map is not initialized. Call init() first.');
+    }
+
+    this.provider.removeMarkerCluster(cluster);
   }
 
   /**

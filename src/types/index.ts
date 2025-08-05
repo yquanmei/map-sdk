@@ -22,10 +22,36 @@ export interface MarkerConfig {
   [key: string]: any; // 允许其他marker配置参数
 }
 
+// 新增：标记点聚合相关类型
+export interface MarkerClusterPoint {
+  position: [number, number]; // [lng, lat]
+  [key: string]: any; // 允许其他属性
+}
+
+export interface MarkerClusterOptions {
+  gridSize?: number; // 距离多少像素进行聚合，默认 60
+  renderClusterMarker?: string; // 聚合后的图标，HTML字符串
+  renderMarker?: MarkerConfig; // 聚合前的图标配置
+  maxZoom?: number; // 层级为多少时才进行聚合，默认 18
+  [key: string]: any; // 允许其他配置参数
+}
+
+export interface IMarkerCluster {
+  id: string;
+  points: MarkerClusterPoint[];
+  addPoint(point: MarkerClusterPoint): void;
+  removePoint(point: MarkerClusterPoint): void;
+  clear(): void;
+  remove(): void;
+  [key: string]: any; // 允许其他方法
+}
+
 export interface IMapProvider {
   init(config: MapConfig): Promise<void>;
   addMarker(config: MarkerConfig): Promise<IMarker>;
   removeMarker(marker: IMarker): void;
+  addMarkerCluster(points: MarkerClusterPoint[], options?: MarkerClusterOptions): Promise<IMarkerCluster>;
+  removeMarkerCluster(cluster: IMarkerCluster): void;
   setCenter(position: [number, number]): void;
   setZoom(zoom: number): void;
   destroy(): void;

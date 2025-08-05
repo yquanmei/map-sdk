@@ -8,7 +8,10 @@ export {
   MarkerConfig,
   IMarker,
   IMapProvider,
-  MapSDKConfig
+  MapSDKConfig,
+  MarkerClusterPoint,
+  MarkerClusterOptions,
+  IMarkerCluster
 } from './types';
 
 // 提供者类
