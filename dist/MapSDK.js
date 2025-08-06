@@ -1,4 +1,4 @@
-import { MapProviderFactory } from './providers/MapProviderFactory';
+import { MapProviderFactory } from "./providers/MapProviderFactory";
 export class MapSDK {
     constructor(provider) {
         this.isInitialized = false;
@@ -13,7 +13,7 @@ export class MapSDK {
      */
     async init(config) {
         if (this.isInitialized) {
-            throw new Error('Map is already initialized');
+            throw new Error("Map is already initialized");
         }
         await this.provider.init(config);
         this.isInitialized = true;
@@ -25,7 +25,7 @@ export class MapSDK {
      */
     async addMarker(config) {
         if (!this.isInitialized) {
-            throw new Error('Map is not initialized. Call init() first.');
+            throw new Error("Map is not initialized. Call init() first.");
         }
         return await this.provider.addMarker(config);
     }
@@ -35,7 +35,7 @@ export class MapSDK {
      */
     removeMarker(marker) {
         if (!this.isInitialized) {
-            throw new Error('Map is not initialized. Call init() first.');
+            throw new Error("Map is not initialized. Call init() first.");
         }
         this.provider.removeMarker(marker);
     }
@@ -47,7 +47,7 @@ export class MapSDK {
      */
     async addMarkerCluster(points, options) {
         if (!this.isInitialized) {
-            throw new Error('Map is not initialized. Call init() first.');
+            throw new Error("Map is not initialized. Call init() first.");
         }
         return await this.provider.addMarkerCluster(points, options);
     }
@@ -57,7 +57,7 @@ export class MapSDK {
      */
     removeMarkerCluster(cluster) {
         if (!this.isInitialized) {
-            throw new Error('Map is not initialized. Call init() first.');
+            throw new Error("Map is not initialized. Call init() first.");
         }
         this.provider.removeMarkerCluster(cluster);
     }
@@ -67,7 +67,7 @@ export class MapSDK {
      */
     setCenter(position) {
         if (!this.isInitialized) {
-            throw new Error('Map is not initialized. Call init() first.');
+            throw new Error("Map is not initialized. Call init() first.");
         }
         this.provider.setCenter(position);
     }
@@ -77,7 +77,7 @@ export class MapSDK {
      */
     setZoom(zoom) {
         if (!this.isInitialized) {
-            throw new Error('Map is not initialized. Call init() first.');
+            throw new Error("Map is not initialized. Call init() first.");
         }
         this.provider.setZoom(zoom);
     }
@@ -87,7 +87,7 @@ export class MapSDK {
      */
     getMarkers() {
         if (!this.isInitialized) {
-            throw new Error('Map is not initialized. Call init() first.');
+            throw new Error("Map is not initialized. Call init() first.");
         }
         return this.provider.getMarkers();
     }
@@ -96,7 +96,7 @@ export class MapSDK {
      */
     clearMarkers() {
         if (!this.isInitialized) {
-            throw new Error('Map is not initialized. Call init() first.');
+            throw new Error("Map is not initialized. Call init() first.");
         }
         this.provider.clearMarkers();
     }

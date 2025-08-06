@@ -1,5 +1,5 @@
-import { BaseMapProvider } from './BaseMapProvider';
-import { IMarker, MapConfig, MarkerConfig, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster } from '../types';
+import { BaseMapProvider } from "./BaseMapProvider";
+import { IMarker, MapConfig, MarkerConfig, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster } from "../types";
 interface GoogleMarker extends IMarker {
     googleMarker: any;
 }
@@ -9,22 +9,17 @@ interface GoogleMarkerCluster extends IMarkerCluster {
 }
 export declare class GoogleMapProvider extends BaseMapProvider {
     private google;
-    private plugins;
     /**
-     * 动态加载Google Maps SDK和MarkerClusterer库
+     * 动态加载Google Maps SDK
      * @param key Google Maps API密钥
      */
     private loadGoogleMapsSDK;
-    /**
-     * 动态加载 MarkerClusterer 库
-     */
-    private loadMarkerClusterer;
     init(config: MapConfig): Promise<void>;
     setCenter(position: [number, number]): void;
     setZoom(zoom: number): void;
     destroy(): void;
     addMarker(config: MarkerConfig): Promise<IMarker>;
-    addMarkerCluster(points: MarkerClusterPoint[], options?: MarkerClusterOptions): Promise<IMarkerCluster>;
+    addMarkerCluster(points: MarkerClusterPoint[], options?: MarkerClusterOptions): Promise<any>;
     removeMarker(marker: IMarker): void;
     removeMarkerCluster(cluster: IMarkerCluster): void;
     removeMarkerFromCollection(markerId: string): void;

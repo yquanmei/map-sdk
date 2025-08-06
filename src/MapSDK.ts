@@ -1,6 +1,6 @@
-import { MapProvider, MapSDKConfig, MarkerConfig, IMarker, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster } from './types';
-import { MapProviderFactory } from './providers/MapProviderFactory';
-import { IMapProvider } from './types';
+import { MapProvider, MapSDKConfig, MarkerConfig, IMarker, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster } from "./types";
+import { MapProviderFactory } from "./providers/MapProviderFactory";
+import { IMapProvider } from "./types";
 
 export class MapSDK {
   private provider: IMapProvider;
@@ -19,7 +19,7 @@ export class MapSDK {
    */
   async init(config: MapSDKConfig): Promise<void> {
     if (this.isInitialized) {
-      throw new Error('Map is already initialized');
+      throw new Error("Map is already initialized");
     }
 
     await this.provider.init(config);
@@ -33,7 +33,7 @@ export class MapSDK {
    */
   async addMarker(config: MarkerConfig): Promise<IMarker> {
     if (!this.isInitialized) {
-      throw new Error('Map is not initialized. Call init() first.');
+      throw new Error("Map is not initialized. Call init() first.");
     }
 
     return await this.provider.addMarker(config);
@@ -45,7 +45,7 @@ export class MapSDK {
    */
   removeMarker(marker: IMarker): void {
     if (!this.isInitialized) {
-      throw new Error('Map is not initialized. Call init() first.');
+      throw new Error("Map is not initialized. Call init() first.");
     }
 
     this.provider.removeMarker(marker);
@@ -59,7 +59,7 @@ export class MapSDK {
    */
   async addMarkerCluster(points: MarkerClusterPoint[], options?: MarkerClusterOptions): Promise<IMarkerCluster> {
     if (!this.isInitialized) {
-      throw new Error('Map is not initialized. Call init() first.');
+      throw new Error("Map is not initialized. Call init() first.");
     }
 
     return await this.provider.addMarkerCluster(points, options);
@@ -71,7 +71,7 @@ export class MapSDK {
    */
   removeMarkerCluster(cluster: IMarkerCluster): void {
     if (!this.isInitialized) {
-      throw new Error('Map is not initialized. Call init() first.');
+      throw new Error("Map is not initialized. Call init() first.");
     }
 
     this.provider.removeMarkerCluster(cluster);
@@ -83,7 +83,7 @@ export class MapSDK {
    */
   setCenter(position: [number, number]): void {
     if (!this.isInitialized) {
-      throw new Error('Map is not initialized. Call init() first.');
+      throw new Error("Map is not initialized. Call init() first.");
     }
 
     this.provider.setCenter(position);
@@ -95,7 +95,7 @@ export class MapSDK {
    */
   setZoom(zoom: number): void {
     if (!this.isInitialized) {
-      throw new Error('Map is not initialized. Call init() first.');
+      throw new Error("Map is not initialized. Call init() first.");
     }
 
     this.provider.setZoom(zoom);
@@ -107,7 +107,7 @@ export class MapSDK {
    */
   getMarkers(): IMarker[] {
     if (!this.isInitialized) {
-      throw new Error('Map is not initialized. Call init() first.');
+      throw new Error("Map is not initialized. Call init() first.");
     }
 
     return (this.provider as any).getMarkers();
@@ -118,7 +118,7 @@ export class MapSDK {
    */
   clearMarkers(): void {
     if (!this.isInitialized) {
-      throw new Error('Map is not initialized. Call init() first.');
+      throw new Error("Map is not initialized. Call init() first.");
     }
 
     (this.provider as any).clearMarkers();
@@ -166,4 +166,4 @@ export class MapSDK {
   static registerProvider(provider: MapProvider, providerClass: new () => IMapProvider): void {
     MapProviderFactory.registerProvider(provider, providerClass);
   }
-} 
+}

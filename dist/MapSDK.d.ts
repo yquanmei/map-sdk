@@ -1,5 +1,5 @@
-import { MapProvider, MapSDKConfig, MarkerConfig, IMarker, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster } from './types';
-import { IMapProvider } from './types';
+import { MapProvider, MapSDKConfig, MarkerConfig, IMarker, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster } from "./types";
+import { IMapProvider } from "./types";
 export declare class MapSDK {
     private provider;
     private isInitialized;
