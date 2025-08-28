@@ -41,12 +41,8 @@ export abstract class BaseMapProvider implements IMapProvider {
   abstract destroy(): void;
   abstract clearMap(): Promise<void>;
 
-  protected generateMarkerId(): string {
-    return `marker_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }
-
-  protected generateClusterId(): string {
-    return `cluster_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  protected generateId(type: string): string {
+    return `${type}_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
   }
 
   protected addMarkerToCollection(marker: IMarker): void {
@@ -187,13 +183,5 @@ export abstract class BaseMapProvider implements IMapProvider {
   protected clearAllPolygons(): void {
     this.polygons.forEach((polygon) => polygon.remove());
     this.polygons.clear();
-  }
-
-  protected generateAnimationId(): string {
-    return `animation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }
-
-  protected generatePolygonId(): string {
-    return `polygon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 }

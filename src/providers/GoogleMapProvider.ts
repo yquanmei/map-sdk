@@ -835,7 +835,7 @@ export class GoogleMapProvider extends BaseMapProvider {
       throw new Error("Map not initialized");
     }
 
-    const polygonId = this.generatePolygonId();
+    const polygonId = this.generateId(CoveringType.POLYGON);
     const defaultOptions = {
       id: polygonId,
       fillColor: "#FF0000",
@@ -1076,7 +1076,7 @@ export class GoogleMapProvider extends BaseMapProvider {
       throw new Error("Map not initialized");
     }
 
-    const animationId = this.generateAnimationId();
+    const animationId = this.generateId(CoveringType.ANIMATION);
     const defaultOptions = {
       duration: 5000,
       speed: 1,

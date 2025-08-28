@@ -1,5 +1,17 @@
-import { BaseMapProvider } from './BaseMapProvider';
-import { IMarker, MapConfig, MarkerConfig, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster, PolygonConfig, IPolygon, AnimationConfig, IAnimation } from '../types';
+import { BaseMapProvider } from "./BaseMapProvider";
+import {
+  IMarker,
+  MapConfig,
+  MarkerConfig,
+  MarkerClusterPoint,
+  MarkerClusterOptions,
+  IMarkerCluster,
+  PolygonConfig,
+  IPolygon,
+  AnimationConfig,
+  IAnimation,
+  CoveringType,
+} from "../types";
 
 interface AMapMarker extends IMarker {
   amapMarker: any;
@@ -26,9 +38,9 @@ export class AMapProvider extends BaseMapProvider {
       }
 
       // 创建script标签
-      const script = document.createElement('script');
-      script.type = 'text/javascript';
-      script.src = `https://webapi.amap.com/maps?v=2.0&key=${apiKey || ''}&plugin=AMap.Marker,AMap.MarkerCluster`;
+      const script = document.createElement("script");
+      script.type = "text/javascript";
+      script.src = `https://webapi.amap.com/maps?v=2.0&key=${apiKey || ""}&plugin=AMap.Marker,AMap.MarkerCluster`;
       script.async = true;
       script.defer = true;
 
@@ -37,13 +49,13 @@ export class AMapProvider extends BaseMapProvider {
         if (window.AMap) {
           resolve();
         } else {
-          reject(new Error('AMap SDK failed to load'));
+          reject(new Error("AMap SDK failed to load"));
         }
       };
 
       // 加载失败回调
       script.onerror = () => {
-        reject(new Error('Failed to load AMap SDK'));
+        reject(new Error("Failed to load AMap SDK"));
       };
 
       // 添加到页面
@@ -53,9 +65,9 @@ export class AMapProvider extends BaseMapProvider {
 
   async init(config: MapConfig): Promise<void> {
     this.config = config;
-    
+
     // 动态加载高德地图SDK
-    if (typeof window !== 'undefined' && !this.AMap) {
+    if (typeof window !== "undefined" && !this.AMap) {
       try {
         // 检查是否已经加载了高德地图SDK
         if (!window.AMap) {
@@ -68,28 +80,26 @@ export class AMapProvider extends BaseMapProvider {
       }
     }
 
-    const container = typeof config.container === 'string' 
-      ? document.getElementById(config.container) 
-      : config.container;
+    const container = typeof config.container === "string" ? document.getElementById(config.container) : config.container;
 
     if (!container) {
-      throw new Error('Container element not found');
+      throw new Error("Container element not found");
     }
 
     this.map = new this.AMap.Map(container, {
       center: config.center || [116.397428, 39.90923],
       zoom: config.zoom || 11,
-      ...config
+      ...config,
     });
   }
 
   async addMarker(config: MarkerConfig): Promise<IMarker> {
     if (!this.map) {
-      throw new Error('Map not initialized');
+      throw new Error("Map not initialized");
     }
 
-    const markerId = this.generateMarkerId();
-    
+    const markerId = this.generateId(CoveringType.MARKER);
+
     const { position, ...otherConfig } = config;
     const amapMarker = new this.AMap.Marker({
       position,
@@ -98,7 +108,7 @@ export class AMapProvider extends BaseMapProvider {
       icon: config.icon,
       clickable: config.clickable !== false,
       draggable: config.draggable || false,
-      ...otherConfig
+      ...otherConfig,
     });
 
     this.map.add(amapMarker);
@@ -120,7 +130,7 @@ export class AMapProvider extends BaseMapProvider {
       remove: () => {
         this.map.remove(amapMarker);
         this.removeMarkerFromCollection(markerId);
-      }
+      },
     };
 
     this.addMarkerToCollection(marker);
@@ -129,30 +139,31 @@ export class AMapProvider extends BaseMapProvider {
 
   async addMarkerCluster(points: MarkerClusterPoint[], options?: MarkerClusterOptions): Promise<IMarkerCluster> {
     if (!this.map) {
-      throw new Error('Map not initialized');
+      throw new Error("Map not initialized");
     }
 
-    const clusterId = this.generateClusterId();
+    const clusterId = this.generateId(CoveringType.CLUSTER);
     const defaultOptions: MarkerClusterOptions = {
       gridSize: 60,
       maxZoom: 18,
-      renderClusterMarker: '<div style="background-color: #ff6b6b; color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold;">{count}</div>',
+      renderClusterMarker:
+        '<div style="background-color: #ff6b6b; color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold;">{count}</div>',
       renderMarker: {
         position: [0, 0], // 占位符，实际位置会从 point 中获取
-        icon: 'https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png'
+        icon: "https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png",
       },
-      ...options
+      ...options,
     };
 
     // 创建标记点数组
     const markers: any[] = [];
-    points.forEach(point => {
+    points.forEach((point) => {
       const { position: _, ...renderMarkerConfig } = defaultOptions.renderMarker!;
       const { position: pointPosition, ...pointConfig } = point;
       const marker = new this.AMap.Marker({
         position: pointPosition,
         ...renderMarkerConfig,
-        ...pointConfig
+        ...pointConfig,
       });
       markers.push(marker);
     });
@@ -163,10 +174,10 @@ export class AMapProvider extends BaseMapProvider {
       maxZoom: defaultOptions.maxZoom,
       renderClusterMarker: (context: any) => {
         const count = context.count;
-        const div = document.createElement('div');
-        div.innerHTML = defaultOptions.renderClusterMarker!.replace('{count}', count.toString());
+        const div = document.createElement("div");
+        div.innerHTML = defaultOptions.renderClusterMarker!.replace("{count}", count.toString());
         return div.firstChild as HTMLElement;
-      }
+      },
     });
 
     const markerCluster: AMapMarkerCluster = {
@@ -180,16 +191,14 @@ export class AMapProvider extends BaseMapProvider {
         const marker = new this.AMap.Marker({
           position: pointPosition,
           ...renderMarkerConfig,
-          ...pointConfig
+          ...pointConfig,
         });
         markers.push(marker);
         markerCluster.points.push(point);
         cluster.addMarker(marker);
       },
       removePoint: (point: MarkerClusterPoint) => {
-        const index = markerCluster.points.findIndex(p => 
-          p.position[0] === point.position[0] && p.position[1] === point.position[1]
-        );
+        const index = markerCluster.points.findIndex((p) => p.position[0] === point.position[0] && p.position[1] === point.position[1]);
         if (index !== -1) {
           const marker = markers[index];
           cluster.removeMarker(marker);
@@ -198,14 +207,14 @@ export class AMapProvider extends BaseMapProvider {
         }
       },
       clear: () => {
-        markers.forEach(marker => cluster.removeMarker(marker));
+        markers.forEach((marker) => cluster.removeMarker(marker));
         markers.length = 0;
         markerCluster.points.length = 0;
       },
       remove: () => {
         cluster.setMap(null);
         this.removeClusterFromCollection(clusterId);
-      }
+      },
     };
 
     this.addClusterToCollection(markerCluster);
@@ -326,7 +335,7 @@ export class AMapProvider extends BaseMapProvider {
     if (!this.map) {
       throw new Error("Map not initialized");
     }
-    const polygonId = this.generatePolygonId();
+    const polygonId = this.generateId(CoveringType.POLYGON);
     const defaultOptions = {
       id: polygonId,
       path: [],
@@ -492,32 +501,32 @@ export class AMapProvider extends BaseMapProvider {
   }
 
   async addAnimation(config: AnimationConfig): Promise<IAnimation> {
-    const animationId = this.generateAnimationId();
+    const animationId = this.generateId(CoveringType.ANIMATION);
     const animation: IAnimation = {
       id: animationId,
       start: () => {
-        console.warn('AMap does not support trajectory animation');
+        console.warn("AMap does not support trajectory animation");
       },
       pause: () => {
-        console.warn('AMap does not support trajectory animation');
+        console.warn("AMap does not support trajectory animation");
       },
       resume: () => {
-        console.warn('AMap does not support trajectory animation');
+        console.warn("AMap does not support trajectory animation");
       },
       stop: () => {
-        console.warn('AMap does not support trajectory animation');
+        console.warn("AMap does not support trajectory animation");
       },
       next: () => {
-        console.warn('AMap does not support trajectory animation');
+        console.warn("AMap does not support trajectory animation");
       },
       previous: () => {
-        console.warn('AMap does not support trajectory animation');
+        console.warn("AMap does not support trajectory animation");
       },
       seek: (progress: number) => {
-        console.warn('AMap does not support trajectory animation');
+        console.warn("AMap does not support trajectory animation");
       },
       setSpeed: (speed: number) => {
-        console.warn('AMap does not support trajectory animation');
+        console.warn("AMap does not support trajectory animation");
       },
       getCurrentPosition: (): [number, number] => {
         return [0, 0];

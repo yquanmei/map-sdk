@@ -10,6 +10,7 @@ import {
   IPolygon,
   AnimationConfig,
   IAnimation,
+  CoveringType,
 } from "../types";
 
 interface OpenLayersMarker extends IMarker {
@@ -114,7 +115,7 @@ export class OpenLayersProvider extends BaseMapProvider {
       throw new Error("Map not initialized");
     }
 
-    const markerId = this.generateMarkerId();
+    const markerId = this.generateId(CoveringType.MARKER);
     const { position, ...otherConfig } = config;
 
     // 创建marker要素
@@ -167,7 +168,7 @@ export class OpenLayersProvider extends BaseMapProvider {
       throw new Error("Map not initialized");
     }
 
-    const clusterId = this.generateClusterId();
+    const clusterId = this.generateId(CoveringType.CLUSTER);
     const defaultOptions: MarkerClusterOptions = {
       gridSize: 60,
       maxZoom: 18,
@@ -403,7 +404,7 @@ export class OpenLayersProvider extends BaseMapProvider {
     if (!this.map || !this.vectorLayer) {
       throw new Error("Map not initialized");
     }
-    const polygonId = this.generatePolygonId();
+    const polygonId = this.generateId(CoveringType.POLYGON);
     const defaultOptions = {
       id: polygonId,
       path: [],
@@ -588,7 +589,7 @@ export class OpenLayersProvider extends BaseMapProvider {
   }
 
   async addAnimation(config: AnimationConfig): Promise<IAnimation> {
-    const animationId = this.generateAnimationId();
+    const animationId = this.generateId(CoveringType.ANIMATION);
     const animation: IAnimation = {
       id: animationId,
       start: () => {

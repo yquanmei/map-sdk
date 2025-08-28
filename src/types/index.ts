@@ -11,6 +11,7 @@ export enum CoveringType {
   POLYGON = "polygon",
   PATH_PLANNING = "path_planning",
   INFO_WINDOW = "info_window",
+  ANIMATION = "animation",
 }
 
 export interface MapConfig {
