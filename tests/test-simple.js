@@ -1,4 +1,4 @@
-const { MapSDK, MapProvider } = require('./dist/index.js');
+const { MapSDK, MapProvider } = require('../dist/index.js');
 
 console.log('=== Map SDK 简单测试 ===');
 

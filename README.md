@@ -8,28 +8,6 @@ A unified map SDK that supports multiple map providers (AMap, Google Maps, OpenL
 npm install map-sdk
 ```
 
-## CSS Import
-
-The SDK includes CSS files that need to be imported for proper styling:
-
-### Method 1: Import CSS in your main CSS file
-
-```css
-@import "map-sdk/dist/index.css";
-```
-
-### Method 2: Import CSS in your JavaScript/TypeScript
-
-```typescript
-import "map-sdk/dist/index.css";
-```
-
-### Method 3: Include CSS in HTML
-
-```html
-<link rel="stylesheet" href="node_modules/map-sdk/dist/index.css" />
-```
-
 ## Usage
 
 ```typescript

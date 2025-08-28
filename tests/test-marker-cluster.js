@@ -1,5 +1,5 @@
 // 测试标记点聚合功能
-import { MapSDK, MapProvider } from './src/index.js';
+import { MapSDK, MapProvider } from '../src/index.js';
 
 async function testMarkerCluster() {
   console.log('开始测试标记点聚合功能...');

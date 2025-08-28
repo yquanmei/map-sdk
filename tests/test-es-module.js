@@ -1,6 +1,6 @@
-const { MapSDK, MapProvider } = require('./dist/index.js');
+import { MapSDK, MapProvider } from '../dist/index.js';
 
-console.log('=== 测试导出 ===');
+console.log('=== 测试ES模块导出 ===');
 console.log('MapSDK:', typeof MapSDK);
 console.log('MapProvider:', MapProvider);
 console.log('MapProvider.AMAP:', MapProvider.AMAP);
