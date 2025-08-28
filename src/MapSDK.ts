@@ -1,4 +1,16 @@
-import { MapProvider, MapSDKConfig, MarkerConfig, IMarker, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster } from "./types";
+import {
+  MapProvider,
+  MapSDKConfig,
+  MarkerConfig,
+  IMarker,
+  MarkerClusterPoint,
+  MarkerClusterOptions,
+  IMarkerCluster,
+  AnimationConfig,
+  IAnimation,
+  PolygonConfig,
+  IPolygon,
+} from "./types";
 import { MapProviderFactory } from "./providers/MapProviderFactory";
 import { IMapProvider } from "./types";
 
@@ -40,15 +52,13 @@ export class MapSDK {
   }
 
   /**
-   * 移除标记点
-   * @param marker 标记点实例
+   * 批量/条件清除标记点
    */
-  removeMarker(marker: IMarker): void {
+  clearMarkers(params?: { type?: string; markers?: Array<IMarker> }): void {
     if (!this.isInitialized) {
       throw new Error("Map is not initialized. Call init() first.");
     }
-
-    this.provider.removeMarker(marker);
+    (this.provider as any).clearMarkers(params);
   }
 
   /**
@@ -66,15 +76,13 @@ export class MapSDK {
   }
 
   /**
-   * 移除标记点聚合
-   * @param cluster 标记点聚合实例
+   * 批量/条件清除聚合
    */
-  removeMarkerCluster(cluster: IMarkerCluster): void {
+  clearMarkerClusters(params?: { type?: string; clusters?: Array<IMarkerCluster> }): void {
     if (!this.isInitialized) {
       throw new Error("Map is not initialized. Call init() first.");
     }
-
-    this.provider.removeMarkerCluster(cluster);
+    (this.provider as any).clearMarkerClusters(params);
   }
 
   /**
@@ -101,6 +109,85 @@ export class MapSDK {
     this.provider.setZoom(zoom);
   }
 
+  getZoom() {
+    if (!this.isInitialized) {
+      throw new Error("Map is not initialized. Call init() first.");
+    }
+    return (this.provider as any).getZoom();
+  }
+
+  /**
+   * 添加路径规划：驾车
+   */
+  async addPathPlanning(options?: {
+    start: [number, number] | string;
+    end: [number, number] | string;
+    points?: [number, number][];
+    optimizeWaypoints?: boolean;
+    avoidHighways?: boolean;
+    avoidTolls?: boolean;
+    avoidFerries?: boolean;
+    onChange?: (points: [number, number][]) => void;
+  }): Promise<any> {
+    if (!this.isInitialized) {
+      throw new Error("Map is not initialized. Call init() first.");
+    }
+
+    return await (this.provider as any).addPathPlanning(options);
+  }
+
+  /**
+   * 通过经纬度获取详细地址信息
+   */
+  async getAddress(position: [number, number]): Promise<any> {
+    if (!this.isInitialized) {
+      throw new Error("Map is not initialized. Call init() first.");
+    }
+
+    return await (this.provider as any).getAddress(position);
+  }
+
+  /**
+   * 添加信息窗体（InfoWindow）
+   */
+  async addInfoWindow(options: { content: string | HTMLElement; position: [number, number]; open?: boolean }): Promise<any> {
+    if (!this.isInitialized) {
+      throw new Error("Map is not initialized. Call init() first.");
+    }
+
+    return await (this.provider as any).addInfoWindow(options);
+  }
+
+  /**
+   * 绘制折线（Polyline）
+   */
+  async addPolyline(options: { path: [number, number][]; color?: string; width?: number; opacity?: number }): Promise<any> {
+    if (!this.isInitialized) {
+      throw new Error("Map is not initialized. Call init() first.");
+    }
+    return await (this.provider as any).addPolyline(options);
+  }
+
+  /**
+   * 添加多边形
+   */
+  async addPolygon(config: PolygonConfig): Promise<IPolygon> {
+    if (!this.isInitialized) {
+      throw new Error("Map is not initialized. Call init() first.");
+    }
+    return await this.provider.addPolygon(config);
+  }
+
+  /**
+   * 清除多边形
+   */
+  clearPolygons(params?: { type?: string; polygons?: Array<IPolygon> }): void {
+    if (!this.isInitialized) {
+      throw new Error("Map is not initialized. Call init() first.");
+    }
+    (this.provider as any).clearPolygons(params);
+  }
+
   /**
    * 获取所有标记点
    * @returns 标记点数组
@@ -114,14 +201,71 @@ export class MapSDK {
   }
 
   /**
-   * 清除所有标记点
+   * 清除所有或部分标记点（无参时清空所有）
    */
-  clearMarkers(): void {
+  // clearAllMarkers(params?: { type?: string; markers?: Array<IMarker> }): void {
+  //   this.clearMarkers(params)
+  // }
+
+  /**
+   * 清除所有折线
+   */
+  clearPolylines(params?: { type?: string; polylines?: any[] }): void {
+    if (!this.isInitialized) {
+      throw new Error("Map is not initialized. Call init() first.");
+    }
+    (this.provider as any).clearPolylines(params);
+  }
+
+  /**
+   * 添加轨迹动画
+   */
+  async addAnimation(config: AnimationConfig): Promise<IAnimation> {
     if (!this.isInitialized) {
       throw new Error("Map is not initialized. Call init() first.");
     }
 
-    (this.provider as any).clearMarkers();
+    return await this.provider.addAnimation(config);
+  }
+
+  /**
+   * 清除轨迹动画
+   */
+  clearAnimations(params?: { type?: string; animations?: Array<IAnimation> }): void {
+    if (!this.isInitialized) {
+      throw new Error("Map is not initialized. Call init() first.");
+    }
+    (this.provider as any).clearAnimations(params);
+  }
+
+  /**
+   * 清除路径规划
+   */
+  clearPathPlannings(params?: { type?: string; pathPlannings?: any[] }): void {
+    if (!this.isInitialized) {
+      throw new Error("Map is not initialized. Call init() first.");
+    }
+    (this.provider as any).clearPathPlannings(params);
+  }
+
+  /**
+   * 清除信息窗体
+   */
+  clearInfoWindow(params?: { type?: string; infoWindows?: any[] }): void {
+    if (!this.isInitialized) {
+      throw new Error("Map is not initialized. Call init() first.");
+    }
+    (this.provider as any).clearInfoWindow(params);
+  }
+
+  /**
+   * 清空地图所有内容
+   */
+  async clearMap(): Promise<void> {
+    if (!this.isInitialized) {
+      throw new Error("Map is not initialized. Call init() first.");
+    }
+    await (this.provider as any).clearMap();
   }
 
   /**

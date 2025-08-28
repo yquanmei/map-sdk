@@ -30,14 +30,13 @@ export class MapSDK {
         return await this.provider.addMarker(config);
     }
     /**
-     * 移除标记点
-     * @param marker 标记点实例
+     * 批量/条件清除标记点
      */
-    removeMarker(marker) {
+    clearMarkers(params) {
         if (!this.isInitialized) {
             throw new Error("Map is not initialized. Call init() first.");
         }
-        this.provider.removeMarker(marker);
+        this.provider.clearMarkers(params);
     }
     /**
      * 添加标记点聚合
@@ -52,14 +51,13 @@ export class MapSDK {
         return await this.provider.addMarkerCluster(points, options);
     }
     /**
-     * 移除标记点聚合
-     * @param cluster 标记点聚合实例
+     * 批量/条件清除聚合
      */
-    removeMarkerCluster(cluster) {
+    clearMarkerClusters(params) {
         if (!this.isInitialized) {
             throw new Error("Map is not initialized. Call init() first.");
         }
-        this.provider.removeMarkerCluster(cluster);
+        this.provider.clearMarkerClusters(params);
     }
     /**
      * 设置地图中心点
@@ -81,6 +79,66 @@ export class MapSDK {
         }
         this.provider.setZoom(zoom);
     }
+    getZoom() {
+        if (!this.isInitialized) {
+            throw new Error("Map is not initialized. Call init() first.");
+        }
+        return this.provider.getZoom();
+    }
+    /**
+     * 添加路径规划：驾车
+     */
+    async addPathPlanning(options) {
+        if (!this.isInitialized) {
+            throw new Error("Map is not initialized. Call init() first.");
+        }
+        return await this.provider.addPathPlanning(options);
+    }
+    /**
+     * 通过经纬度获取详细地址信息
+     */
+    async getAddress(position) {
+        if (!this.isInitialized) {
+            throw new Error("Map is not initialized. Call init() first.");
+        }
+        return await this.provider.getAddress(position);
+    }
+    /**
+     * 添加信息窗体（InfoWindow）
+     */
+    async addInfoWindow(options) {
+        if (!this.isInitialized) {
+            throw new Error("Map is not initialized. Call init() first.");
+        }
+        return await this.provider.addInfoWindow(options);
+    }
+    /**
+     * 绘制折线（Polyline）
+     */
+    async addPolyline(options) {
+        if (!this.isInitialized) {
+            throw new Error("Map is not initialized. Call init() first.");
+        }
+        return await this.provider.addPolyline(options);
+    }
+    /**
+     * 添加多边形
+     */
+    async addPolygon(config) {
+        if (!this.isInitialized) {
+            throw new Error("Map is not initialized. Call init() first.");
+        }
+        return await this.provider.addPolygon(config);
+    }
+    /**
+     * 清除多边形
+     */
+    clearPolygons(params) {
+        if (!this.isInitialized) {
+            throw new Error("Map is not initialized. Call init() first.");
+        }
+        this.provider.clearPolygons(params);
+    }
     /**
      * 获取所有标记点
      * @returns 标记点数组
@@ -92,13 +150,64 @@ export class MapSDK {
         return this.provider.getMarkers();
     }
     /**
-     * 清除所有标记点
+     * 清除所有或部分标记点（无参时清空所有）
      */
-    clearMarkers() {
+    // clearAllMarkers(params?: { type?: string; markers?: Array<IMarker> }): void {
+    //   this.clearMarkers(params)
+    // }
+    /**
+     * 清除所有折线
+     */
+    clearPolylines(params) {
         if (!this.isInitialized) {
             throw new Error("Map is not initialized. Call init() first.");
         }
-        this.provider.clearMarkers();
+        this.provider.clearPolylines(params);
+    }
+    /**
+     * 添加轨迹动画
+     */
+    async addAnimation(config) {
+        if (!this.isInitialized) {
+            throw new Error("Map is not initialized. Call init() first.");
+        }
+        return await this.provider.addAnimation(config);
+    }
+    /**
+     * 清除轨迹动画
+     */
+    clearAnimations(params) {
+        if (!this.isInitialized) {
+            throw new Error("Map is not initialized. Call init() first.");
+        }
+        this.provider.clearAnimations(params);
+    }
+    /**
+     * 清除路径规划
+     */
+    clearPathPlannings(params) {
+        if (!this.isInitialized) {
+            throw new Error("Map is not initialized. Call init() first.");
+        }
+        this.provider.clearPathPlannings(params);
+    }
+    /**
+     * 清除信息窗体
+     */
+    clearInfoWindow(params) {
+        if (!this.isInitialized) {
+            throw new Error("Map is not initialized. Call init() first.");
+        }
+        this.provider.clearInfoWindow(params);
+    }
+    /**
+     * 清空地图所有内容
+     */
+    async clearMap() {
+        if (!this.isInitialized) {
+            throw new Error("Map is not initialized. Call init() first.");
+        }
+        await this.provider.clearMap();
     }
     /**
      * 销毁地图

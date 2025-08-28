@@ -1,5 +1,5 @@
 // 主类
-export { MapSDK } from './MapSDK';
+export { MapSDK } from "./MapSDK";
 
 // 类型定义
 export {
@@ -11,16 +11,21 @@ export {
   MapSDKConfig,
   MarkerClusterPoint,
   MarkerClusterOptions,
-  IMarkerCluster
-} from './types';
+  IMarkerCluster,
+  AnimationConfig,
+  IAnimation,
+  PolygonConfig,
+  IPolygon,
+  CoveringType,
+} from "./types";
 
 // 提供者类
-export { AMapProvider } from './providers/AMapProvider';
-export { GoogleMapProvider } from './providers/GoogleMapProvider';
-export { OpenLayersProvider } from './providers/OpenLayersProvider';
-export { BaseMapProvider } from './providers/BaseMapProvider';
-export { MapProviderFactory } from './providers/MapProviderFactory';
+export { AMapProvider } from "./providers/AMapProvider";
+export { GoogleMapProvider } from "./providers/GoogleMapProvider";
+export { OpenLayersProvider } from "./providers/OpenLayersProvider";
+export { BaseMapProvider } from "./providers/BaseMapProvider";
+export { MapProviderFactory } from "./providers/MapProviderFactory";
 
 // 默认导出
-import { MapSDK } from './MapSDK';
-export default MapSDK; 
+import { MapSDK } from "./MapSDK";
+export default MapSDK;

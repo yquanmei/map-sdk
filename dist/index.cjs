@@ -1,13 +1,17 @@
-import { Loader } from '@googlemaps/js-api-loader';
-import { MarkerClusterer } from '@googlemaps/markerclusterer';
+'use strict';
 
-var MapProvider;
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var jsApiLoader = require('@googlemaps/js-api-loader');
+var markerclusterer = require('@googlemaps/markerclusterer');
+
+exports.MapProvider = void 0;
 (function (MapProvider) {
     MapProvider["AMAP"] = "amap";
     MapProvider["GOOGLE"] = "google";
     MapProvider["OPENLAYERS"] = "openlayers";
-})(MapProvider || (MapProvider = {}));
-var CoveringType;
+})(exports.MapProvider || (exports.MapProvider = {}));
+exports.CoveringType = void 0;
 (function (CoveringType) {
     CoveringType["MARKER"] = "marker";
     CoveringType["CLUSTER"] = "cluster";
@@ -15,7 +19,7 @@ var CoveringType;
     CoveringType["POLYGON"] = "polygon";
     CoveringType["PATH_PLANNING"] = "path_planning";
     CoveringType["INFO_WINDOW"] = "info_window";
-})(CoveringType || (CoveringType = {}));
+})(exports.CoveringType || (exports.CoveringType = {}));
 
 class BaseMapProvider {
     constructor() {
@@ -733,7 +737,7 @@ class GoogleMapProvider extends BaseMapProvider {
                 resolve();
                 return;
             }
-            const loader = new Loader({
+            const loader = new jsApiLoader.Loader({
                 apiKey: key || "",
                 version: "weekly",
             });
@@ -799,7 +803,7 @@ class GoogleMapProvider extends BaseMapProvider {
         if (!this.map) {
             throw new Error("Map not initialized");
         }
-        const markerId = this.generateId(CoveringType.MARKER);
+        const markerId = this.generateId(exports.CoveringType.MARKER);
         const defaultOptions = {
             map: true,
             id: markerId,
@@ -872,7 +876,7 @@ class GoogleMapProvider extends BaseMapProvider {
                 this.removeMarkerFromCollection(markerId);
             },
         };
-        if (type !== CoveringType.CLUSTER) {
+        if (type !== exports.CoveringType.CLUSTER) {
             this.addMarkerToCollection(marker);
         }
         return marker;
@@ -881,7 +885,7 @@ class GoogleMapProvider extends BaseMapProvider {
         if (!this.map) {
             throw new Error("Map not initialized");
         }
-        const clusterId = this.generateId(CoveringType.CLUSTER);
+        const clusterId = this.generateId(exports.CoveringType.CLUSTER);
         const defaultOptions = {
             id: clusterId,
             data: {},
@@ -914,13 +918,13 @@ class GoogleMapProvider extends BaseMapProvider {
                 content: markerOptions.content,
                 onClick: markerOptions.onClick,
                 data: markerOptions.data,
-            }, CoveringType.CLUSTER);
+            }, exports.CoveringType.CLUSTER);
             return marker.googleMarker;
         });
         const markers = await Promise.all(markerPromises);
         this.getZoom();
         // const { MarkerClusterer } = await this.google.maps.importLibrary("marker") as any;
-        const googleMarkerClusterer = new MarkerClusterer({
+        const googleMarkerClusterer = new markerclusterer.MarkerClusterer({
             markers,
             map: this.map,
             // renderer: {
@@ -1167,7 +1171,7 @@ class GoogleMapProvider extends BaseMapProvider {
             throw new Error("Map not initialized");
         }
         const { Polyline } = await this.google.maps.importLibrary("maps");
-        const polylineId = this.generateId(CoveringType.POLYLINE);
+        const polylineId = this.generateId(exports.CoveringType.POLYLINE);
         const defaultOptions = {
             id: polylineId,
             color: "#f00",
@@ -1241,7 +1245,7 @@ class GoogleMapProvider extends BaseMapProvider {
             throw new Error("Map not initialized");
         }
         try {
-            const pathPlanningId = this.generateId(CoveringType.PATH_PLANNING);
+            const pathPlanningId = this.generateId(exports.CoveringType.PATH_PLANNING);
             const defaultOptions = {
                 id: pathPlanningId,
                 start: [0, 0],
@@ -2479,9 +2483,9 @@ class MapProviderFactory {
 MapProviderFactory.providers = new Map();
 (() => {
     // 注册所有可用的提供者
-    MapProviderFactory.registerProvider(MapProvider.AMAP, AMapProvider);
-    MapProviderFactory.registerProvider(MapProvider.GOOGLE, GoogleMapProvider);
-    MapProviderFactory.registerProvider(MapProvider.OPENLAYERS, OpenLayersProvider);
+    MapProviderFactory.registerProvider(exports.MapProvider.AMAP, AMapProvider);
+    MapProviderFactory.registerProvider(exports.MapProvider.GOOGLE, GoogleMapProvider);
+    MapProviderFactory.registerProvider(exports.MapProvider.OPENLAYERS, OpenLayersProvider);
 })();
 
 class MapSDK {
@@ -2736,5 +2740,11 @@ class MapSDK {
 
 // 主类
 
-export { AMapProvider, BaseMapProvider, CoveringType, GoogleMapProvider, MapProvider, MapProviderFactory, MapSDK, OpenLayersProvider, MapSDK as default };
-//# sourceMappingURL=index.js.map
+exports.AMapProvider = AMapProvider;
+exports.BaseMapProvider = BaseMapProvider;
+exports.GoogleMapProvider = GoogleMapProvider;
+exports.MapProviderFactory = MapProviderFactory;
+exports.MapSDK = MapSDK;
+exports.OpenLayersProvider = OpenLayersProvider;
+exports.default = MapSDK;
+//# sourceMappingURL=index.cjs.map

@@ -1,5 +1,5 @@
 import { BaseMapProvider } from './BaseMapProvider';
-import { IMarker, MapConfig, MarkerConfig, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster } from '../types';
+import { IMarker, MapConfig, MarkerConfig, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster, PolygonConfig, IPolygon, AnimationConfig, IAnimation } from '../types';
 export declare class AMapProvider extends BaseMapProvider {
     private AMap;
     /**
@@ -15,6 +15,38 @@ export declare class AMapProvider extends BaseMapProvider {
     setCenter(position: [number, number]): void;
     setZoom(zoom: number): void;
     destroy(): void;
+    getZoom(): number;
+    clearMarkers(params?: {
+        type?: string;
+        markers?: Array<IMarker>;
+    }): void;
+    clearMarkerClusters(params?: {
+        type?: string;
+        clusters?: Array<IMarkerCluster>;
+    }): void;
+    clearPolylines(params?: {
+        type?: string;
+        polylines?: any[];
+    }): void;
+    addPolygon(config: PolygonConfig): Promise<IPolygon>;
+    clearPolygons(params?: {
+        type?: string;
+        polygons?: Array<IPolygon>;
+    }): void;
+    clearPathPlannings(params?: {
+        type?: string;
+        pathPlannings?: any[];
+    }): void;
+    clearInfoWindow(params?: {
+        type?: string;
+        infoWindows?: any[];
+    }): void;
+    clearMap(): Promise<void>;
+    addAnimation(config: AnimationConfig): Promise<IAnimation>;
+    clearAnimations(params?: {
+        type?: string;
+        animations?: Array<IAnimation>;
+    }): void;
 }
 declare global {
     interface Window {

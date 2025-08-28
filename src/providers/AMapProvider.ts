@@ -1,5 +1,5 @@
 import { BaseMapProvider } from './BaseMapProvider';
-import { IMarker, MapConfig, MarkerConfig, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster } from '../types';
+import { IMarker, MapConfig, MarkerConfig, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster, PolygonConfig, IPolygon, AnimationConfig, IAnimation } from '../types';
 
 interface AMapMarker extends IMarker {
   amapMarker: any;
@@ -248,6 +248,318 @@ export class AMapProvider extends BaseMapProvider {
     this.clearMarkers();
     this.clearMarkerClusters();
   }
+
+  getZoom(): number {
+    if (this.map) {
+      return this.map.getZoom();
+    }
+    return 11;
+  }
+
+  clearMarkers(params?: { type?: string; markers?: Array<IMarker> }): void {
+    if (!this.map) return;
+    const typeToClear = params?.type;
+    const explicitMarkers = params?.markers || [];
+    if (!typeToClear && explicitMarkers.length === 0) {
+      this.clearAllMarkers();
+      return;
+    }
+    if (typeToClear) {
+      this.getMarkers().forEach((marker) => {
+        if ((marker as any)?.type === typeToClear) {
+          marker.remove();
+        }
+      });
+    }
+    explicitMarkers.forEach((marker) => {
+      marker.remove();
+    });
+  }
+
+  clearMarkerClusters(params?: { type?: string; clusters?: Array<IMarkerCluster> }): void {
+    if (!this.map) return;
+    const typeToClear = params?.type;
+    const explicitClusters = params?.clusters || [];
+    if (!typeToClear && explicitClusters.length === 0) {
+      this.clearAllMarkerClusters();
+      return;
+    }
+    if (typeToClear) {
+      this.getMarkerClusters().forEach((cluster) => {
+        if ((cluster as any)?.type === typeToClear) {
+          cluster.remove();
+        }
+      });
+    }
+    explicitClusters.forEach((cluster) => {
+      cluster.remove();
+    });
+  }
+
+  clearPolylines(params?: { type?: string; polylines?: any[] }): void {
+    if (!this.map) return;
+    const typeToClear = params?.type;
+    const explicitPolylines = params?.polylines || [];
+    if (!typeToClear && explicitPolylines.length === 0) {
+      this.clearAllPolylines();
+      return;
+    }
+    if (typeToClear) {
+      this.polylines.forEach((polyline: any) => {
+        if (polyline?.type === typeToClear) {
+          if (polyline.setMap) {
+            polyline.setMap(null);
+          }
+          this.removePolylineFromCollection(polyline);
+        }
+      });
+    }
+    explicitPolylines.forEach((polyline) => {
+      if (polyline.setMap) {
+        polyline.setMap(null);
+      }
+      this.removePolylineFromCollection(polyline);
+    });
+  }
+
+  async addPolygon(config: PolygonConfig): Promise<IPolygon> {
+    if (!this.map) {
+      throw new Error("Map not initialized");
+    }
+    const polygonId = this.generatePolygonId();
+    const defaultOptions = {
+      id: polygonId,
+      path: [],
+      strokeColor: "#FF0000",
+      strokeOpacity: 1,
+      strokeWeight: 2,
+      fillColor: "#FF0000",
+      fillOpacity: 0.3,
+      clickable: true,
+      draggable: false,
+      editable: false,
+      zIndex: 1,
+    };
+    const mergedOptions = { ...defaultOptions, ...config };
+    const polygon = new this.AMap.Polygon({
+      path: mergedOptions.path,
+      strokeColor: mergedOptions.strokeColor,
+      strokeOpacity: mergedOptions.strokeOpacity,
+      strokeWeight: mergedOptions.strokeWeight,
+      fillColor: mergedOptions.fillColor,
+      fillOpacity: mergedOptions.fillOpacity,
+      clickable: mergedOptions.clickable,
+      draggable: mergedOptions.draggable,
+      editable: mergedOptions.editable,
+      zIndex: mergedOptions.zIndex,
+    });
+    this.map.add(polygon);
+    const amapPolygon: IPolygon = {
+      id: polygonId,
+      path: mergedOptions.path,
+      googlePolygon: polygon,
+      setPath: (path: [number, number][]) => {
+        polygon.setPath(path);
+        amapPolygon.path = path;
+      },
+      setOptions: (options: any) => {
+        polygon.setOptions(options);
+      },
+      setEditable: (editable: boolean) => {
+        polygon.setOptions({ editable });
+      },
+      setDraggable: (draggable: boolean) => {
+        polygon.setOptions({ draggable });
+      },
+      getBounds: () => {
+        return polygon.getBounds();
+      },
+      contains: (point: [number, number]) => {
+        return polygon.contains(point);
+      },
+      getArea: () => {
+        return polygon.getArea();
+      },
+      show: () => {
+        polygon.show();
+      },
+      hide: () => {
+        polygon.hide();
+      },
+      remove: () => {
+        this.map.remove(polygon);
+        this.removePolygonFromCollection(polygonId);
+      },
+      clear: () => {
+        this.map.remove(polygon);
+        this.removePolygonFromCollection(polygonId);
+      },
+    };
+    this.addPolygonToCollection(amapPolygon);
+    return amapPolygon;
+  }
+
+  clearPolygons(params?: { type?: string; polygons?: Array<IPolygon> }): void {
+    if (!this.map) return;
+
+    const typeToClear = params?.type;
+    const explicitPolygons = params?.polygons || [];
+
+    if (!typeToClear && explicitPolygons.length === 0) {
+      this.clearAllPolygons();
+      return;
+    }
+
+    if (typeToClear) {
+      this.getPolygons().forEach((polygon) => {
+        if ((polygon as any)?.type === typeToClear) {
+          polygon.remove();
+        }
+      });
+    }
+
+    explicitPolygons.forEach((polygon) => {
+      polygon.remove();
+    });
+  }
+
+  clearPathPlannings(params?: { type?: string; pathPlannings?: any[] }): void {
+    if (!this.map) return;
+
+    const typeToClear = params?.type;
+    const explicitPathPlannings = params?.pathPlannings || [];
+
+    if (!typeToClear && explicitPathPlannings.length === 0) {
+      this.clearAllPathPlannings();
+      return;
+    }
+
+    if (typeToClear) {
+      this.getPathPlannings().forEach((planning: any) => {
+        if (planning?.type === typeToClear) {
+          if (planning?.remove) {
+            planning.remove();
+          }
+        }
+      });
+    }
+
+    explicitPathPlannings.forEach((planning) => {
+      if (planning?.remove) {
+        planning.remove();
+      }
+      this.removePathPlanningFromCollection(planning);
+    });
+  }
+
+  clearInfoWindow(params?: { type?: string; infoWindows?: any[] }): void {
+    if (!this.map) return;
+
+    const typeToClear = params?.type;
+    const explicitInfoWindows = params?.infoWindows || [];
+
+    if (!typeToClear && explicitInfoWindows.length === 0) {
+      this.clearAllInfoWindows();
+      return;
+    }
+
+    if (typeToClear) {
+      this.getInfoWindows().forEach((infoWindow: any) => {
+        if (infoWindow?.type === typeToClear) {
+          if (infoWindow?.remove) {
+            infoWindow.remove();
+          }
+        }
+      });
+    }
+
+    explicitInfoWindows.forEach((infoWindow) => {
+      if (infoWindow?.remove) {
+        infoWindow.remove();
+      }
+      this.removeInfoWindowFromCollection(infoWindow);
+    });
+  }
+
+  async clearMap(): Promise<void> {
+    this.clearMarkers();
+    this.clearMarkerClusters();
+    this.clearPolylines();
+    this.clearPolygons();
+    this.clearPathPlannings();
+    this.clearInfoWindow();
+    this.clearAnimations();
+  }
+
+  async addAnimation(config: AnimationConfig): Promise<IAnimation> {
+    const animationId = this.generateAnimationId();
+    const animation: IAnimation = {
+      id: animationId,
+      start: () => {
+        console.warn('AMap does not support trajectory animation');
+      },
+      pause: () => {
+        console.warn('AMap does not support trajectory animation');
+      },
+      resume: () => {
+        console.warn('AMap does not support trajectory animation');
+      },
+      stop: () => {
+        console.warn('AMap does not support trajectory animation');
+      },
+      next: () => {
+        console.warn('AMap does not support trajectory animation');
+      },
+      previous: () => {
+        console.warn('AMap does not support trajectory animation');
+      },
+      seek: (progress: number) => {
+        console.warn('AMap does not support trajectory animation');
+      },
+      setSpeed: (speed: number) => {
+        console.warn('AMap does not support trajectory animation');
+      },
+      getCurrentPosition: (): [number, number] => {
+        return [0, 0];
+      },
+      getProgress: (): number => {
+        return 0;
+      },
+      getStatus: (): "idle" | "playing" | "paused" | "stopped" | "completed" => {
+        return "idle";
+      },
+      remove: () => {
+        this.removeAnimationFromCollection(animationId);
+      },
+      clear: () => {
+        this.removeAnimationFromCollection(animationId);
+      },
+    };
+    this.addAnimationToCollection(animation);
+    return animation;
+  }
+
+  clearAnimations(params?: { type?: string; animations?: Array<IAnimation> }): void {
+    const typeToClear = params?.type;
+    const explicitAnimations = params?.animations || [];
+
+    if (!typeToClear && explicitAnimations.length === 0) {
+      this.clearAllAnimations();
+      return;
+    }
+
+    if (typeToClear) {
+      this.getAnimations().forEach((animation) => {
+        if ((animation as any)?.type === typeToClear) {
+          animation.remove();
+        }
+      });
+    }
+
+    explicitAnimations.forEach((animation) => {
+      animation.remove();
+    });
+  }
 }
 
 // 扩展window对象以包含AMap
@@ -255,4 +567,4 @@ declare global {
   interface Window {
     AMap?: any;
   }
-} 
+}

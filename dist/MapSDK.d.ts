@@ -1,4 +1,4 @@
-import { MapProvider, MapSDKConfig, MarkerConfig, IMarker, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster } from "./types";
+import { MapProvider, MapSDKConfig, MarkerConfig, IMarker, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster, AnimationConfig, IAnimation, PolygonConfig, IPolygon } from "./types";
 import { IMapProvider } from "./types";
 export declare class MapSDK {
     private provider;
@@ -16,10 +16,12 @@ export declare class MapSDK {
      */
     addMarker(config: MarkerConfig): Promise<IMarker>;
     /**
-     * 移除标记点
-     * @param marker 标记点实例
+     * 批量/条件清除标记点
      */
-    removeMarker(marker: IMarker): void;
+    clearMarkers(params?: {
+        type?: string;
+        markers?: Array<IMarker>;
+    }): void;
     /**
      * 添加标记点聚合
      * @param points 坐标点数组
@@ -28,10 +30,12 @@ export declare class MapSDK {
      */
     addMarkerCluster(points: MarkerClusterPoint[], options?: MarkerClusterOptions): Promise<IMarkerCluster>;
     /**
-     * 移除标记点聚合
-     * @param cluster 标记点聚合实例
+     * 批量/条件清除聚合
      */
-    removeMarkerCluster(cluster: IMarkerCluster): void;
+    clearMarkerClusters(params?: {
+        type?: string;
+        clusters?: Array<IMarkerCluster>;
+    }): void;
     /**
      * 设置地图中心点
      * @param position 中心点坐标 [经度, 纬度]
@@ -42,15 +46,96 @@ export declare class MapSDK {
      * @param zoom 缩放级别
      */
     setZoom(zoom: number): void;
+    getZoom(): any;
+    /**
+     * 添加路径规划：驾车
+     */
+    addPathPlanning(options?: {
+        start: [number, number] | string;
+        end: [number, number] | string;
+        points?: [number, number][];
+        optimizeWaypoints?: boolean;
+        avoidHighways?: boolean;
+        avoidTolls?: boolean;
+        avoidFerries?: boolean;
+        onChange?: (points: [number, number][]) => void;
+    }): Promise<any>;
+    /**
+     * 通过经纬度获取详细地址信息
+     */
+    getAddress(position: [number, number]): Promise<any>;
+    /**
+     * 添加信息窗体（InfoWindow）
+     */
+    addInfoWindow(options: {
+        content: string | HTMLElement;
+        position: [number, number];
+        open?: boolean;
+    }): Promise<any>;
+    /**
+     * 绘制折线（Polyline）
+     */
+    addPolyline(options: {
+        path: [number, number][];
+        color?: string;
+        width?: number;
+        opacity?: number;
+    }): Promise<any>;
+    /**
+     * 添加多边形
+     */
+    addPolygon(config: PolygonConfig): Promise<IPolygon>;
+    /**
+     * 清除多边形
+     */
+    clearPolygons(params?: {
+        type?: string;
+        polygons?: Array<IPolygon>;
+    }): void;
     /**
      * 获取所有标记点
      * @returns 标记点数组
      */
     getMarkers(): IMarker[];
     /**
-     * 清除所有标记点
+     * 清除所有或部分标记点（无参时清空所有）
      */
-    clearMarkers(): void;
+    /**
+     * 清除所有折线
+     */
+    clearPolylines(params?: {
+        type?: string;
+        polylines?: any[];
+    }): void;
+    /**
+     * 添加轨迹动画
+     */
+    addAnimation(config: AnimationConfig): Promise<IAnimation>;
+    /**
+     * 清除轨迹动画
+     */
+    clearAnimations(params?: {
+        type?: string;
+        animations?: Array<IAnimation>;
+    }): void;
+    /**
+     * 清除路径规划
+     */
+    clearPathPlannings(params?: {
+        type?: string;
+        pathPlannings?: any[];
+    }): void;
+    /**
+     * 清除信息窗体
+     */
+    clearInfoWindow(params?: {
+        type?: string;
+        infoWindows?: any[];
+    }): void;
+    /**
+     * 清空地图所有内容
+     */
+    clearMap(): Promise<void>;
     /**
      * 销毁地图
      */
