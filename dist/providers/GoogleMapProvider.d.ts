@@ -12,7 +12,6 @@ interface GoogleMarkerCluster extends IMarkerCluster {
 }
 export declare class GoogleMapProvider extends BaseMapProvider {
     private google;
-    private apiKey?;
     /**
      * 动态加载Google Maps SDK
      * @param key Google Maps API密钥

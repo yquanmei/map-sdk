@@ -39,18 +39,11 @@ interface GooglePolygon extends IPolygon {
 
 export class GoogleMapProvider extends BaseMapProvider {
   private google: any;
-  private apiKey?: string;
-  // private polylines: any[] = []
-  // private pathPlannings: Array<{ directionsRenderer: any; clear?: () => void; remove?: () => void }> = []
-  // private infoWindows: any[] = []
-
   /**
    * 动态加载Google Maps SDK
    * @param key Google Maps API密钥
    */
   private async loadGoogleMapsSDK(key?: string): Promise<void> {
-    this.apiKey = key;
-
     return new Promise(async (resolve) => {
       // 检查是否已经加载
       if (window.google && window.google.maps) {
@@ -75,7 +68,7 @@ export class GoogleMapProvider extends BaseMapProvider {
       try {
         // 检查是否已经加载了Google Maps SDK
         if (!window.google || !window.google.maps) {
-          await this.loadGoogleMapsSDK(config.apiKey as string);
+          await this.loadGoogleMapsSDK(config.key as string);
         }
         this.google = window.google;
       } catch (error) {

@@ -72,7 +72,7 @@ export class AMapProvider extends BaseMapProvider {
         // 检查是否已经加载了高德地图SDK
         if (!window.AMap) {
           // 动态加载高德地图SDK
-          await this.loadAMapSDK(config.apiKey);
+          await this.loadAMapSDK(config.key);
         }
         this.AMap = window.AMap;
       } catch (error) {
@@ -351,7 +351,7 @@ export class AMapProvider extends BaseMapProvider {
     };
     const mergedOptions = { ...defaultOptions, ...config };
     const polygon = new this.AMap.Polygon({
-      path: mergedOptions.path.map(p => [...p] as [number, number]),
+      path: mergedOptions.path.map((p) => [...p] as [number, number]),
       strokeColor: mergedOptions.strokeColor,
       strokeOpacity: mergedOptions.strokeOpacity,
       strokeWeight: mergedOptions.strokeWeight,

@@ -195,7 +195,7 @@ class AMapProvider extends BaseMapProvider {
                 // 检查是否已经加载了高德地图SDK
                 if (!window.AMap) {
                     // 动态加载高德地图SDK
-                    await this.loadAMapSDK(config.apiKey);
+                    await this.loadAMapSDK(config.key);
                 }
                 this.AMap = window.AMap;
             }
@@ -452,7 +452,7 @@ class AMapProvider extends BaseMapProvider {
         };
         const mergedOptions = { ...defaultOptions, ...config };
         const polygon = new this.AMap.Polygon({
-            path: mergedOptions.path.map(p => [...p]),
+            path: mergedOptions.path.map((p) => [...p]),
             strokeColor: mergedOptions.strokeColor,
             strokeOpacity: mergedOptions.strokeOpacity,
             strokeWeight: mergedOptions.strokeWeight,
@@ -790,15 +790,11 @@ function safeCloneElement(element, deep = true) {
 }
 
 class GoogleMapProvider extends BaseMapProvider {
-    // private polylines: any[] = []
-    // private pathPlannings: Array<{ directionsRenderer: any; clear?: () => void; remove?: () => void }> = []
-    // private infoWindows: any[] = []
     /**
      * 动态加载Google Maps SDK
      * @param key Google Maps API密钥
      */
     async loadGoogleMapsSDK(key) {
-        this.apiKey = key;
         return new Promise(async (resolve) => {
             // 检查是否已经加载
             if (window.google && window.google.maps) {
@@ -820,7 +816,7 @@ class GoogleMapProvider extends BaseMapProvider {
             try {
                 // 检查是否已经加载了Google Maps SDK
                 if (!window.google || !window.google.maps) {
-                    await this.loadGoogleMapsSDK(config.apiKey);
+                    await this.loadGoogleMapsSDK(config.key);
                 }
                 this.google = window.google;
             }

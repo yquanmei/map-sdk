@@ -36,7 +36,7 @@ export interface MapConfig extends BaseConfig {
     readonly container: string | HTMLElement;
     readonly center?: readonly [number, number];
     readonly zoom?: number;
-    readonly apiKey?: string;
+    readonly key?: string;
     readonly [key: string]: unknown;
 }
 export interface MarkerConfig extends BaseConfig {

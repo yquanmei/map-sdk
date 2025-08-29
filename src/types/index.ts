@@ -35,7 +35,7 @@ export interface MapConfig extends BaseConfig {
   readonly container: string | HTMLElement;
   readonly center?: readonly [number, number]; // [lng, lat] - 使用readonly确保不可变性
   readonly zoom?: number;
-  readonly apiKey?: string;
+  readonly key?: string; // API密钥参数名统一为key
   readonly [key: string]: unknown; // 使用unknown而不是any提高类型安全性
 }
 
