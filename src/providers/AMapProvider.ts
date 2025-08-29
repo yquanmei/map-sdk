@@ -10,7 +10,7 @@ import {
   IPolygon,
   AnimationConfig,
   IAnimation,
-  CoveringType,
+  COVERING_TYPES,
 } from "../types";
 
 interface AMapMarker extends IMarker {
@@ -98,7 +98,7 @@ export class AMapProvider extends BaseMapProvider {
       throw new Error("Map not initialized");
     }
 
-    const markerId = this.generateId(CoveringType.MARKER);
+    const markerId = this.generateId(COVERING_TYPES.MARKER);
 
     const { position, ...otherConfig } = config;
     const amapMarker = new this.AMap.Marker({
@@ -115,7 +115,7 @@ export class AMapProvider extends BaseMapProvider {
 
     const marker: AMapMarker = {
       id: markerId,
-      position: config.position,
+      position: [...config.position] as [number, number],
       amapMarker,
       setPosition: (position: [number, number]) => {
         amapMarker.setPosition(position);
@@ -142,7 +142,7 @@ export class AMapProvider extends BaseMapProvider {
       throw new Error("Map not initialized");
     }
 
-    const clusterId = this.generateId(CoveringType.CLUSTER);
+    const clusterId = this.generateId(COVERING_TYPES.CLUSTER);
     const defaultOptions: MarkerClusterOptions = {
       gridSize: 60,
       maxZoom: 18,
@@ -335,7 +335,7 @@ export class AMapProvider extends BaseMapProvider {
     if (!this.map) {
       throw new Error("Map not initialized");
     }
-    const polygonId = this.generateId(CoveringType.POLYGON);
+    const polygonId = this.generateId(COVERING_TYPES.POLYGON);
     const defaultOptions = {
       id: polygonId,
       path: [],
@@ -351,7 +351,7 @@ export class AMapProvider extends BaseMapProvider {
     };
     const mergedOptions = { ...defaultOptions, ...config };
     const polygon = new this.AMap.Polygon({
-      path: mergedOptions.path,
+      path: mergedOptions.path.map(p => [...p] as [number, number]),
       strokeColor: mergedOptions.strokeColor,
       strokeOpacity: mergedOptions.strokeOpacity,
       strokeWeight: mergedOptions.strokeWeight,
@@ -365,7 +365,7 @@ export class AMapProvider extends BaseMapProvider {
     this.map.add(polygon);
     const amapPolygon: IPolygon = {
       id: polygonId,
-      path: mergedOptions.path,
+      path: mergedOptions.path.map((point) => [...point] as [number, number]),
       googlePolygon: polygon,
       setPath: (path: [number, number][]) => {
         polygon.setPath(path);
@@ -501,7 +501,7 @@ export class AMapProvider extends BaseMapProvider {
   }
 
   async addAnimation(config: AnimationConfig): Promise<IAnimation> {
-    const animationId = this.generateId(CoveringType.ANIMATION);
+    const animationId = this.generateId(COVERING_TYPES.ANIMATION);
     const animation: IAnimation = {
       id: animationId,
       start: () => {

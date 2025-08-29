@@ -1,12 +1,14 @@
 import { BaseMapProvider } from "./BaseMapProvider";
-import { IMarker, MapConfig, MarkerConfig, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster, CoveringType, IAnimation, AnimationConfig, PolygonConfig, IPolygon } from "../types";
+import { IMarker, MapConfig, MarkerConfig, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster, IAnimation, AnimationConfig, PolygonConfig, IPolygon } from "../types";
 import "../css/google.css";
 interface GoogleMarker extends IMarker {
     googleMarker: any;
+    position: [number, number];
 }
 interface GoogleMarkerCluster extends IMarkerCluster {
     markerClusterer: any;
     googleMarkers: any[];
+    points: MarkerClusterPoint[];
 }
 export declare class GoogleMapProvider extends BaseMapProvider {
     private google;
@@ -21,7 +23,7 @@ export declare class GoogleMapProvider extends BaseMapProvider {
     setZoom(zoom: number): void;
     getZoom(): any;
     destroy(): void;
-    addMarker(config: MarkerConfig, type?: CoveringType): Promise<IMarker>;
+    addMarker(config: MarkerConfig, type?: string): Promise<IMarker>;
     addMarkerCluster(points: MarkerClusterPoint[], options?: MarkerClusterOptions): Promise<any>;
     /**
      * 按条件清除标记点
@@ -115,7 +117,6 @@ export declare class GoogleMapProvider extends BaseMapProvider {
         type?: string;
         polygons?: Array<IPolygon>;
     }): void;
-    generateId(type: string): string;
     /**
      * 添加轨迹动画
      */
@@ -127,6 +128,7 @@ export declare class GoogleMapProvider extends BaseMapProvider {
         type?: string;
         animations?: Array<IAnimation>;
     }): void;
+    generateId(type: string): string;
 }
 declare global {
     interface Window {

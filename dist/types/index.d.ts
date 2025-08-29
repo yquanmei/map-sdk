@@ -1,138 +1,139 @@
-export declare enum MapProvider {
-    AMAP = "amap",
-    GOOGLE = "google",
-    OPENLAYERS = "openlayers"
+export declare const MAP_PROVIDERS: {
+    readonly AMAP: "amap";
+    readonly GOOGLE: "google";
+    readonly OPENLAYERS: "openlayers";
+};
+export type MapProvider = (typeof MAP_PROVIDERS)[keyof typeof MAP_PROVIDERS];
+export declare const MapProvider: {
+    readonly AMAP: "amap";
+    readonly GOOGLE: "google";
+    readonly OPENLAYERS: "openlayers";
+};
+export declare const COVERING_TYPES: {
+    readonly MARKER: "marker";
+    readonly CLUSTER: "cluster";
+    readonly POLYLINE: "polyline";
+    readonly POLYGON: "polygon";
+    readonly PATH_PLANNING: "path_planning";
+    readonly INFO_WINDOW: "info_window";
+    readonly ANIMATION: "animation";
+};
+export type CoveringType = (typeof COVERING_TYPES)[keyof typeof COVERING_TYPES];
+export declare const CoveringType: {
+    readonly MARKER: "marker";
+    readonly CLUSTER: "cluster";
+    readonly POLYLINE: "polyline";
+    readonly POLYGON: "polygon";
+    readonly PATH_PLANNING: "path_planning";
+    readonly INFO_WINDOW: "info_window";
+    readonly ANIMATION: "animation";
+};
+export interface BaseConfig {
+    readonly id?: string;
+    readonly data?: Record<string, unknown>;
 }
-export declare enum CoveringType {
-    MARKER = "marker",
-    CLUSTER = "cluster",
-    POLYLINE = "polyline",
-    POLYGON = "polygon",
-    PATH_PLANNING = "path_planning",
-    INFO_WINDOW = "info_window"
+export interface MapConfig extends BaseConfig {
+    readonly container: string | HTMLElement;
+    readonly center?: readonly [number, number];
+    readonly zoom?: number;
+    readonly apiKey?: string;
+    readonly [key: string]: unknown;
 }
-export interface MapConfig {
-    container: string | HTMLElement;
-    center?: [number, number];
-    zoom?: number;
-    apiKey?: string;
-    [key: string]: any;
+export interface MarkerConfig extends BaseConfig {
+    readonly position: readonly [number, number];
+    readonly title?: string;
+    readonly content?: string;
+    readonly icon?: string;
+    readonly clickable?: boolean;
+    readonly draggable?: boolean;
+    readonly map?: boolean;
+    readonly onClick?: (params: MarkerEventParams) => void;
+    readonly onMouseover?: (params: MarkerMouseEventParams) => void;
+    readonly onMouseout?: (params: MarkerMouseEventParams) => void;
+    readonly [key: string]: unknown;
 }
-export interface MarkerConfig {
-    position: [number, number];
-    title?: string;
-    content?: string;
-    icon?: string;
-    clickable?: boolean;
-    draggable?: boolean;
-    map?: boolean;
-    id?: string;
-    data?: any;
-    onClick?: (params: {
-        event: any;
-        content: HTMLElement;
-        data: any;
-        position: [number, number];
-        marker: any;
-    }) => void;
-    onMouseover?: (params: {
-        event: any;
-        content: HTMLElement;
-        data: any;
-    }) => void;
-    onMouseout?: (params: {
-        event: any;
-        content: HTMLElement;
-        data: any;
-    }) => void;
-    [key: string]: any;
+export interface MarkerEventParams {
+    readonly event: Event;
+    readonly content: HTMLElement;
+    readonly data: unknown;
+    readonly position: readonly [number, number];
+    readonly marker: unknown;
 }
-export interface MarkerClusterPoint {
-    position: [number, number];
-    [key: string]: any;
+export interface MarkerMouseEventParams {
+    readonly event: Event;
+    readonly content: HTMLElement;
+    readonly data: unknown;
+}
+export interface MarkerClusterPoint extends BaseConfig {
+    readonly position: readonly [number, number];
+    readonly [key: string]: unknown;
 }
 export interface MarkerClusterOptions {
-    gridSize?: number;
-    renderClusterMarker?: string;
-    renderMarker?: MarkerConfig;
-    maxZoom?: number;
-    [key: string]: any;
+    readonly gridSize?: number;
+    readonly renderClusterMarker?: string;
+    readonly renderMarker?: MarkerConfig;
+    readonly maxZoom?: number;
+    readonly [key: string]: unknown;
 }
 export interface IMarkerCluster {
-    id: string;
+    readonly id: string;
     points: MarkerClusterPoint[];
     addPoint(point: MarkerClusterPoint): void;
     removePoint(point: MarkerClusterPoint): void;
     clear(): void;
     remove(): void;
-    [key: string]: any;
+    readonly [key: string]: unknown;
+}
+export interface ClearParams<T> {
+    readonly type?: string;
+    readonly items?: readonly T[];
 }
 export interface IMapProvider {
     init(config: MapConfig): Promise<void>;
     addMarker(config: MarkerConfig): Promise<IMarker>;
-    clearMarkers(params?: {
-        type?: string;
-        markers?: Array<IMarker>;
-    }): void;
-    addMarkerCluster(points: MarkerClusterPoint[], options?: MarkerClusterOptions): Promise<IMarkerCluster>;
-    clearMarkerClusters(params?: {
-        type?: string;
-        clusters?: Array<IMarkerCluster>;
-    }): void;
+    clearMarkers(params?: ClearParams<IMarker>): void;
+    addMarkerCluster(points: readonly MarkerClusterPoint[], options?: MarkerClusterOptions): Promise<IMarkerCluster>;
+    clearMarkerClusters(params?: ClearParams<IMarkerCluster>): void;
     addAnimation(config: AnimationConfig): Promise<IAnimation>;
-    clearAnimations(params?: {
-        type?: string;
-        animations?: Array<IAnimation>;
-    }): void;
-    clearPolylines(params?: {
-        type?: string;
-        polylines?: any[];
-    }): void;
+    clearAnimations(params?: ClearParams<IAnimation>): void;
+    clearPolylines(params?: ClearParams<any>): void;
     addPolygon(config: PolygonConfig): Promise<IPolygon>;
-    clearPolygons(params?: {
-        type?: string;
-        polygons?: Array<IPolygon>;
-    }): void;
-    clearPathPlannings(params?: {
-        type?: string;
-        pathPlannings?: any[];
-    }): void;
-    clearInfoWindow(params?: {
-        type?: string;
-        infoWindows?: any[];
-    }): void;
-    setCenter(position: [number, number]): void;
+    clearPolygons(params?: ClearParams<IPolygon>): void;
+    clearPathPlannings(params?: ClearParams<any>): void;
+    clearInfoWindow(params?: ClearParams<any>): void;
+    setCenter(position: readonly [number, number]): void;
     setZoom(zoom: number): void;
-    getZoom(): void;
+    getZoom(): number;
     destroy(): void;
     clearMap(): Promise<void>;
 }
 export interface IMarker {
-    id: string;
+    readonly id: string;
     position: [number, number];
-    setPosition(position: [number, number]): void;
+    setPosition(position: readonly [number, number]): void;
     setTitle(title: string): void;
     setContent(content: string): void;
     remove(): void;
-    [key: string]: any;
+    readonly [key: string]: unknown;
 }
-export interface AnimationConfig {
-    path: [number, number][];
-    duration?: number;
-    speed?: number;
-    markerOptions?: MarkerConfig;
-    autoStart?: boolean;
-    loop?: boolean;
-    onStart?: () => void;
-    onPause?: () => void;
-    onResume?: () => void;
-    onStop?: () => void;
-    onComplete?: () => void;
-    onProgress?: (progress: number, position: [number, number]) => void;
-    onStep?: (currentIndex: number, position: [number, number]) => void;
+export interface AnimationConfig extends BaseConfig {
+    readonly path: readonly (readonly [number, number])[];
+    readonly duration?: number;
+    readonly speed?: number;
+    readonly markerOptions?: MarkerConfig;
+    readonly autoStart?: boolean;
+    readonly loop?: boolean;
+    readonly onStart?: () => void;
+    readonly onPause?: () => void;
+    readonly onResume?: () => void;
+    readonly onStop?: () => void;
+    readonly onComplete?: () => void;
+    readonly onProgress?: (progress: number, position: readonly [number, number]) => void;
+    readonly onStep?: (currentIndex: number, position: readonly [number, number]) => void;
 }
+export type AnimationStatus = "idle" | "playing" | "paused" | "stopped" | "completed";
 export interface IAnimation {
-    id: string;
+    readonly id: string;
     start(): void;
     pause(): void;
     resume(): void;
@@ -141,71 +142,56 @@ export interface IAnimation {
     previous(): void;
     seek(progress: number): void;
     setSpeed(speed: number): void;
-    getCurrentPosition(): [number, number];
+    getCurrentPosition(): readonly [number, number];
     getProgress(): number;
-    getStatus(): "idle" | "playing" | "paused" | "stopped" | "completed";
+    getStatus(): AnimationStatus;
     remove(): void;
     clear(): void;
 }
-export interface MapSDKConfig {
-    container: string | HTMLElement;
-    center?: [number, number];
-    zoom?: number;
-    apiKey?: string;
-    [key: string]: any;
+export interface MapSDKConfig extends MapConfig {
 }
-export interface PolygonConfig {
-    path: [number, number][];
-    fillColor?: string;
-    fillOpacity?: number;
-    strokeColor?: string;
-    strokeOpacity?: number;
-    strokeWeight?: number;
-    editable?: boolean;
-    draggable?: boolean;
-    clickable?: boolean;
-    zIndex?: number;
-    data?: any;
-    onClick?: (params: {
-        event: any;
-        polygon: IPolygon;
-        data: any;
-    }) => void;
-    onMouseover?: (params: {
-        event: any;
-        polygon: IPolygon;
-        data: any;
-    }) => void;
-    onMouseout?: (params: {
-        event: any;
-        polygon: IPolygon;
-        data: any;
-    }) => void;
-    onDragEnd?: (params: {
-        event: any;
-        polygon: IPolygon;
-        path: [number, number][];
-    }) => void;
-    onEditEnd?: (params: {
-        event: any;
-        polygon: IPolygon;
-        path: [number, number][];
-    }) => void;
-    [key: string]: any;
+export interface PolygonConfig extends BaseConfig {
+    readonly path: readonly (readonly [number, number])[];
+    readonly fillColor?: string;
+    readonly fillOpacity?: number;
+    readonly strokeColor?: string;
+    readonly strokeOpacity?: number;
+    readonly strokeWeight?: number;
+    readonly editable?: boolean;
+    readonly draggable?: boolean;
+    readonly clickable?: boolean;
+    readonly zIndex?: number;
+    readonly onClick?: (params: PolygonEventParams) => void;
+    readonly onMouseover?: (params: PolygonEventParams) => void;
+    readonly onMouseout?: (params: PolygonEventParams) => void;
+    readonly onDragEnd?: (params: PolygonDragEventParams) => void;
+    readonly onEditEnd?: (params: PolygonEditEventParams) => void;
+    readonly [key: string]: unknown;
+}
+export interface PolygonEventParams {
+    readonly event: Event;
+    readonly polygon: IPolygon;
+    readonly data: unknown;
+}
+export interface PolygonDragEventParams extends PolygonEventParams {
+    readonly path: readonly (readonly [number, number])[];
+}
+export interface PolygonEditEventParams extends PolygonEventParams {
+    readonly path: readonly (readonly [number, number])[];
 }
 export interface IPolygon {
-    id: string;
+    readonly id: string;
     path: [number, number][];
-    setPath(path: [number, number][]): void;
+    setPath(path: readonly (readonly [number, number])[]): void;
     setOptions(options: Partial<PolygonConfig>): void;
     setEditable(editable: boolean): void;
     setDraggable(draggable: boolean): void;
-    getBounds(): any;
-    contains(point: [number, number]): boolean;
+    getBounds(): unknown;
+    contains(point: readonly [number, number]): boolean;
     getArea(): number;
     show(): void;
     hide(): void;
     remove(): void;
     clear(): void;
-    [key: string]: any;
+    readonly [key: string]: unknown;
 }

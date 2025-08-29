@@ -1,9 +1,27 @@
-import { MapProvider, MapSDKConfig, MarkerConfig, IMarker, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster, AnimationConfig, IAnimation, PolygonConfig, IPolygon } from "./types";
+import { MapProvider, MapSDKConfig, MarkerConfig, IMarker, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster, AnimationConfig, IAnimation, PolygonConfig, IPolygon, ClearParams } from "./types";
 import { IMapProvider } from "./types";
+export declare class MapSDKError extends Error {
+    readonly code?: string;
+    constructor(message: string, code?: string);
+}
+export declare const ERROR_CODES: {
+    readonly NOT_INITIALIZED: "NOT_INITIALIZED";
+    readonly ALREADY_INITIALIZED: "ALREADY_INITIALIZED";
+    readonly UNSUPPORTED_PROVIDER: "UNSUPPORTED_PROVIDER";
+    readonly INVALID_CONFIG: "INVALID_CONFIG";
+};
 export declare class MapSDK {
     private provider;
     private isInitialized;
     constructor(provider: MapProvider);
+    /**
+     * 检查地图是否已初始化，未初始化则抛出错误
+     */
+    private ensureInitialized;
+    /**
+     * 验证配置参数
+     */
+    private validateConfig;
     /**
      * 初始化地图
      * @param config 地图配置
@@ -18,69 +36,66 @@ export declare class MapSDK {
     /**
      * 批量/条件清除标记点
      */
-    clearMarkers(params?: {
-        type?: string;
-        markers?: Array<IMarker>;
-    }): void;
+    clearMarkers(params?: ClearParams<IMarker>): void;
     /**
      * 添加标记点聚合
      * @param points 坐标点数组
      * @param options 聚合选项
      * @returns 标记点聚合实例
      */
-    addMarkerCluster(points: MarkerClusterPoint[], options?: MarkerClusterOptions): Promise<IMarkerCluster>;
+    addMarkerCluster(points: readonly MarkerClusterPoint[], options?: MarkerClusterOptions): Promise<IMarkerCluster>;
     /**
      * 批量/条件清除聚合
      */
-    clearMarkerClusters(params?: {
-        type?: string;
-        clusters?: Array<IMarkerCluster>;
-    }): void;
+    clearMarkerClusters(params?: ClearParams<IMarkerCluster>): void;
     /**
      * 设置地图中心点
      * @param position 中心点坐标 [经度, 纬度]
      */
-    setCenter(position: [number, number]): void;
+    setCenter(position: readonly [number, number]): void;
     /**
      * 设置地图缩放级别
      * @param zoom 缩放级别
      */
     setZoom(zoom: number): void;
-    getZoom(): any;
+    /**
+     * 获取地图缩放级别
+     */
+    getZoom(): number;
     /**
      * 添加路径规划：驾车
      */
     addPathPlanning(options?: {
-        start: [number, number] | string;
-        end: [number, number] | string;
-        points?: [number, number][];
-        optimizeWaypoints?: boolean;
-        avoidHighways?: boolean;
-        avoidTolls?: boolean;
-        avoidFerries?: boolean;
-        onChange?: (points: [number, number][]) => void;
-    }): Promise<any>;
+        readonly start: readonly [number, number] | string;
+        readonly end: readonly [number, number] | string;
+        readonly points?: readonly (readonly [number, number])[];
+        readonly optimizeWaypoints?: boolean;
+        readonly avoidHighways?: boolean;
+        readonly avoidTolls?: boolean;
+        readonly avoidFerries?: boolean;
+        readonly onChange?: (points: readonly (readonly [number, number])[]) => void;
+    }): Promise<unknown>;
     /**
      * 通过经纬度获取详细地址信息
      */
-    getAddress(position: [number, number]): Promise<any>;
+    getAddress(position: readonly [number, number]): Promise<unknown>;
     /**
      * 添加信息窗体（InfoWindow）
      */
     addInfoWindow(options: {
-        content: string | HTMLElement;
-        position: [number, number];
-        open?: boolean;
-    }): Promise<any>;
+        readonly content: string | HTMLElement;
+        readonly position: readonly [number, number];
+        readonly open?: boolean;
+    }): Promise<unknown>;
     /**
      * 绘制折线（Polyline）
      */
     addPolyline(options: {
-        path: [number, number][];
-        color?: string;
-        width?: number;
-        opacity?: number;
-    }): Promise<any>;
+        readonly path: readonly (readonly [number, number])[];
+        readonly color?: string;
+        readonly width?: number;
+        readonly opacity?: number;
+    }): Promise<unknown>;
     /**
      * 添加多边形
      */
@@ -88,25 +103,16 @@ export declare class MapSDK {
     /**
      * 清除多边形
      */
-    clearPolygons(params?: {
-        type?: string;
-        polygons?: Array<IPolygon>;
-    }): void;
+    clearPolygons(params?: ClearParams<IPolygon>): void;
     /**
      * 获取所有标记点
      * @returns 标记点数组
      */
-    getMarkers(): IMarker[];
-    /**
-     * 清除所有或部分标记点（无参时清空所有）
-     */
+    getMarkers(): readonly IMarker[];
     /**
      * 清除所有折线
      */
-    clearPolylines(params?: {
-        type?: string;
-        polylines?: any[];
-    }): void;
+    clearPolylines(params?: ClearParams<any>): void;
     /**
      * 添加轨迹动画
      */
@@ -114,24 +120,15 @@ export declare class MapSDK {
     /**
      * 清除轨迹动画
      */
-    clearAnimations(params?: {
-        type?: string;
-        animations?: Array<IAnimation>;
-    }): void;
+    clearAnimations(params?: ClearParams<IAnimation>): void;
     /**
      * 清除路径规划
      */
-    clearPathPlannings(params?: {
-        type?: string;
-        pathPlannings?: any[];
-    }): void;
+    clearPathPlannings(params?: ClearParams<any>): void;
     /**
      * 清除信息窗体
      */
-    clearInfoWindow(params?: {
-        type?: string;
-        infoWindows?: any[];
-    }): void;
+    clearInfoWindow(params?: ClearParams<any>): void;
     /**
      * 清空地图所有内容
      */
@@ -148,7 +145,7 @@ export declare class MapSDK {
      * 获取支持的地图提供者列表
      * @returns 支持的地图提供者数组
      */
-    static getSupportedProviders(): MapProvider[];
+    static getSupportedProviders(): readonly MapProvider[];
     /**
      * 检查地图提供者是否被支持
      * @param provider 地图提供者

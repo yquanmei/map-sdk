@@ -39,7 +39,12 @@ export default {
       tsconfig: './tsconfig.json',
       declaration: true,
       declarationDir: 'dist',
-      rootDir: 'src'
+      rootDir: 'src',
+      compilerOptions: {
+        skipLibCheck: true,
+        noImplicitAny: false,
+        strict: false
+      }
     })
   ]
 }; 

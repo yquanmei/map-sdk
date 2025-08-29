@@ -1,21 +1,25 @@
 import { Loader } from '@googlemaps/js-api-loader';
 import { MarkerClusterer } from '@googlemaps/markerclusterer';
 
-var MapProvider;
-(function (MapProvider) {
-    MapProvider["AMAP"] = "amap";
-    MapProvider["GOOGLE"] = "google";
-    MapProvider["OPENLAYERS"] = "openlayers";
-})(MapProvider || (MapProvider = {}));
-var CoveringType;
-(function (CoveringType) {
-    CoveringType["MARKER"] = "marker";
-    CoveringType["CLUSTER"] = "cluster";
-    CoveringType["POLYLINE"] = "polyline";
-    CoveringType["POLYGON"] = "polygon";
-    CoveringType["PATH_PLANNING"] = "path_planning";
-    CoveringType["INFO_WINDOW"] = "info_window";
-})(CoveringType || (CoveringType = {}));
+// 使用const assertion提供更好的类型安全性
+const MAP_PROVIDERS = {
+    AMAP: "amap",
+    GOOGLE: "google",
+    OPENLAYERS: "openlayers",
+};
+// 向后兼容：提供运行时可访问的MapProvider对象
+const MapProvider = MAP_PROVIDERS;
+const COVERING_TYPES = {
+    MARKER: "marker",
+    CLUSTER: "cluster",
+    POLYLINE: "polyline",
+    POLYGON: "polygon",
+    PATH_PLANNING: "path_planning",
+    INFO_WINDOW: "info_window",
+    ANIMATION: "animation",
+};
+// 向后兼容：提供运行时可访问的CoveringType对象
+const CoveringType = COVERING_TYPES;
 
 class BaseMapProvider {
     constructor() {
@@ -27,11 +31,8 @@ class BaseMapProvider {
         this.infoWindows = [];
         this.animations = new Map();
     }
-    generateMarkerId() {
-        return `marker_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    }
-    generateClusterId() {
-        return `cluster_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    generateId(type) {
+        return `${type}_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
     }
     addMarkerToCollection(marker) {
         this.markers.set(marker.id, marker);
@@ -110,7 +111,7 @@ class BaseMapProvider {
                 polyline.setMap(null);
             }
         });
-        this.polylines = [];
+        this.polylines.length = 0;
     }
     clearAllPathPlannings() {
         this.pathPlannings.forEach((planning) => {
@@ -118,15 +119,15 @@ class BaseMapProvider {
                 planning.remove();
             }
         });
-        this.pathPlannings = [];
+        this.pathPlannings.length = 0;
     }
     clearAllInfoWindows() {
         this.infoWindows.forEach((infoWindow) => {
-            if (infoWindow?.remove) {
+            if (infoWindow && typeof infoWindow.remove === "function") {
                 infoWindow.remove();
             }
         });
-        this.infoWindows = [];
+        this.infoWindows.length = 0;
     }
     clearAllAnimations() {
         this.animations.forEach((animation) => animation.remove());
@@ -145,12 +146,6 @@ class BaseMapProvider {
         this.polygons.forEach((polygon) => polygon.remove());
         this.polygons.clear();
     }
-    generateAnimationId() {
-        return `animation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    }
-    generatePolygonId() {
-        return `polygon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    }
 }
 
 class AMapProvider extends BaseMapProvider {
@@ -166,9 +161,9 @@ class AMapProvider extends BaseMapProvider {
                 return;
             }
             // 创建script标签
-            const script = document.createElement('script');
-            script.type = 'text/javascript';
-            script.src = `https://webapi.amap.com/maps?v=2.0&key=${apiKey || ''}&plugin=AMap.Marker,AMap.MarkerCluster`;
+            const script = document.createElement("script");
+            script.type = "text/javascript";
+            script.src = `https://webapi.amap.com/maps?v=2.0&key=${apiKey || ""}&plugin=AMap.Marker,AMap.MarkerCluster`;
             script.async = true;
             script.defer = true;
             // 加载成功回调
@@ -177,12 +172,12 @@ class AMapProvider extends BaseMapProvider {
                     resolve();
                 }
                 else {
-                    reject(new Error('AMap SDK failed to load'));
+                    reject(new Error("AMap SDK failed to load"));
                 }
             };
             // 加载失败回调
             script.onerror = () => {
-                reject(new Error('Failed to load AMap SDK'));
+                reject(new Error("Failed to load AMap SDK"));
             };
             // 添加到页面
             document.head.appendChild(script);
@@ -191,7 +186,7 @@ class AMapProvider extends BaseMapProvider {
     async init(config) {
         this.config = config;
         // 动态加载高德地图SDK
-        if (typeof window !== 'undefined' && !this.AMap) {
+        if (typeof window !== "undefined" && !this.AMap) {
             try {
                 // 检查是否已经加载了高德地图SDK
                 if (!window.AMap) {
@@ -204,23 +199,21 @@ class AMapProvider extends BaseMapProvider {
                 throw new Error(`Failed to load AMap SDK: ${error}`);
             }
         }
-        const container = typeof config.container === 'string'
-            ? document.getElementById(config.container)
-            : config.container;
+        const container = typeof config.container === "string" ? document.getElementById(config.container) : config.container;
         if (!container) {
-            throw new Error('Container element not found');
+            throw new Error("Container element not found");
         }
         this.map = new this.AMap.Map(container, {
             center: config.center || [116.397428, 39.90923],
             zoom: config.zoom || 11,
-            ...config
+            ...config,
         });
     }
     async addMarker(config) {
         if (!this.map) {
-            throw new Error('Map not initialized');
+            throw new Error("Map not initialized");
         }
-        const markerId = this.generateMarkerId();
+        const markerId = this.generateId(COVERING_TYPES.MARKER);
         const { position, ...otherConfig } = config;
         const amapMarker = new this.AMap.Marker({
             position,
@@ -229,12 +222,12 @@ class AMapProvider extends BaseMapProvider {
             icon: config.icon,
             clickable: config.clickable !== false,
             draggable: config.draggable || false,
-            ...otherConfig
+            ...otherConfig,
         });
         this.map.add(amapMarker);
         const marker = {
             id: markerId,
-            position: config.position,
+            position: [...config.position],
             amapMarker,
             setPosition: (position) => {
                 amapMarker.setPosition(position);
@@ -249,35 +242,35 @@ class AMapProvider extends BaseMapProvider {
             remove: () => {
                 this.map.remove(amapMarker);
                 this.removeMarkerFromCollection(markerId);
-            }
+            },
         };
         this.addMarkerToCollection(marker);
         return marker;
     }
     async addMarkerCluster(points, options) {
         if (!this.map) {
-            throw new Error('Map not initialized');
+            throw new Error("Map not initialized");
         }
-        const clusterId = this.generateClusterId();
+        const clusterId = this.generateId(COVERING_TYPES.CLUSTER);
         const defaultOptions = {
             gridSize: 60,
             maxZoom: 18,
             renderClusterMarker: '<div style="background-color: #ff6b6b; color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold;">{count}</div>',
             renderMarker: {
                 position: [0, 0], // 占位符，实际位置会从 point 中获取
-                icon: 'https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png'
+                icon: "https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png",
             },
-            ...options
+            ...options,
         };
         // 创建标记点数组
         const markers = [];
-        points.forEach(point => {
+        points.forEach((point) => {
             const { position: _, ...renderMarkerConfig } = defaultOptions.renderMarker;
             const { position: pointPosition, ...pointConfig } = point;
             const marker = new this.AMap.Marker({
                 position: pointPosition,
                 ...renderMarkerConfig,
-                ...pointConfig
+                ...pointConfig,
             });
             markers.push(marker);
         });
@@ -287,10 +280,10 @@ class AMapProvider extends BaseMapProvider {
             maxZoom: defaultOptions.maxZoom,
             renderClusterMarker: (context) => {
                 const count = context.count;
-                const div = document.createElement('div');
-                div.innerHTML = defaultOptions.renderClusterMarker.replace('{count}', count.toString());
+                const div = document.createElement("div");
+                div.innerHTML = defaultOptions.renderClusterMarker.replace("{count}", count.toString());
                 return div.firstChild;
-            }
+            },
         });
         const markerCluster = {
             id: clusterId,
@@ -303,14 +296,14 @@ class AMapProvider extends BaseMapProvider {
                 const marker = new this.AMap.Marker({
                     position: pointPosition,
                     ...renderMarkerConfig,
-                    ...pointConfig
+                    ...pointConfig,
                 });
                 markers.push(marker);
                 markerCluster.points.push(point);
                 cluster.addMarker(marker);
             },
             removePoint: (point) => {
-                const index = markerCluster.points.findIndex(p => p.position[0] === point.position[0] && p.position[1] === point.position[1]);
+                const index = markerCluster.points.findIndex((p) => p.position[0] === point.position[0] && p.position[1] === point.position[1]);
                 if (index !== -1) {
                     const marker = markers[index];
                     cluster.removeMarker(marker);
@@ -319,14 +312,14 @@ class AMapProvider extends BaseMapProvider {
                 }
             },
             clear: () => {
-                markers.forEach(marker => cluster.removeMarker(marker));
+                markers.forEach((marker) => cluster.removeMarker(marker));
                 markers.length = 0;
                 markerCluster.points.length = 0;
             },
             remove: () => {
                 cluster.setMap(null);
                 this.removeClusterFromCollection(clusterId);
-            }
+            },
         };
         this.addClusterToCollection(markerCluster);
         return markerCluster;
@@ -439,7 +432,7 @@ class AMapProvider extends BaseMapProvider {
         if (!this.map) {
             throw new Error("Map not initialized");
         }
-        const polygonId = this.generatePolygonId();
+        const polygonId = this.generateId(COVERING_TYPES.POLYGON);
         const defaultOptions = {
             id: polygonId,
             path: [],
@@ -455,7 +448,7 @@ class AMapProvider extends BaseMapProvider {
         };
         const mergedOptions = { ...defaultOptions, ...config };
         const polygon = new this.AMap.Polygon({
-            path: mergedOptions.path,
+            path: mergedOptions.path.map(p => [...p]),
             strokeColor: mergedOptions.strokeColor,
             strokeOpacity: mergedOptions.strokeOpacity,
             strokeWeight: mergedOptions.strokeWeight,
@@ -469,7 +462,7 @@ class AMapProvider extends BaseMapProvider {
         this.map.add(polygon);
         const amapPolygon = {
             id: polygonId,
-            path: mergedOptions.path,
+            path: mergedOptions.path.map((point) => [...point]),
             googlePolygon: polygon,
             setPath: (path) => {
                 polygon.setPath(path);
@@ -591,32 +584,32 @@ class AMapProvider extends BaseMapProvider {
         this.clearAnimations();
     }
     async addAnimation(config) {
-        const animationId = this.generateAnimationId();
+        const animationId = this.generateId(COVERING_TYPES.ANIMATION);
         const animation = {
             id: animationId,
             start: () => {
-                console.warn('AMap does not support trajectory animation');
+                console.warn("AMap does not support trajectory animation");
             },
             pause: () => {
-                console.warn('AMap does not support trajectory animation');
+                console.warn("AMap does not support trajectory animation");
             },
             resume: () => {
-                console.warn('AMap does not support trajectory animation');
+                console.warn("AMap does not support trajectory animation");
             },
             stop: () => {
-                console.warn('AMap does not support trajectory animation');
+                console.warn("AMap does not support trajectory animation");
             },
             next: () => {
-                console.warn('AMap does not support trajectory animation');
+                console.warn("AMap does not support trajectory animation");
             },
             previous: () => {
-                console.warn('AMap does not support trajectory animation');
+                console.warn("AMap does not support trajectory animation");
             },
             seek: (progress) => {
-                console.warn('AMap does not support trajectory animation');
+                console.warn("AMap does not support trajectory animation");
             },
             setSpeed: (speed) => {
-                console.warn('AMap does not support trajectory animation');
+                console.warn("AMap does not support trajectory animation");
             },
             getCurrentPosition: () => {
                 return [0, 0];
@@ -658,64 +651,139 @@ class AMapProvider extends BaseMapProvider {
 }
 
 /**
+ * DOM操作相关的工具函数
+ */
+// 错误类定义
+class DOMError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = "DOMError";
+    }
+}
+/**
  * 将HTML字符串转换为DOM节点（现代浏览器首选）
  * @param htmlString HTML字符串
  * @returns 解析后的DOM节点
  */
-const safeStringToDOM = (htmlString) => {
-    const template = document.createElement("template");
-    template.innerHTML = htmlString.trim();
-    return template.content.firstChild;
-};
+function safeStringToDOM(htmlString) {
+    try {
+        const template = document.createElement("template");
+        template.innerHTML = htmlString.trim();
+        return template.content.firstChild;
+    }
+    catch (error) {
+        throw new DOMError(`Failed to parse HTML string: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
+}
 /**
  * 将HTML字符串转换为DOM节点（兼容旧浏览器）
  * @param htmlString HTML字符串
  * @returns 解析后的DOM节点
  */
-const legacyStringToDOM = (htmlString) => {
-    const div = document.createElement("div");
-    div.innerHTML = htmlString;
-    return div.firstChild;
-};
+function legacyStringToDOM(htmlString) {
+    try {
+        const div = document.createElement("div");
+        div.innerHTML = htmlString;
+        return div.firstChild;
+    }
+    catch (error) {
+        throw new DOMError(`Failed to parse HTML string with legacy method: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
+}
 /**
  * 创建DOM节点内容
  * @param htmlString HTML字符串
  * @returns 解析后的DOM节点
  */
-const createDomContentFromString = (htmlString) => {
+function createDomContentFromString(htmlString) {
+    if (!htmlString || typeof htmlString !== "string") {
+        throw new DOMError("HTML string is required and must be a non-empty string");
+    }
     // 检测浏览器是否支持template元素的content特性
     const isTemplateSupported = "content" in document.createElement("template");
     const domNode = isTemplateSupported ? safeStringToDOM(htmlString) : legacyStringToDOM(htmlString);
     if (!(domNode instanceof HTMLElement)) {
-        throw new Error("无法从字符串创建有效的DOM元素");
+        throw new DOMError("无法从字符串创建有效的DOM元素");
     }
     return domNode;
-};
+}
+/**
+ * 检查是否在浏览器环境中
+ */
+function isBrowser() {
+    return typeof window !== "undefined" && typeof document !== "undefined";
+}
+/**
+ * 验证输入是否为有效的HTMLElement
+ */
+function isValidHTMLElement(input) {
+    return isBrowser() && input instanceof HTMLElement;
+}
 /**
  * 将输入内容转换为DOM元素
  * @param input 输入内容（DOM元素、HTML字符串或其他类型）
  * @returns HTMLElement 转换后的DOM元素
  */
-const createDomContent = (input) => {
+function createDomContent(input) {
     // 1. 如果已经是DOM元素，直接返回
-    if (typeof window !== "undefined" && input instanceof HTMLElement) {
+    if (isValidHTMLElement(input)) {
         return input;
     }
-    // 2. 如果是字符串，调用createDomContent转换
+    // 2. 如果是字符串，调用createDomContentFromString转换
     if (typeof input === "string") {
         try {
-            // 假设createDomContent是一个将字符串转换为DOM的方法
             return createDomContentFromString(input);
         }
-        catch (e) {
-            console.warn("字符串转换为DOM失败，使用默认空div", e);
+        catch (error) {
+            console.warn("字符串转换为DOM失败，使用默认空div", error);
         }
     }
     // 3. 其他情况返回空div
+    if (!isBrowser()) {
+        throw new DOMError("DOM operations are not available in this environment");
+    }
     const emptyDiv = document.createElement("div");
     emptyDiv.className = "empty";
+    emptyDiv.setAttribute("data-fallback", "true");
     return emptyDiv;
-};
+}
+/**
+ * 安全地设置元素的innerHTML
+ * @param element 目标元素
+ * @param content HTML内容
+ */
+function safeSetInnerHTML(element, content) {
+    if (!isValidHTMLElement(element)) {
+        throw new DOMError("Invalid HTMLElement provided");
+    }
+    if (typeof content !== "string") {
+        throw new DOMError("Content must be a string");
+    }
+    try {
+        element.innerHTML = content;
+    }
+    catch (error) {
+        throw new DOMError(`Failed to set innerHTML: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
+}
+/**
+ * 安全地克隆DOM元素
+ * @param element 要克隆的元素
+ * @param deep 是否深度克隆
+ * @returns 克隆的元素
+ */
+function safeCloneElement(element, deep = true) {
+    if (!isValidHTMLElement(element)) {
+        throw new DOMError("Invalid HTMLElement provided for cloning");
+    }
+    try {
+        const cloned = element.cloneNode(deep);
+        return cloned;
+    }
+    catch (error) {
+        throw new DOMError(`Failed to clone element: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
+}
 
 class GoogleMapProvider extends BaseMapProvider {
     // private polylines: any[] = []
@@ -748,7 +816,7 @@ class GoogleMapProvider extends BaseMapProvider {
             try {
                 // 检查是否已经加载了Google Maps SDK
                 if (!window.google || !window.google.maps) {
-                    await this.loadGoogleMapsSDK(config.key);
+                    await this.loadGoogleMapsSDK(config.apiKey);
                 }
                 this.google = window.google;
             }
@@ -799,7 +867,7 @@ class GoogleMapProvider extends BaseMapProvider {
         if (!this.map) {
             throw new Error("Map not initialized");
         }
-        const markerId = this.generateId(CoveringType.MARKER);
+        const markerId = this.generateId(COVERING_TYPES.MARKER);
         const defaultOptions = {
             map: true,
             id: markerId,
@@ -845,7 +913,7 @@ class GoogleMapProvider extends BaseMapProvider {
         });
         const marker = {
             id: markerId,
-            position: mergedOptions.position,
+            position: [...mergedOptions.position],
             googleMarker,
             data: mergedOptions.data || {},
             setPosition: (position) => {
@@ -872,7 +940,7 @@ class GoogleMapProvider extends BaseMapProvider {
                 this.removeMarkerFromCollection(markerId);
             },
         };
-        if (type !== CoveringType.CLUSTER) {
+        if (type !== COVERING_TYPES.CLUSTER) {
             this.addMarkerToCollection(marker);
         }
         return marker;
@@ -881,7 +949,7 @@ class GoogleMapProvider extends BaseMapProvider {
         if (!this.map) {
             throw new Error("Map not initialized");
         }
-        const clusterId = this.generateId(CoveringType.CLUSTER);
+        const clusterId = this.generateId(COVERING_TYPES.CLUSTER);
         const defaultOptions = {
             id: clusterId,
             data: {},
@@ -914,14 +982,14 @@ class GoogleMapProvider extends BaseMapProvider {
                 content: markerOptions.content,
                 onClick: markerOptions.onClick,
                 data: markerOptions.data,
-            }, CoveringType.CLUSTER);
+            }, COVERING_TYPES.CLUSTER);
             return marker.googleMarker;
         });
         const markers = await Promise.all(markerPromises);
         this.getZoom();
         // const { MarkerClusterer } = await this.google.maps.importLibrary("marker") as any;
         const googleMarkerClusterer = new MarkerClusterer({
-            markers,
+            markers: markers,
             map: this.map,
             // renderer: {
             //   // render: ({ count, position }: any) => {
@@ -1167,7 +1235,7 @@ class GoogleMapProvider extends BaseMapProvider {
             throw new Error("Map not initialized");
         }
         const { Polyline } = await this.google.maps.importLibrary("maps");
-        const polylineId = this.generateId(CoveringType.POLYLINE);
+        const polylineId = this.generateId(COVERING_TYPES.POLYLINE);
         const defaultOptions = {
             id: polylineId,
             color: "#f00",
@@ -1241,7 +1309,7 @@ class GoogleMapProvider extends BaseMapProvider {
             throw new Error("Map not initialized");
         }
         try {
-            const pathPlanningId = this.generateId(CoveringType.PATH_PLANNING);
+            const pathPlanningId = this.generateId(COVERING_TYPES.PATH_PLANNING);
             const defaultOptions = {
                 id: pathPlanningId,
                 start: [0, 0],
@@ -1448,7 +1516,7 @@ class GoogleMapProvider extends BaseMapProvider {
         if (!this.map || !this.google) {
             throw new Error("Map not initialized");
         }
-        const polygonId = this.generatePolygonId();
+        const polygonId = this.generateId(COVERING_TYPES.POLYGON);
         const defaultOptions = {
             id: polygonId,
             fillColor: "#FF0000",
@@ -1479,7 +1547,7 @@ class GoogleMapProvider extends BaseMapProvider {
             // 返回一个包装的polyline对象，模拟polygon接口
             const previewPolygon = {
                 id: polygonId,
-                path: mergedOptions.path,
+                path: mergedOptions.path.map((p) => [...p]),
                 googlePolygon: polyline,
                 setPath: (path) => {
                     polyline.setPath(path.map(([lng, lat]) => ({ lat, lng })));
@@ -1545,7 +1613,7 @@ class GoogleMapProvider extends BaseMapProvider {
                     .getArray()[0]
                     .getArray()
                     .map((latLng) => [latLng.lng(), latLng.lat()]);
-                mergedOptions.onDragEnd({ event, polygon: polygon, path });
+                mergedOptions.onDragEnd({ event, polygon: polygon, path, data: mergedOptions.data });
             });
         }
         if (typeof mergedOptions.onEditEnd === "function") {
@@ -1555,12 +1623,12 @@ class GoogleMapProvider extends BaseMapProvider {
                     .getArray()[0]
                     .getArray()
                     .map((latLng) => [latLng.lng(), latLng.lat()]);
-                mergedOptions.onEditEnd({ event, polygon: polygon, path });
+                mergedOptions.onEditEnd({ event, polygon: polygon, path, data: mergedOptions.data });
             });
         }
         const polygon = {
             id: polygonId,
-            path: mergedOptions.path,
+            path: mergedOptions.path.map((p) => [...p]),
             googlePolygon,
             setPath: (path) => {
                 googlePolygon.setPaths(path.map(([lng, lat]) => ({ lat, lng })));
@@ -1650,10 +1718,6 @@ class GoogleMapProvider extends BaseMapProvider {
             this.removePolygonFromCollection(polygon.id);
         });
     }
-    // ============================ 其他 =============================
-    generateId(type) {
-        return `${type}_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-    }
     // ============================ 轨迹动画 =============================
     /**
      * 添加轨迹动画
@@ -1662,7 +1726,7 @@ class GoogleMapProvider extends BaseMapProvider {
         if (!this.map || !this.google) {
             throw new Error("Map not initialized");
         }
-        const animationId = this.generateAnimationId();
+        const animationId = this.generateId(COVERING_TYPES.ANIMATION);
         const defaultOptions = {
             duration: 5000,
             speed: 1,
@@ -1823,7 +1887,7 @@ class GoogleMapProvider extends BaseMapProvider {
                 }
             },
             getCurrentPosition: () => {
-                return mergedOptions.path[Math.min(currentIndex, mergedOptions.path.length - 1)];
+                return [...mergedOptions.path[Math.min(currentIndex, mergedOptions.path.length - 1)]];
             },
             getProgress: () => {
                 if (status === "idle" || status === "stopped")
@@ -1883,6 +1947,10 @@ class GoogleMapProvider extends BaseMapProvider {
             }
             this.removeAnimationFromCollection(animation.id);
         });
+    }
+    // ============================ 其他 =============================
+    generateId(type) {
+        return `${type}_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
     }
 }
 
@@ -1963,7 +2031,7 @@ class OpenLayersProvider extends BaseMapProvider {
         if (!this.map || !this.vectorLayer) {
             throw new Error("Map not initialized");
         }
-        const markerId = this.generateMarkerId();
+        const markerId = this.generateId(COVERING_TYPES.MARKER);
         const { position, ...otherConfig } = config;
         // 创建marker要素
         const feature = new this.ol.Feature({
@@ -1982,7 +2050,7 @@ class OpenLayersProvider extends BaseMapProvider {
         this.vectorLayer.getSource().addFeature(feature);
         const marker = {
             id: markerId,
-            position,
+            position: [...position],
             olMarker: feature,
             olFeature: feature,
             setPosition: (newPosition) => {
@@ -2007,7 +2075,7 @@ class OpenLayersProvider extends BaseMapProvider {
         if (!this.map) {
             throw new Error("Map not initialized");
         }
-        const clusterId = this.generateClusterId();
+        const clusterId = this.generateId(COVERING_TYPES.CLUSTER);
         const defaultOptions = {
             renderClusterMarker: '<div style="background-color: #ff6b6b; color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold;">{count}</div>',
             renderMarker: {
@@ -2219,7 +2287,7 @@ class OpenLayersProvider extends BaseMapProvider {
         if (!this.map || !this.vectorLayer) {
             throw new Error("Map not initialized");
         }
-        const polygonId = this.generatePolygonId();
+        const polygonId = this.generateId(COVERING_TYPES.POLYGON);
         const defaultOptions = {
             id: polygonId,
             path: [],
@@ -2235,7 +2303,7 @@ class OpenLayersProvider extends BaseMapProvider {
         };
         const mergedOptions = { ...defaultOptions, ...config };
         const polygonFeature = new this.ol.Feature({
-            geometry: new this.ol.geom.Polygon([mergedOptions.path.map(([lng, lat]) => this.ol.proj.fromLonLat([lng, lat]))]),
+            geometry: new this.ol.geom.Polygon([mergedOptions.path.map((point) => this.ol.proj.fromLonLat([point[0], point[1]]))]),
         });
         const polygonStyle = new this.ol.style.Style({
             fill: new this.ol.style.Fill({
@@ -2251,7 +2319,7 @@ class OpenLayersProvider extends BaseMapProvider {
         this.vectorLayer.getSource().addFeature(polygonFeature);
         const olPolygon = {
             id: polygonId,
-            path: mergedOptions.path,
+            path: mergedOptions.path.map((p) => [...p]),
             googlePolygon: polygonFeature,
             setPath: (path) => {
                 const geometry = polygonFeature.getGeometry();
@@ -2388,7 +2456,7 @@ class OpenLayersProvider extends BaseMapProvider {
         this.clearAnimations();
     }
     async addAnimation(config) {
-        const animationId = this.generateAnimationId();
+        const animationId = this.generateId(COVERING_TYPES.ANIMATION);
         const animation = {
             id: animationId,
             start: () => {
@@ -2458,39 +2526,132 @@ class OpenLayersProvider extends BaseMapProvider {
     }
 }
 
+// 错误类定义
+class MapProviderError extends Error {
+    constructor(message, provider) {
+        super(message);
+        this.provider = provider;
+        this.name = "MapProviderError";
+    }
+}
 class MapProviderFactory {
+    /**
+     * 注册地图提供者
+     * @param provider 地图提供者类型
+     * @param providerClass 提供者构造函数
+     */
     static registerProvider(provider, providerClass) {
+        if (!provider || typeof provider !== "string") {
+            throw new MapProviderError("Invalid provider type");
+        }
+        if (!providerClass || typeof providerClass !== "function") {
+            throw new MapProviderError("Invalid provider class", provider);
+        }
         this.providers.set(provider, providerClass);
     }
+    /**
+     * 创建地图提供者实例
+     * @param provider 地图提供者类型
+     * @returns 地图提供者实例
+     */
     static createProvider(provider) {
         const ProviderClass = this.providers.get(provider);
         if (!ProviderClass) {
-            throw new Error(`Unsupported map provider: ${provider}`);
+            throw new MapProviderError(`Unsupported map provider: ${provider}. Supported providers: ${this.getSupportedProviders().join(", ")}`, provider);
         }
-        return new ProviderClass();
+        try {
+            return new ProviderClass();
+        }
+        catch (error) {
+            throw new MapProviderError(`Failed to create provider instance for ${provider}: ${error instanceof Error ? error.message : "Unknown error"}`, provider);
+        }
     }
+    /**
+     * 获取所有支持的地图提供者
+     * @returns 支持的地图提供者数组
+     */
     static getSupportedProviders() {
         return Array.from(this.providers.keys());
     }
+    /**
+     * 检查地图提供者是否被支持
+     * @param provider 地图提供者
+     * @returns 是否支持
+     */
     static isProviderSupported(provider) {
         return this.providers.has(provider);
+    }
+    /**
+     * 取消注册地图提供者
+     * @param provider 地图提供者类型
+     */
+    static unregisterProvider(provider) {
+        return this.providers.delete(provider);
+    }
+    /**
+     * 清除所有注册的提供者（主要用于测试）
+     */
+    static clearProviders() {
+        this.providers.clear();
     }
 }
 MapProviderFactory.providers = new Map();
 (() => {
     // 注册所有可用的提供者
-    MapProviderFactory.registerProvider(MapProvider.AMAP, AMapProvider);
-    MapProviderFactory.registerProvider(MapProvider.GOOGLE, GoogleMapProvider);
-    MapProviderFactory.registerProvider(MapProvider.OPENLAYERS, OpenLayersProvider);
+    MapProviderFactory.registerProvider(MAP_PROVIDERS.AMAP, AMapProvider);
+    MapProviderFactory.registerProvider(MAP_PROVIDERS.GOOGLE, GoogleMapProvider);
+    MapProviderFactory.registerProvider(MAP_PROVIDERS.OPENLAYERS, OpenLayersProvider);
 })();
 
+// SDK错误类定义
+class MapSDKError extends Error {
+    constructor(message, code) {
+        super(message);
+        this.code = code;
+        this.name = "MapSDKError";
+    }
+}
+// 错误代码常量
+const ERROR_CODES = {
+    NOT_INITIALIZED: "NOT_INITIALIZED",
+    ALREADY_INITIALIZED: "ALREADY_INITIALIZED",
+    UNSUPPORTED_PROVIDER: "UNSUPPORTED_PROVIDER",
+    INVALID_CONFIG: "INVALID_CONFIG",
+};
 class MapSDK {
     constructor(provider) {
         this.isInitialized = false;
-        if (!MapProviderFactory.isProviderSupported(provider)) {
-            throw new Error(`Unsupported map provider: ${provider}`);
+        try {
+            if (!MapProviderFactory.isProviderSupported(provider)) {
+                throw new MapSDKError(`Unsupported map provider: ${provider}`, ERROR_CODES.UNSUPPORTED_PROVIDER);
+            }
+            this.provider = MapProviderFactory.createProvider(provider);
         }
-        this.provider = MapProviderFactory.createProvider(provider);
+        catch (error) {
+            if (error instanceof MapProviderError) {
+                throw new MapSDKError(error.message, ERROR_CODES.UNSUPPORTED_PROVIDER);
+            }
+            throw error;
+        }
+    }
+    /**
+     * 检查地图是否已初始化，未初始化则抛出错误
+     */
+    ensureInitialized() {
+        if (!this.isInitialized) {
+            throw new MapSDKError("Map is not initialized. Call init() first.", ERROR_CODES.NOT_INITIALIZED);
+        }
+    }
+    /**
+     * 验证配置参数
+     */
+    validateConfig(config) {
+        if (!config) {
+            throw new MapSDKError("Config is required", ERROR_CODES.INVALID_CONFIG);
+        }
+        if (!config.container) {
+            throw new MapSDKError("Container is required", ERROR_CODES.INVALID_CONFIG);
+        }
     }
     /**
      * 初始化地图
@@ -2498,10 +2659,16 @@ class MapSDK {
      */
     async init(config) {
         if (this.isInitialized) {
-            throw new Error("Map is already initialized");
+            throw new MapSDKError("Map is already initialized", ERROR_CODES.ALREADY_INITIALIZED);
         }
-        await this.provider.init(config);
-        this.isInitialized = true;
+        this.validateConfig(config);
+        try {
+            await this.provider.init(config);
+            this.isInitialized = true;
+        }
+        catch (error) {
+            throw new MapSDKError(`Failed to initialize map: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
     }
     /**
      * 添加标记点
@@ -2509,18 +2676,22 @@ class MapSDK {
      * @returns 标记点实例
      */
     async addMarker(config) {
-        if (!this.isInitialized) {
-            throw new Error("Map is not initialized. Call init() first.");
+        this.ensureInitialized();
+        if (!config?.position) {
+            throw new MapSDKError("Marker position is required", ERROR_CODES.INVALID_CONFIG);
         }
-        return await this.provider.addMarker(config);
+        try {
+            return await this.provider.addMarker(config);
+        }
+        catch (error) {
+            throw new MapSDKError(`Failed to add marker: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
     }
     /**
      * 批量/条件清除标记点
      */
     clearMarkers(params) {
-        if (!this.isInitialized) {
-            throw new Error("Map is not initialized. Call init() first.");
-        }
+        this.ensureInitialized();
         this.provider.clearMarkers(params);
     }
     /**
@@ -2530,18 +2701,22 @@ class MapSDK {
      * @returns 标记点聚合实例
      */
     async addMarkerCluster(points, options) {
-        if (!this.isInitialized) {
-            throw new Error("Map is not initialized. Call init() first.");
+        this.ensureInitialized();
+        if (!points || points.length === 0) {
+            throw new MapSDKError("Cluster points are required", ERROR_CODES.INVALID_CONFIG);
         }
-        return await this.provider.addMarkerCluster(points, options);
+        try {
+            return await this.provider.addMarkerCluster(points, options);
+        }
+        catch (error) {
+            throw new MapSDKError(`Failed to add marker cluster: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
     }
     /**
      * 批量/条件清除聚合
      */
     clearMarkerClusters(params) {
-        if (!this.isInitialized) {
-            throw new Error("Map is not initialized. Call init() first.");
-        }
+        this.ensureInitialized();
         this.provider.clearMarkerClusters(params);
     }
     /**
@@ -2549,8 +2724,9 @@ class MapSDK {
      * @param position 中心点坐标 [经度, 纬度]
      */
     setCenter(position) {
-        if (!this.isInitialized) {
-            throw new Error("Map is not initialized. Call init() first.");
+        this.ensureInitialized();
+        if (!position || position.length !== 2) {
+            throw new MapSDKError("Invalid position format", ERROR_CODES.INVALID_CONFIG);
         }
         this.provider.setCenter(position);
     }
@@ -2559,69 +2735,99 @@ class MapSDK {
      * @param zoom 缩放级别
      */
     setZoom(zoom) {
-        if (!this.isInitialized) {
-            throw new Error("Map is not initialized. Call init() first.");
+        this.ensureInitialized();
+        if (typeof zoom !== "number" || zoom < 0) {
+            throw new MapSDKError("Invalid zoom level", ERROR_CODES.INVALID_CONFIG);
         }
         this.provider.setZoom(zoom);
     }
+    /**
+     * 获取地图缩放级别
+     */
     getZoom() {
-        if (!this.isInitialized) {
-            throw new Error("Map is not initialized. Call init() first.");
-        }
+        this.ensureInitialized();
         return this.provider.getZoom();
     }
     /**
      * 添加路径规划：驾车
      */
     async addPathPlanning(options) {
-        if (!this.isInitialized) {
-            throw new Error("Map is not initialized. Call init() first.");
+        this.ensureInitialized();
+        if (!options?.start || !options?.end) {
+            throw new MapSDKError("Start and end points are required", ERROR_CODES.INVALID_CONFIG);
         }
-        return await this.provider.addPathPlanning(options);
+        try {
+            return await this.provider.addPathPlanning(options);
+        }
+        catch (error) {
+            throw new MapSDKError(`Failed to add path planning: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
     }
     /**
      * 通过经纬度获取详细地址信息
      */
     async getAddress(position) {
-        if (!this.isInitialized) {
-            throw new Error("Map is not initialized. Call init() first.");
+        this.ensureInitialized();
+        if (!position || position.length !== 2) {
+            throw new MapSDKError("Invalid position format", ERROR_CODES.INVALID_CONFIG);
         }
-        return await this.provider.getAddress(position);
+        try {
+            return await this.provider.getAddress(position);
+        }
+        catch (error) {
+            throw new MapSDKError(`Failed to get address: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
     }
     /**
      * 添加信息窗体（InfoWindow）
      */
     async addInfoWindow(options) {
-        if (!this.isInitialized) {
-            throw new Error("Map is not initialized. Call init() first.");
+        this.ensureInitialized();
+        if (!options?.content || !options?.position) {
+            throw new MapSDKError("Content and position are required", ERROR_CODES.INVALID_CONFIG);
         }
-        return await this.provider.addInfoWindow(options);
+        try {
+            return await this.provider.addInfoWindow(options);
+        }
+        catch (error) {
+            throw new MapSDKError(`Failed to add info window: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
     }
     /**
      * 绘制折线（Polyline）
      */
     async addPolyline(options) {
-        if (!this.isInitialized) {
-            throw new Error("Map is not initialized. Call init() first.");
+        this.ensureInitialized();
+        if (!options?.path || options.path.length < 2) {
+            throw new MapSDKError("Path with at least 2 points is required", ERROR_CODES.INVALID_CONFIG);
         }
-        return await this.provider.addPolyline(options);
+        try {
+            return await this.provider.addPolyline(options);
+        }
+        catch (error) {
+            throw new MapSDKError(`Failed to add polyline: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
     }
     /**
      * 添加多边形
      */
     async addPolygon(config) {
-        if (!this.isInitialized) {
-            throw new Error("Map is not initialized. Call init() first.");
+        this.ensureInitialized();
+        if (!config?.path || config.path.length < 3) {
+            throw new MapSDKError("Path with at least 3 points is required", ERROR_CODES.INVALID_CONFIG);
         }
-        return await this.provider.addPolygon(config);
+        try {
+            return await this.provider.addPolygon(config);
+        }
+        catch (error) {
+            throw new MapSDKError(`Failed to add polygon: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
     }
     /**
      * 清除多边形
      */
     clearPolygons(params) {
-        if (!this.isInitialized) {
-            throw new Error("Map is not initialized. Call init() first.");
-        }
+        this.ensureInitialized();
         this.provider.clearPolygons(params);
     }
     /**
@@ -2629,78 +2835,78 @@ class MapSDK {
      * @returns 标记点数组
      */
     getMarkers() {
-        if (!this.isInitialized) {
-            throw new Error("Map is not initialized. Call init() first.");
-        }
-        return this.provider.getMarkers();
+        this.ensureInitialized();
+        return this.provider.getMarkers() || [];
     }
-    /**
-     * 清除所有或部分标记点（无参时清空所有）
-     */
-    // clearAllMarkers(params?: { type?: string; markers?: Array<IMarker> }): void {
-    //   this.clearMarkers(params)
-    // }
     /**
      * 清除所有折线
      */
     clearPolylines(params) {
-        if (!this.isInitialized) {
-            throw new Error("Map is not initialized. Call init() first.");
-        }
+        this.ensureInitialized();
         this.provider.clearPolylines(params);
     }
     /**
      * 添加轨迹动画
      */
     async addAnimation(config) {
-        if (!this.isInitialized) {
-            throw new Error("Map is not initialized. Call init() first.");
+        this.ensureInitialized();
+        if (!config?.path || config.path.length < 2) {
+            throw new MapSDKError("Animation path with at least 2 points is required", ERROR_CODES.INVALID_CONFIG);
         }
-        return await this.provider.addAnimation(config);
+        try {
+            return await this.provider.addAnimation(config);
+        }
+        catch (error) {
+            throw new MapSDKError(`Failed to add animation: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
     }
     /**
      * 清除轨迹动画
      */
     clearAnimations(params) {
-        if (!this.isInitialized) {
-            throw new Error("Map is not initialized. Call init() first.");
-        }
+        this.ensureInitialized();
         this.provider.clearAnimations(params);
     }
     /**
      * 清除路径规划
      */
     clearPathPlannings(params) {
-        if (!this.isInitialized) {
-            throw new Error("Map is not initialized. Call init() first.");
-        }
+        this.ensureInitialized();
         this.provider.clearPathPlannings(params);
     }
     /**
      * 清除信息窗体
      */
     clearInfoWindow(params) {
-        if (!this.isInitialized) {
-            throw new Error("Map is not initialized. Call init() first.");
-        }
+        this.ensureInitialized();
         this.provider.clearInfoWindow(params);
     }
     /**
      * 清空地图所有内容
      */
     async clearMap() {
-        if (!this.isInitialized) {
-            throw new Error("Map is not initialized. Call init() first.");
+        this.ensureInitialized();
+        try {
+            await this.provider.clearMap();
         }
-        await this.provider.clearMap();
+        catch (error) {
+            throw new MapSDKError(`Failed to clear map: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
     }
     /**
      * 销毁地图
      */
     destroy() {
         if (this.isInitialized) {
-            this.provider.destroy();
-            this.isInitialized = false;
+            try {
+                this.provider.destroy();
+            }
+            catch (error) {
+                console.warn("Error during map destruction:", error);
+            }
+            finally {
+                this.isInitialized = false;
+            }
         }
     }
     /**
@@ -2730,11 +2936,16 @@ class MapSDK {
      * @param providerClass 提供者类
      */
     static registerProvider(provider, providerClass) {
-        MapProviderFactory.registerProvider(provider, providerClass);
+        try {
+            MapProviderFactory.registerProvider(provider, providerClass);
+        }
+        catch (error) {
+            throw new MapSDKError(`Failed to register provider: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
     }
 }
 
 // 主类
 
-export { AMapProvider, BaseMapProvider, CoveringType, GoogleMapProvider, MapProvider, MapProviderFactory, MapSDK, OpenLayersProvider, MapSDK as default };
+export { AMapProvider, BaseMapProvider, COVERING_TYPES, CoveringType, DOMError, ERROR_CODES, GoogleMapProvider, MAP_PROVIDERS, MapProvider, MapProviderError, MapProviderFactory, MapSDK, MapSDKError, OpenLayersProvider, createDomContent, MapSDK as default, safeCloneElement, safeSetInnerHTML };
 //# sourceMappingURL=index.js.map

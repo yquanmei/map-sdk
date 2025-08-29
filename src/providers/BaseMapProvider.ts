@@ -10,34 +10,40 @@ import {
   AnimationConfig,
   PolygonConfig,
   IPolygon,
+  ClearParams,
+COVERING_TYPES,
 } from "../types";
 
 export abstract class BaseMapProvider implements IMapProvider {
   protected map: any;
-  protected markers: Map<string, IMarker> = new Map();
-  protected markerClusters: Map<string, IMarkerCluster> = new Map();
+  protected readonly markers: Map<string, IMarker> = new Map();
+  protected readonly markerClusters: Map<string, IMarkerCluster> = new Map();
   protected polylines: any[] = [];
-  protected polygons: Map<string, IPolygon> = new Map();
-  protected pathPlannings: Array<{ directionsRenderer: any; clear?: () => void; remove?: () => void }> = [];
+  protected readonly polygons: Map<string, IPolygon> = new Map();
+  protected pathPlannings: Array<{
+    directionsRenderer: any;
+    clear?: () => void;
+    remove?: () => void;
+  }> = [];
   protected infoWindows: any[] = [];
-  protected animations: Map<string, IAnimation> = new Map();
+  protected readonly animations: Map<string, IAnimation> = new Map();
   protected config!: MapConfig;
 
   abstract init(config: MapConfig): Promise<void>;
   abstract addMarker(config: MarkerConfig): Promise<IMarker>;
-  abstract clearMarkers(params?: { type?: string; markers?: Array<IMarker> }): void;
-  abstract addMarkerCluster(points: MarkerClusterPoint[], options?: MarkerClusterOptions): Promise<IMarkerCluster>;
-  abstract clearMarkerClusters(params?: { type?: string; clusters?: Array<IMarkerCluster> }): void;
+  abstract clearMarkers(params?: ClearParams<IMarker>): void;
+  abstract addMarkerCluster(points: readonly MarkerClusterPoint[], options?: MarkerClusterOptions): Promise<IMarkerCluster>;
+  abstract clearMarkerClusters(params?: ClearParams<IMarkerCluster>): void;
   abstract addAnimation(config: AnimationConfig): Promise<IAnimation>;
-  abstract clearAnimations(params?: { type?: string; animations?: Array<IAnimation> }): void;
-  abstract clearPolylines(params?: { type?: string; polylines?: any[] }): void;
+  abstract clearAnimations(params?: ClearParams<IAnimation>): void;
+  abstract clearPolylines(params?: ClearParams<unknown>): void;
   abstract addPolygon(config: PolygonConfig): Promise<IPolygon>;
-  abstract clearPolygons(params?: { type?: string; polygons?: Array<IPolygon> }): void;
-  abstract clearPathPlannings(params?: { type?: string; pathPlannings?: any[] }): void;
-  abstract clearInfoWindow(params?: { type?: string; infoWindows?: any[] }): void;
-  abstract setCenter(position: [number, number]): void;
+  abstract clearPolygons(params?: ClearParams<IPolygon>): void;
+  abstract clearPathPlannings(params?: ClearParams<unknown>): void;
+  abstract clearInfoWindow(params?: ClearParams<unknown>): void;
+  abstract setCenter(position: readonly [number, number]): void;
   abstract setZoom(zoom: number): void;
-  abstract getZoom(): void;
+  abstract getZoom(): number;
   abstract destroy(): void;
   abstract clearMap(): Promise<void>;
 
@@ -72,11 +78,11 @@ export abstract class BaseMapProvider implements IMapProvider {
     }
   }
 
-  protected addPathPlanningToCollection(pathPlanning: any): void {
+  protected addPathPlanningToCollection(pathPlanning: { directionsRenderer: any; clear?: () => void; remove?: () => void }): void {
     this.pathPlannings.push(pathPlanning);
   }
 
-  protected removePathPlanningFromCollection(pathPlanning: any): void {
+  protected removePathPlanningFromCollection(pathPlanning: { directionsRenderer: any; clear?: () => void; remove?: () => void }): void {
     const index = this.pathPlannings.indexOf(pathPlanning);
     if (index > -1) {
       this.pathPlannings.splice(index, 1);
@@ -102,27 +108,27 @@ export abstract class BaseMapProvider implements IMapProvider {
     this.animations.delete(animationId);
   }
 
-  public getMarkers(): IMarker[] {
+  public getMarkers(): readonly IMarker[] {
     return Array.from(this.markers.values());
   }
 
-  public getMarkerClusters(): IMarkerCluster[] {
+  public getMarkerClusters(): readonly IMarkerCluster[] {
     return Array.from(this.markerClusters.values());
   }
 
-  public getAnimations(): IAnimation[] {
+  public getAnimations(): readonly IAnimation[] {
     return Array.from(this.animations.values());
   }
 
-  public getPolylines(): any[] {
+  public getPolylines(): readonly any[] {
     return [...this.polylines];
   }
 
-  public getPathPlannings(): any[] {
+  public getPathPlannings(): readonly any[] {
     return [...this.pathPlannings];
   }
 
-  public getInfoWindows(): any[] {
+  public getInfoWindows(): readonly any[] {
     return [...this.infoWindows];
   }
 
@@ -142,7 +148,7 @@ export abstract class BaseMapProvider implements IMapProvider {
         polyline.setMap(null);
       }
     });
-    this.polylines = [];
+    this.polylines.length = 0;
   }
 
   protected clearAllPathPlannings(): void {
@@ -151,16 +157,16 @@ export abstract class BaseMapProvider implements IMapProvider {
         planning.remove();
       }
     });
-    this.pathPlannings = [];
+    this.pathPlannings.length = 0;
   }
 
   protected clearAllInfoWindows(): void {
     this.infoWindows.forEach((infoWindow) => {
-      if (infoWindow?.remove) {
+      if (infoWindow && typeof infoWindow.remove === "function") {
         infoWindow.remove();
       }
     });
-    this.infoWindows = [];
+    this.infoWindows.length = 0;
   }
 
   protected clearAllAnimations(): void {
@@ -176,7 +182,7 @@ export abstract class BaseMapProvider implements IMapProvider {
     this.polygons.delete(polygonId);
   }
 
-  public getPolygons(): IPolygon[] {
+  public getPolygons(): readonly IPolygon[] {
     return Array.from(this.polygons.values());
   }
 

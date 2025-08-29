@@ -10,19 +10,65 @@ import {
   IAnimation,
   PolygonConfig,
   IPolygon,
+  ClearParams,
 } from "./types";
-import { MapProviderFactory } from "./providers/MapProviderFactory";
+import { MapProviderFactory, MapProviderError } from "./providers/MapProviderFactory";
 import { IMapProvider } from "./types";
+
+// SDK错误类定义
+export class MapSDKError extends Error {
+  constructor(message: string, public readonly code?: string) {
+    super(message);
+    this.name = "MapSDKError";
+  }
+}
+
+// 错误代码常量
+export const ERROR_CODES = {
+  NOT_INITIALIZED: "NOT_INITIALIZED",
+  ALREADY_INITIALIZED: "ALREADY_INITIALIZED",
+  UNSUPPORTED_PROVIDER: "UNSUPPORTED_PROVIDER",
+  INVALID_CONFIG: "INVALID_CONFIG",
+} as const;
 
 export class MapSDK {
   private provider: IMapProvider;
   private isInitialized = false;
 
   constructor(provider: MapProvider) {
-    if (!MapProviderFactory.isProviderSupported(provider)) {
-      throw new Error(`Unsupported map provider: ${provider}`);
+    try {
+      if (!MapProviderFactory.isProviderSupported(provider)) {
+        throw new MapSDKError(`Unsupported map provider: ${provider}`, ERROR_CODES.UNSUPPORTED_PROVIDER);
+      }
+      this.provider = MapProviderFactory.createProvider(provider);
+    } catch (error) {
+      if (error instanceof MapProviderError) {
+        throw new MapSDKError(error.message, ERROR_CODES.UNSUPPORTED_PROVIDER);
+      }
+      throw error;
     }
-    this.provider = MapProviderFactory.createProvider(provider);
+  }
+
+  /**
+   * 检查地图是否已初始化，未初始化则抛出错误
+   */
+  private ensureInitialized(): void {
+    if (!this.isInitialized) {
+      throw new MapSDKError("Map is not initialized. Call init() first.", ERROR_CODES.NOT_INITIALIZED);
+    }
+  }
+
+  /**
+   * 验证配置参数
+   */
+  private validateConfig(config: MapSDKConfig): void {
+    if (!config) {
+      throw new MapSDKError("Config is required", ERROR_CODES.INVALID_CONFIG);
+    }
+
+    if (!config.container) {
+      throw new MapSDKError("Container is required", ERROR_CODES.INVALID_CONFIG);
+    }
   }
 
   /**
@@ -31,11 +77,17 @@ export class MapSDK {
    */
   async init(config: MapSDKConfig): Promise<void> {
     if (this.isInitialized) {
-      throw new Error("Map is already initialized");
+      throw new MapSDKError("Map is already initialized", ERROR_CODES.ALREADY_INITIALIZED);
     }
 
-    await this.provider.init(config);
-    this.isInitialized = true;
+    this.validateConfig(config);
+
+    try {
+      await this.provider.init(config);
+      this.isInitialized = true;
+    } catch (error) {
+      throw new MapSDKError(`Failed to initialize map: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
   }
 
   /**
@@ -44,21 +96,25 @@ export class MapSDK {
    * @returns 标记点实例
    */
   async addMarker(config: MarkerConfig): Promise<IMarker> {
-    if (!this.isInitialized) {
-      throw new Error("Map is not initialized. Call init() first.");
+    this.ensureInitialized();
+
+    if (!config?.position) {
+      throw new MapSDKError("Marker position is required", ERROR_CODES.INVALID_CONFIG);
     }
 
-    return await this.provider.addMarker(config);
+    try {
+      return await this.provider.addMarker(config);
+    } catch (error) {
+      throw new MapSDKError(`Failed to add marker: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
   }
 
   /**
    * 批量/条件清除标记点
    */
-  clearMarkers(params?: { type?: string; markers?: Array<IMarker> }): void {
-    if (!this.isInitialized) {
-      throw new Error("Map is not initialized. Call init() first.");
-    }
-    (this.provider as any).clearMarkers(params);
+  clearMarkers(params?: ClearParams<IMarker>): void {
+    this.ensureInitialized();
+    this.provider.clearMarkers(params);
   }
 
   /**
@@ -67,31 +123,37 @@ export class MapSDK {
    * @param options 聚合选项
    * @returns 标记点聚合实例
    */
-  async addMarkerCluster(points: MarkerClusterPoint[], options?: MarkerClusterOptions): Promise<IMarkerCluster> {
-    if (!this.isInitialized) {
-      throw new Error("Map is not initialized. Call init() first.");
+  async addMarkerCluster(points: readonly MarkerClusterPoint[], options?: MarkerClusterOptions): Promise<IMarkerCluster> {
+    this.ensureInitialized();
+
+    if (!points || points.length === 0) {
+      throw new MapSDKError("Cluster points are required", ERROR_CODES.INVALID_CONFIG);
     }
 
-    return await this.provider.addMarkerCluster(points, options);
+    try {
+      return await this.provider.addMarkerCluster(points, options);
+    } catch (error) {
+      throw new MapSDKError(`Failed to add marker cluster: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
   }
 
   /**
    * 批量/条件清除聚合
    */
-  clearMarkerClusters(params?: { type?: string; clusters?: Array<IMarkerCluster> }): void {
-    if (!this.isInitialized) {
-      throw new Error("Map is not initialized. Call init() first.");
-    }
-    (this.provider as any).clearMarkerClusters(params);
+  clearMarkerClusters(params?: ClearParams<IMarkerCluster>): void {
+    this.ensureInitialized();
+    this.provider.clearMarkerClusters(params);
   }
 
   /**
    * 设置地图中心点
    * @param position 中心点坐标 [经度, 纬度]
    */
-  setCenter(position: [number, number]): void {
-    if (!this.isInitialized) {
-      throw new Error("Map is not initialized. Call init() first.");
+  setCenter(position: readonly [number, number]): void {
+    this.ensureInitialized();
+
+    if (!position || position.length !== 2) {
+      throw new MapSDKError("Invalid position format", ERROR_CODES.INVALID_CONFIG);
     }
 
     this.provider.setCenter(position);
@@ -102,170 +164,203 @@ export class MapSDK {
    * @param zoom 缩放级别
    */
   setZoom(zoom: number): void {
-    if (!this.isInitialized) {
-      throw new Error("Map is not initialized. Call init() first.");
+    this.ensureInitialized();
+
+    if (typeof zoom !== "number" || zoom < 0) {
+      throw new MapSDKError("Invalid zoom level", ERROR_CODES.INVALID_CONFIG);
     }
 
     this.provider.setZoom(zoom);
   }
 
-  getZoom() {
-    if (!this.isInitialized) {
-      throw new Error("Map is not initialized. Call init() first.");
-    }
-    return (this.provider as any).getZoom();
+  /**
+   * 获取地图缩放级别
+   */
+  getZoom(): number {
+    this.ensureInitialized();
+    return this.provider.getZoom();
   }
 
   /**
    * 添加路径规划：驾车
    */
   async addPathPlanning(options?: {
-    start: [number, number] | string;
-    end: [number, number] | string;
-    points?: [number, number][];
-    optimizeWaypoints?: boolean;
-    avoidHighways?: boolean;
-    avoidTolls?: boolean;
-    avoidFerries?: boolean;
-    onChange?: (points: [number, number][]) => void;
-  }): Promise<any> {
-    if (!this.isInitialized) {
-      throw new Error("Map is not initialized. Call init() first.");
+    readonly start: readonly [number, number] | string;
+    readonly end: readonly [number, number] | string;
+    readonly points?: readonly (readonly [number, number])[];
+    readonly optimizeWaypoints?: boolean;
+    readonly avoidHighways?: boolean;
+    readonly avoidTolls?: boolean;
+    readonly avoidFerries?: boolean;
+    readonly onChange?: (points: readonly (readonly [number, number])[]) => void;
+  }): Promise<unknown> {
+    this.ensureInitialized();
+
+    if (!options?.start || !options?.end) {
+      throw new MapSDKError("Start and end points are required", ERROR_CODES.INVALID_CONFIG);
     }
 
-    return await (this.provider as any).addPathPlanning(options);
+    try {
+      return await (this.provider as any).addPathPlanning(options);
+    } catch (error) {
+      throw new MapSDKError(`Failed to add path planning: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
   }
 
   /**
    * 通过经纬度获取详细地址信息
    */
-  async getAddress(position: [number, number]): Promise<any> {
-    if (!this.isInitialized) {
-      throw new Error("Map is not initialized. Call init() first.");
+  async getAddress(position: readonly [number, number]): Promise<unknown> {
+    this.ensureInitialized();
+
+    if (!position || position.length !== 2) {
+      throw new MapSDKError("Invalid position format", ERROR_CODES.INVALID_CONFIG);
     }
 
-    return await (this.provider as any).getAddress(position);
+    try {
+      return await (this.provider as any).getAddress(position);
+    } catch (error) {
+      throw new MapSDKError(`Failed to get address: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
   }
 
   /**
    * 添加信息窗体（InfoWindow）
    */
-  async addInfoWindow(options: { content: string | HTMLElement; position: [number, number]; open?: boolean }): Promise<any> {
-    if (!this.isInitialized) {
-      throw new Error("Map is not initialized. Call init() first.");
+  async addInfoWindow(options: {
+    readonly content: string | HTMLElement;
+    readonly position: readonly [number, number];
+    readonly open?: boolean;
+  }): Promise<unknown> {
+    this.ensureInitialized();
+
+    if (!options?.content || !options?.position) {
+      throw new MapSDKError("Content and position are required", ERROR_CODES.INVALID_CONFIG);
     }
 
-    return await (this.provider as any).addInfoWindow(options);
+    try {
+      return await (this.provider as any).addInfoWindow(options);
+    } catch (error) {
+      throw new MapSDKError(`Failed to add info window: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
   }
 
   /**
    * 绘制折线（Polyline）
    */
-  async addPolyline(options: { path: [number, number][]; color?: string; width?: number; opacity?: number }): Promise<any> {
-    if (!this.isInitialized) {
-      throw new Error("Map is not initialized. Call init() first.");
+  async addPolyline(options: {
+    readonly path: readonly (readonly [number, number])[];
+    readonly color?: string;
+    readonly width?: number;
+    readonly opacity?: number;
+  }): Promise<unknown> {
+    this.ensureInitialized();
+
+    if (!options?.path || options.path.length < 2) {
+      throw new MapSDKError("Path with at least 2 points is required", ERROR_CODES.INVALID_CONFIG);
     }
-    return await (this.provider as any).addPolyline(options);
+
+    try {
+      return await (this.provider as any).addPolyline(options);
+    } catch (error) {
+      throw new MapSDKError(`Failed to add polyline: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
   }
 
   /**
    * 添加多边形
    */
   async addPolygon(config: PolygonConfig): Promise<IPolygon> {
-    if (!this.isInitialized) {
-      throw new Error("Map is not initialized. Call init() first.");
+    this.ensureInitialized();
+
+    if (!config?.path || config.path.length < 3) {
+      throw new MapSDKError("Path with at least 3 points is required", ERROR_CODES.INVALID_CONFIG);
     }
-    return await this.provider.addPolygon(config);
+
+    try {
+      return await this.provider.addPolygon(config);
+    } catch (error) {
+      throw new MapSDKError(`Failed to add polygon: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
   }
 
   /**
    * 清除多边形
    */
-  clearPolygons(params?: { type?: string; polygons?: Array<IPolygon> }): void {
-    if (!this.isInitialized) {
-      throw new Error("Map is not initialized. Call init() first.");
-    }
-    (this.provider as any).clearPolygons(params);
+  clearPolygons(params?: ClearParams<IPolygon>): void {
+    this.ensureInitialized();
+    this.provider.clearPolygons(params);
   }
 
   /**
    * 获取所有标记点
    * @returns 标记点数组
    */
-  getMarkers(): IMarker[] {
-    if (!this.isInitialized) {
-      throw new Error("Map is not initialized. Call init() first.");
-    }
-
-    return (this.provider as any).getMarkers();
+  getMarkers(): readonly IMarker[] {
+    this.ensureInitialized();
+    return (this.provider as any).getMarkers() || [];
   }
-
-  /**
-   * 清除所有或部分标记点（无参时清空所有）
-   */
-  // clearAllMarkers(params?: { type?: string; markers?: Array<IMarker> }): void {
-  //   this.clearMarkers(params)
-  // }
 
   /**
    * 清除所有折线
    */
-  clearPolylines(params?: { type?: string; polylines?: any[] }): void {
-    if (!this.isInitialized) {
-      throw new Error("Map is not initialized. Call init() first.");
-    }
-    (this.provider as any).clearPolylines(params);
+  clearPolylines(params?: ClearParams<any>): void {
+    this.ensureInitialized();
+    this.provider.clearPolylines(params);
   }
 
   /**
    * 添加轨迹动画
    */
   async addAnimation(config: AnimationConfig): Promise<IAnimation> {
-    if (!this.isInitialized) {
-      throw new Error("Map is not initialized. Call init() first.");
+    this.ensureInitialized();
+
+    if (!config?.path || config.path.length < 2) {
+      throw new MapSDKError("Animation path with at least 2 points is required", ERROR_CODES.INVALID_CONFIG);
     }
 
-    return await this.provider.addAnimation(config);
+    try {
+      return await this.provider.addAnimation(config);
+    } catch (error) {
+      throw new MapSDKError(`Failed to add animation: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
   }
 
   /**
    * 清除轨迹动画
    */
-  clearAnimations(params?: { type?: string; animations?: Array<IAnimation> }): void {
-    if (!this.isInitialized) {
-      throw new Error("Map is not initialized. Call init() first.");
-    }
-    (this.provider as any).clearAnimations(params);
+  clearAnimations(params?: ClearParams<IAnimation>): void {
+    this.ensureInitialized();
+    this.provider.clearAnimations(params);
   }
 
   /**
    * 清除路径规划
    */
-  clearPathPlannings(params?: { type?: string; pathPlannings?: any[] }): void {
-    if (!this.isInitialized) {
-      throw new Error("Map is not initialized. Call init() first.");
-    }
-    (this.provider as any).clearPathPlannings(params);
+  clearPathPlannings(params?: ClearParams<any>): void {
+    this.ensureInitialized();
+    this.provider.clearPathPlannings(params);
   }
 
   /**
    * 清除信息窗体
    */
-  clearInfoWindow(params?: { type?: string; infoWindows?: any[] }): void {
-    if (!this.isInitialized) {
-      throw new Error("Map is not initialized. Call init() first.");
-    }
-    (this.provider as any).clearInfoWindow(params);
+  clearInfoWindow(params?: ClearParams<any>): void {
+    this.ensureInitialized();
+    this.provider.clearInfoWindow(params);
   }
 
   /**
    * 清空地图所有内容
    */
   async clearMap(): Promise<void> {
-    if (!this.isInitialized) {
-      throw new Error("Map is not initialized. Call init() first.");
+    this.ensureInitialized();
+
+    try {
+      await this.provider.clearMap();
+    } catch (error) {
+      throw new MapSDKError(`Failed to clear map: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
-    await (this.provider as any).clearMap();
   }
 
   /**
@@ -273,8 +368,13 @@ export class MapSDK {
    */
   destroy(): void {
     if (this.isInitialized) {
-      this.provider.destroy();
-      this.isInitialized = false;
+      try {
+        this.provider.destroy();
+      } catch (error) {
+        console.warn("Error during map destruction:", error);
+      } finally {
+        this.isInitialized = false;
+      }
     }
   }
 
@@ -289,7 +389,7 @@ export class MapSDK {
    * 获取支持的地图提供者列表
    * @returns 支持的地图提供者数组
    */
-  static getSupportedProviders(): MapProvider[] {
+  static getSupportedProviders(): readonly MapProvider[] {
     return MapProviderFactory.getSupportedProviders();
   }
 
@@ -308,6 +408,10 @@ export class MapSDK {
    * @param providerClass 提供者类
    */
   static registerProvider(provider: MapProvider, providerClass: new () => IMapProvider): void {
-    MapProviderFactory.registerProvider(provider, providerClass);
+    try {
+      MapProviderFactory.registerProvider(provider, providerClass);
+    } catch (error) {
+      throw new MapSDKError(`Failed to register provider: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
   }
 }

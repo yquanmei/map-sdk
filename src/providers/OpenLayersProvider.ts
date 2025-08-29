@@ -10,7 +10,7 @@ import {
   IPolygon,
   AnimationConfig,
   IAnimation,
-  CoveringType,
+  COVERING_TYPES,
 } from "../types";
 
 interface OpenLayersMarker extends IMarker {
@@ -115,7 +115,7 @@ export class OpenLayersProvider extends BaseMapProvider {
       throw new Error("Map not initialized");
     }
 
-    const markerId = this.generateId(CoveringType.MARKER);
+    const markerId = this.generateId(COVERING_TYPES.MARKER);
     const { position, ...otherConfig } = config;
 
     // 创建marker要素
@@ -140,7 +140,7 @@ export class OpenLayersProvider extends BaseMapProvider {
 
     const marker: OpenLayersMarker = {
       id: markerId,
-      position,
+      position: [...position] as [number, number],
       olMarker: feature,
       olFeature: feature,
       setPosition: (newPosition: [number, number]) => {
@@ -168,7 +168,7 @@ export class OpenLayersProvider extends BaseMapProvider {
       throw new Error("Map not initialized");
     }
 
-    const clusterId = this.generateId(CoveringType.CLUSTER);
+    const clusterId = this.generateId(COVERING_TYPES.CLUSTER);
     const defaultOptions: MarkerClusterOptions = {
       gridSize: 60,
       maxZoom: 18,
@@ -404,7 +404,7 @@ export class OpenLayersProvider extends BaseMapProvider {
     if (!this.map || !this.vectorLayer) {
       throw new Error("Map not initialized");
     }
-    const polygonId = this.generateId(CoveringType.POLYGON);
+    const polygonId = this.generateId(COVERING_TYPES.POLYGON);
     const defaultOptions = {
       id: polygonId,
       path: [],
@@ -420,7 +420,7 @@ export class OpenLayersProvider extends BaseMapProvider {
     };
     const mergedOptions = { ...defaultOptions, ...config };
     const polygonFeature = new this.ol.Feature({
-      geometry: new this.ol.geom.Polygon([mergedOptions.path.map(([lng, lat]: [number, number]) => this.ol.proj.fromLonLat([lng, lat]))]),
+      geometry: new this.ol.geom.Polygon([mergedOptions.path.map((point: any) => this.ol.proj.fromLonLat([point[0], point[1]]))]),
     });
     const polygonStyle = new this.ol.style.Style({
       fill: new this.ol.style.Fill({
@@ -436,7 +436,7 @@ export class OpenLayersProvider extends BaseMapProvider {
     this.vectorLayer.getSource().addFeature(polygonFeature);
     const olPolygon: IPolygon = {
       id: polygonId,
-      path: mergedOptions.path,
+      path: mergedOptions.path.map((p) => [...p] as [number, number]),
       googlePolygon: polygonFeature,
       setPath: (path: [number, number][]) => {
         const geometry = polygonFeature.getGeometry() as any;
@@ -589,7 +589,7 @@ export class OpenLayersProvider extends BaseMapProvider {
   }
 
   async addAnimation(config: AnimationConfig): Promise<IAnimation> {
-    const animationId = this.generateId(CoveringType.ANIMATION);
+    const animationId = this.generateId(COVERING_TYPES.ANIMATION);
     const animation: IAnimation = {
       id: animationId,
       start: () => {

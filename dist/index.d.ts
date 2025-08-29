@@ -1,9 +1,10 @@
-export { MapSDK } from "./MapSDK";
-export { MapProvider, MapConfig, MarkerConfig, IMarker, IMapProvider, MapSDKConfig, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster, AnimationConfig, IAnimation, PolygonConfig, IPolygon, CoveringType, } from "./types";
+export { MapSDK, MapSDKError, ERROR_CODES } from "./MapSDK";
+export { MAP_PROVIDERS, COVERING_TYPES, MapProvider, MapConfig, MarkerConfig, IMarker, IMapProvider, MapSDKConfig, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster, AnimationConfig, IAnimation, PolygonConfig, IPolygon, CoveringType, ClearParams, BaseConfig, MarkerEventParams, MarkerMouseEventParams, PolygonEventParams, PolygonDragEventParams, PolygonEditEventParams, AnimationStatus, } from "./types";
 export { AMapProvider } from "./providers/AMapProvider";
 export { GoogleMapProvider } from "./providers/GoogleMapProvider";
 export { OpenLayersProvider } from "./providers/OpenLayersProvider";
 export { BaseMapProvider } from "./providers/BaseMapProvider";
-export { MapProviderFactory } from "./providers/MapProviderFactory";
+export { MapProviderFactory, MapProviderError } from "./providers/MapProviderFactory";
+export { createDomContent, safeSetInnerHTML, safeCloneElement, DOMError } from "./utils";
 import { MapSDK } from "./MapSDK";
 export default MapSDK;

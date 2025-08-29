@@ -1,5 +1,5 @@
-import { BaseMapProvider } from './BaseMapProvider';
-import { IMarker, MapConfig, MarkerConfig, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster, PolygonConfig, IPolygon, AnimationConfig, IAnimation } from '../types';
+import { BaseMapProvider } from "./BaseMapProvider";
+import { IMarker, MapConfig, MarkerConfig, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster, PolygonConfig, IPolygon, AnimationConfig, IAnimation } from "../types";
 export declare class AMapProvider extends BaseMapProvider {
     private AMap;
     /**

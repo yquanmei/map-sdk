@@ -6,7 +6,7 @@ import {
   MarkerClusterPoint,
   MarkerClusterOptions,
   IMarkerCluster,
-  CoveringType,
+  COVERING_TYPES,
   IAnimation,
   AnimationConfig,
   PolygonConfig,
@@ -20,15 +20,21 @@ import { merge } from "lodash-es";
 
 interface GoogleMarker extends IMarker {
   googleMarker: any;
+  // 覆盖readonly属性为可写
+  position: [number, number];
 }
 
 interface GoogleMarkerCluster extends IMarkerCluster {
   markerClusterer: any;
   googleMarkers: any[];
+  // 覆盖readonly属性为可写
+  points: MarkerClusterPoint[];
 }
 
 interface GooglePolygon extends IPolygon {
   googlePolygon: any;
+  // 覆盖readonly属性为可写
+  path: [number, number][];
 }
 
 export class GoogleMapProvider extends BaseMapProvider {
@@ -69,7 +75,7 @@ export class GoogleMapProvider extends BaseMapProvider {
       try {
         // 检查是否已经加载了Google Maps SDK
         if (!window.google || !window.google.maps) {
-          await this.loadGoogleMapsSDK(config.key);
+          await this.loadGoogleMapsSDK(config.apiKey as string);
         }
         this.google = window.google;
       } catch (error) {
@@ -122,12 +128,12 @@ export class GoogleMapProvider extends BaseMapProvider {
     }
   }
 
-  async addMarker(config: MarkerConfig, type?: CoveringType): Promise<IMarker> {
+  async addMarker(config: MarkerConfig, type?: string): Promise<IMarker> {
     if (!this.map) {
       throw new Error("Map not initialized");
     }
 
-    const markerId = this.generateId(CoveringType.MARKER);
+    const markerId = this.generateId(COVERING_TYPES.MARKER);
     const defaultOptions = {
       map: true,
       id: markerId,
@@ -172,7 +178,7 @@ export class GoogleMapProvider extends BaseMapProvider {
     });
     const marker: GoogleMarker = {
       id: markerId,
-      position: mergedOptions.position,
+      position: [...mergedOptions.position] as [number, number],
       googleMarker,
       data: mergedOptions.data || {},
       setPosition: (position: [number, number]) => {
@@ -199,7 +205,7 @@ export class GoogleMapProvider extends BaseMapProvider {
         this.removeMarkerFromCollection(markerId);
       },
     };
-    if (type !== CoveringType.CLUSTER) {
+    if (type !== COVERING_TYPES.CLUSTER) {
       this.addMarkerToCollection(marker);
     }
     return marker;
@@ -209,7 +215,7 @@ export class GoogleMapProvider extends BaseMapProvider {
     if (!this.map) {
       throw new Error("Map not initialized");
     }
-    const clusterId = this.generateId(CoveringType.CLUSTER);
+    const clusterId = this.generateId(COVERING_TYPES.CLUSTER);
     const defaultOptions = {
       id: clusterId,
       data: {},
@@ -245,7 +251,7 @@ export class GoogleMapProvider extends BaseMapProvider {
           onClick: markerOptions.onClick,
           data: markerOptions.data,
         },
-        CoveringType.CLUSTER
+        COVERING_TYPES.CLUSTER
       );
       return marker.googleMarker;
     });
@@ -254,8 +260,8 @@ export class GoogleMapProvider extends BaseMapProvider {
     const zoom = this.getZoom();
     // const { MarkerClusterer } = await this.google.maps.importLibrary("marker") as any;
     const googleMarkerClusterer = new MarkerClusterer({
-      markers,
-      map: this.map,
+      markers: markers as any,
+      map: this.map as any,
       // renderer: {
       //   // render: ({ count, position }: any) => {
       //   //   console.log(`%c count::: `, 'color: pink;', count)
@@ -527,7 +533,7 @@ export class GoogleMapProvider extends BaseMapProvider {
       throw new Error("Map not initialized");
     }
     const { Polyline } = await this.google.maps.importLibrary("maps");
-    const polylineId = this.generateId(CoveringType.POLYLINE);
+    const polylineId = this.generateId(COVERING_TYPES.POLYLINE);
     const defaultOptions = {
       id: polylineId,
       color: "#f00",
@@ -616,7 +622,7 @@ export class GoogleMapProvider extends BaseMapProvider {
     }
 
     try {
-      const pathPlanningId = this.generateId(CoveringType.PATH_PLANNING);
+      const pathPlanningId = this.generateId(COVERING_TYPES.PATH_PLANNING);
       const defaultOptions = {
         id: pathPlanningId,
         start: [0, 0],
@@ -835,7 +841,7 @@ export class GoogleMapProvider extends BaseMapProvider {
       throw new Error("Map not initialized");
     }
 
-    const polygonId = this.generateId(CoveringType.POLYGON);
+    const polygonId = this.generateId(COVERING_TYPES.POLYGON);
     const defaultOptions = {
       id: polygonId,
       fillColor: "#FF0000",
@@ -871,7 +877,7 @@ export class GoogleMapProvider extends BaseMapProvider {
       // 返回一个包装的polyline对象，模拟polygon接口
       const previewPolygon: GooglePolygon = {
         id: polygonId,
-        path: mergedOptions.path,
+        path: mergedOptions.path.map((p) => [...p] as [number, number]),
         googlePolygon: polyline,
         setPath: (path: [number, number][]) => {
           polyline.setPath(path.map(([lng, lat]) => ({ lat, lng })));
@@ -943,7 +949,7 @@ export class GoogleMapProvider extends BaseMapProvider {
           .getArray()[0]
           .getArray()
           .map((latLng: any) => [latLng.lng(), latLng.lat()]);
-        mergedOptions.onDragEnd!({ event, polygon: polygon, path });
+        mergedOptions.onDragEnd!({ event, polygon: polygon, path, data: mergedOptions.data });
       });
     }
 
@@ -954,13 +960,13 @@ export class GoogleMapProvider extends BaseMapProvider {
           .getArray()[0]
           .getArray()
           .map((latLng: any) => [latLng.lng(), latLng.lat()]);
-        mergedOptions.onEditEnd!({ event, polygon: polygon, path });
+        mergedOptions.onEditEnd!({ event, polygon: polygon, path, data: mergedOptions.data });
       });
     }
 
     const polygon: GooglePolygon = {
       id: polygonId,
-      path: mergedOptions.path,
+      path: mergedOptions.path.map((p) => [...p] as [number, number]),
       googlePolygon,
 
       setPath: (path: [number, number][]) => {
@@ -1076,7 +1082,7 @@ export class GoogleMapProvider extends BaseMapProvider {
       throw new Error("Map not initialized");
     }
 
-    const animationId = this.generateId(CoveringType.ANIMATION);
+    const animationId = this.generateId(COVERING_TYPES.ANIMATION);
     const defaultOptions = {
       duration: 5000,
       speed: 1,
@@ -1258,7 +1264,7 @@ export class GoogleMapProvider extends BaseMapProvider {
       },
 
       getCurrentPosition: (): [number, number] => {
-        return mergedOptions.path[Math.min(currentIndex, mergedOptions.path.length - 1)];
+        return [...mergedOptions.path[Math.min(currentIndex, mergedOptions.path.length - 1)]] as [number, number];
       },
 
       getProgress: (): number => {
