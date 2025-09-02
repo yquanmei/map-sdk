@@ -31,9 +31,12 @@ export default {
     }),
     commonjs(),
     postcss({
-      extract: true,
+      extract: 'index.css',
       minimize: true,
-      sourceMap: true
+      sourceMap: true,
+      autoModules: false,
+      modules: false,
+      inject: false
     }),
     typescript({
       tsconfig: './tsconfig.json',
@@ -47,4 +50,4 @@ export default {
       }
     })
   ]
-}; 
+};

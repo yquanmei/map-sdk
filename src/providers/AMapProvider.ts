@@ -31,7 +31,7 @@ export class AMapProvider extends BaseMapProvider {
    * 动态加载高德地图SDK
    * @param apiKey 高德地图API密钥
    */
-  private async loadAMapSDK(config): Promise<void> {
+  private async loadAMapSDK(config: any): Promise<void> {
     return new Promise(async (resolve, reject) => {
       // 检查是否已经加载
       if ((window as any).AMap) {
