@@ -70,7 +70,7 @@ export class AMapProvider extends BaseMapProvider {
   }
 
   async init(config: MapConfig): Promise<void> {
-    this.config = config;
+    // this.config = config;
 
     // 动态加载高德地图SDK
     if (typeof window !== "undefined" && !this.AMap) {
@@ -89,8 +89,11 @@ export class AMapProvider extends BaseMapProvider {
     const defaultOptions = {
       zoom: 11,
       center: [116.397428, 39.90923],
-      viewMode: "2D",
+      viewMode: "3D",
       mapStyle: "amap://styles/whitesmoke",
+      pitchEnable: true,
+      pitch: 40,
+      rotation: -15,
     };
 
     const mergedOptions = {
@@ -110,6 +113,9 @@ export class AMapProvider extends BaseMapProvider {
       zoom: mergedOptions.zoom,
       viewMode: mergedOptions.viewMode,
       mapStyle: mergedOptions.mapStyle,
+      pitchEnable: mergedOptions.pitchEnable,
+      pitch: mergedOptions.pitch,
+      rotation: mergedOptions.rotation,
     });
   }
 
@@ -121,10 +127,12 @@ export class AMapProvider extends BaseMapProvider {
     const markerId = this.generateId(COVERING_TYPES.MARKER);
 
     const defaultOptions = {
+      map: true,
       position: [],
       content: "",
       clickable: true,
       data: {},
+      anchor: "bottom-center",
     };
 
     const mergedOptions = {
@@ -135,20 +143,17 @@ export class AMapProvider extends BaseMapProvider {
     const content = createDomContent(mergedOptions.content || "");
     const { position } = mergedOptions;
 
-    const markerOptions: any = {
-      position: {
-        lat: position[1],
-        lng: position[0],
-      },
-      content,
-    };
+    // const markerOptions: any = {};
 
-    if (mergedOptions.map) {
-      markerOptions.map = this.map;
-    }
+    // if (mergedOptions.map) {
+    //   markerOptions.map = this.map;
+    // }
 
     const amapMarker = new this.AMap.Marker({
-      ...markerOptions,
+      map: this.map,
+      position: [position[0], position[1]],
+      content,
+      anchor: mergedOptions.anchor,
     });
 
     const marker: AMapMarker = {
@@ -320,7 +325,18 @@ export class AMapProvider extends BaseMapProvider {
     }
 
     this.addInfoWindowToCollection(infoWindow);
-    return infoWindow;
+
+    // 为信息窗口添加open方法
+    const infoWindowWithOpen = {
+      aMapInfoWindow: infoWindow,
+      open: (position?: [number, number]) => {
+        if (this.map) {
+          infoWindow.open(this.map, position || options.position);
+        }
+      },
+    };
+
+    return infoWindowWithOpen;
   }
 
   destroy(): void {
@@ -535,7 +551,7 @@ export class AMapProvider extends BaseMapProvider {
     });
   }
 
-  clearInfoWindow(params?: { type?: string; infoWindows?: any[] }): void {
+  clearInfoWindows(params?: { type?: string; infoWindows?: any[] }): void {
     if (!this.map) return;
 
     const typeToClear = params?.type;

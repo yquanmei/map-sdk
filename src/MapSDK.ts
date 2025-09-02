@@ -364,9 +364,9 @@ export class MapSDK {
   /**
    * 清除信息窗体
    */
-  clearInfoWindow(params?: ClearParams<any>): void {
+  clearInfoWindows(params?: ClearParams<any>): void {
     this.ensureInitialized();
-    this.provider.clearInfoWindow(params);
+    this.provider.clearInfoWindows(params);
   }
 
   /**

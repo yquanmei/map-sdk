@@ -55,7 +55,7 @@ export declare class GoogleMapProvider extends BaseMapProvider {
         position: [number, number];
         open?: boolean;
     }): Promise<any>;
-    clearInfoWindow(params?: {
+    clearInfoWindows(params?: {
         type?: string;
         infoWindows?: any[];
     }): void;

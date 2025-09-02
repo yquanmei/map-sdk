@@ -97,7 +97,7 @@ export interface IMapProvider {
     addPolygon(config: PolygonConfig): Promise<IPolygon>;
     clearPolygons(params?: ClearParams<IPolygon>): void;
     clearPathPlannings(params?: ClearParams<any>): void;
-    clearInfoWindow(params?: ClearParams<any>): void;
+    clearInfoWindows(params?: ClearParams<any>): void;
     addInfoWindow(options: {
         content: string | HTMLElement;
         position: readonly [number, number];

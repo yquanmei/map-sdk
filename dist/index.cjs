@@ -356,7 +356,7 @@ class AMapProvider extends BaseMapProvider {
         });
     }
     async init(config) {
-        this.config = config;
+        // this.config = config;
         // 动态加载高德地图SDK
         if (typeof window !== "undefined" && !this.AMap) {
             try {
@@ -374,8 +374,11 @@ class AMapProvider extends BaseMapProvider {
         const defaultOptions = {
             zoom: 11,
             center: [116.397428, 39.90923],
-            viewMode: "2D",
+            viewMode: "3D",
             mapStyle: "amap://styles/whitesmoke",
+            pitchEnable: true,
+            pitch: 40,
+            rotation: -15,
         };
         const mergedOptions = {
             ...defaultOptions,
@@ -390,6 +393,9 @@ class AMapProvider extends BaseMapProvider {
             zoom: mergedOptions.zoom,
             viewMode: mergedOptions.viewMode,
             mapStyle: mergedOptions.mapStyle,
+            pitchEnable: mergedOptions.pitchEnable,
+            pitch: mergedOptions.pitch,
+            rotation: mergedOptions.rotation,
         });
     }
     async addMarker(config) {
@@ -398,10 +404,12 @@ class AMapProvider extends BaseMapProvider {
         }
         const markerId = this.generateId(COVERING_TYPES.MARKER);
         const defaultOptions = {
+            map: true,
             position: [],
             content: "",
             clickable: true,
             data: {},
+            anchor: "bottom-center",
         };
         const mergedOptions = {
             ...defaultOptions,
@@ -409,18 +417,15 @@ class AMapProvider extends BaseMapProvider {
         };
         const content = createDomContent(mergedOptions.content || "");
         const { position } = mergedOptions;
-        const markerOptions = {
-            position: {
-                lat: position[1],
-                lng: position[0],
-            },
-            content,
-        };
-        if (mergedOptions.map) {
-            markerOptions.map = this.map;
-        }
+        // const markerOptions: any = {};
+        // if (mergedOptions.map) {
+        //   markerOptions.map = this.map;
+        // }
         const amapMarker = new this.AMap.Marker({
-            ...markerOptions,
+            map: this.map,
+            position: [position[0], position[1]],
+            content,
+            anchor: mergedOptions.anchor,
         });
         const marker = {
             id: markerId,
@@ -574,7 +579,16 @@ class AMapProvider extends BaseMapProvider {
             infoWindow.open(this.map, options.position);
         }
         this.addInfoWindowToCollection(infoWindow);
-        return infoWindow;
+        // 为信息窗口添加open方法
+        const infoWindowWithOpen = {
+            aMapInfoWindow: infoWindow,
+            open: (position) => {
+                if (this.map) {
+                    infoWindow.open(this.map, position || options.position);
+                }
+            },
+        };
+        return infoWindowWithOpen;
     }
     destroy() {
         if (this.map) {
@@ -777,7 +791,7 @@ class AMapProvider extends BaseMapProvider {
             this.removePathPlanningFromCollection(planning);
         });
     }
-    clearInfoWindow(params) {
+    clearInfoWindows(params) {
         if (!this.map)
             return;
         const typeToClear = params?.type;
@@ -895,7 +909,7 @@ class GoogleMapProvider extends BaseMapProvider {
         });
     }
     async init(config) {
-        this.config = config;
+        // this.config = config;
         // 动态加载Google Maps SDK
         if (typeof window !== "undefined" && !this.google) {
             try {
@@ -984,18 +998,13 @@ class GoogleMapProvider extends BaseMapProvider {
         const { AdvancedMarkerElement } = await this.google.maps.importLibrary("marker");
         const content = createDomContent(mergedOptions.content || "");
         const { position } = mergedOptions;
-        const markerOptions = {
+        const googleMarker = new AdvancedMarkerElement({
+            map: this.map,
             position: {
                 lat: position[1],
                 lng: position[0],
             },
             content,
-        };
-        if (mergedOptions.map) {
-            markerOptions.map = this.map;
-        }
-        const googleMarker = new AdvancedMarkerElement({
-            ...markerOptions,
         });
         googleMarker.addListener("click", ({ domEvent, latLng }) => {
             if (typeof mergedOptions.onClick !== "function")
@@ -1283,8 +1292,8 @@ class GoogleMapProvider extends BaseMapProvider {
         }
         const infoWindow = {
             googleInfoWindow,
-            open: () => {
-                googleInfoWindow.setPosition({ lat: mergedOptions.position[1], lng: mergedOptions.position[0] });
+            open: (position) => {
+                googleInfoWindow.setPosition({ lat: (position || mergedOptions.position)[1], lng: (position || mergedOptions.position)[0] });
                 googleInfoWindow.open(this.map);
             },
             close: () => {
@@ -1297,7 +1306,7 @@ class GoogleMapProvider extends BaseMapProvider {
         this.addInfoWindowToCollection(infoWindow);
         return infoWindow;
     }
-    clearInfoWindow(params) {
+    clearInfoWindows(params) {
         if (!this.map)
             return;
         const typeToClear = params?.type;
@@ -1610,7 +1619,7 @@ class GoogleMapProvider extends BaseMapProvider {
         this.clearPolylines();
         this.clearPolygons();
         this.clearPathPlannings();
-        this.clearInfoWindow();
+        this.clearInfoWindows();
         this.clearAnimations();
     }
     // ============================ 多边形 =============================
@@ -2336,7 +2345,16 @@ class OpenLayersProvider extends BaseMapProvider {
         });
         this.map.addOverlay(overlay);
         this.addInfoWindowToCollection(overlay);
-        return overlay;
+        // 为overlay添加open方法
+        const overlayWithOpen = {
+            ...overlay,
+            open: (position) => {
+                if (this.map) {
+                    overlay.setPosition(this.ol.proj.fromLonLat(position || options.position));
+                }
+            }
+        };
+        return overlayWithOpen;
     }
     destroy() {
         if (this.map) {
@@ -2556,7 +2574,7 @@ class OpenLayersProvider extends BaseMapProvider {
             this.removePathPlanningFromCollection(planning);
         });
     }
-    clearInfoWindow(params) {
+    clearInfoWindows(params) {
         if (!this.map)
             return;
         const typeToClear = params?.type;
@@ -2587,7 +2605,7 @@ class OpenLayersProvider extends BaseMapProvider {
         this.clearPolylines();
         this.clearPolygons();
         this.clearPathPlannings();
-        this.clearInfoWindow();
+        this.clearInfoWindows();
         this.clearAnimations();
     }
     async addAnimation(config) {
@@ -3028,9 +3046,9 @@ class MapSDK {
     /**
      * 清除信息窗体
      */
-    clearInfoWindow(params) {
+    clearInfoWindows(params) {
         this.ensureInitialized();
-        this.provider.clearInfoWindow(params);
+        this.provider.clearInfoWindows(params);
     }
     /**
      * 清空地图所有内容

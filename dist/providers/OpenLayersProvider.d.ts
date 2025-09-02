@@ -44,7 +44,7 @@ export declare class OpenLayersProvider extends BaseMapProvider {
         type?: string;
         pathPlannings?: any[];
     }): void;
-    clearInfoWindow(params?: {
+    clearInfoWindows(params?: {
         type?: string;
         infoWindows?: any[];
     }): void;

@@ -342,8 +342,18 @@ export class OpenLayersProvider extends BaseMapProvider {
 
     this.map.addOverlay(overlay);
     this.addInfoWindowToCollection(overlay);
-    return overlay;
-  }
+    
+    // 为overlay添加open方法
+    const overlayWithOpen = {
+      ...overlay,
+      open: (position?: [number, number]) => {
+        if (this.map) {
+          overlay.setPosition(this.ol.proj.fromLonLat(position || options.position));
+        }
+      }
+    };
+    
+    return overlayWithOpen;  }
 
   destroy(): void {
     if (this.map) {
@@ -576,7 +586,7 @@ export class OpenLayersProvider extends BaseMapProvider {
     });
   }
 
-  clearInfoWindow(params?: { type?: string; infoWindows?: any[] }): void {
+  clearInfoWindows(params?: { type?: string; infoWindows?: any[] }): void {
     if (!this.map) return;
 
     const typeToClear = params?.type;
@@ -611,7 +621,7 @@ export class OpenLayersProvider extends BaseMapProvider {
     this.clearPolylines();
     this.clearPolygons();
     this.clearPathPlannings();
-    this.clearInfoWindow();
+    this.clearInfoWindows();
     this.clearAnimations();
   }
 

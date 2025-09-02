@@ -61,7 +61,7 @@ export class GoogleMapProvider extends BaseMapProvider {
   }
 
   async init(config: MapConfig): Promise<void> {
-    this.config = config;
+    // this.config = config;
 
     // 动态加载Google Maps SDK
     if (typeof window !== "undefined" && !this.google) {
@@ -162,19 +162,13 @@ export class GoogleMapProvider extends BaseMapProvider {
     const content = createDomContent(mergedOptions.content || "");
     const { position } = mergedOptions;
 
-    const markerOptions: any = {
+    const googleMarker = new AdvancedMarkerElement({
+      map: this.map,
       position: {
         lat: position[1],
         lng: position[0],
       },
       content,
-    };
-
-    if (mergedOptions.map) {
-      markerOptions.map = this.map;
-    }
-    const googleMarker = new AdvancedMarkerElement({
-      ...markerOptions,
     });
     googleMarker.addListener("click", ({ domEvent, latLng }: { domEvent: any; latLng: any }) => {
       if (typeof mergedOptions.onClick !== "function") return;
@@ -480,8 +474,8 @@ export class GoogleMapProvider extends BaseMapProvider {
 
     const infoWindow = {
       googleInfoWindow,
-      open: () => {
-        googleInfoWindow.setPosition({ lat: mergedOptions.position[1], lng: mergedOptions.position[0] });
+      open: (position?: [number, number]) => {
+        googleInfoWindow.setPosition({ lat: (position || mergedOptions.position)[1], lng: (position || mergedOptions.position)[0] });
         googleInfoWindow.open(this.map);
       },
       close: () => {
@@ -496,7 +490,7 @@ export class GoogleMapProvider extends BaseMapProvider {
     return infoWindow;
   }
 
-  clearInfoWindow(params?: { type?: string; infoWindows?: any[] }): void {
+  clearInfoWindows(params?: { type?: string; infoWindows?: any[] }): void {
     if (!this.map) return;
 
     const typeToClear = params?.type;
@@ -844,7 +838,7 @@ export class GoogleMapProvider extends BaseMapProvider {
     this.clearPolylines();
     this.clearPolygons();
     this.clearPathPlannings();
-    this.clearInfoWindow();
+    this.clearInfoWindows();
     this.clearAnimations();
   }
 

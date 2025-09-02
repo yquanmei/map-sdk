@@ -134,7 +134,7 @@ export declare class MapSDK {
     /**
      * 清除信息窗体
      */
-    clearInfoWindow(params?: ClearParams<any>): void;
+    clearInfoWindows(params?: ClearParams<any>): void;
     /**
      * 清空地图所有内容
      */
