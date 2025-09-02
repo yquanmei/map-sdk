@@ -273,9 +273,9 @@ export class MapSDK {
   async addPolygon(config: PolygonConfig): Promise<IPolygon> {
     this.ensureInitialized();
 
-    if (!config?.path || config.path.length < 3) {
-      throw new MapSDKError("Path with at least 3 points is required", ERROR_CODES.INVALID_CONFIG);
-    }
+    // if (!config.editable && (!config?.path || config.path.length < 3)) {
+    //   throw new MapSDKError("Path with at least 3 points is required", ERROR_CODES.INVALID_CONFIG);
+    // }
 
     try {
       return await this.provider.addPolygon(config);

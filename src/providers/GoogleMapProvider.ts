@@ -46,7 +46,7 @@ export class GoogleMapProvider extends BaseMapProvider {
   private async loadGoogleMapsSDK(key?: string): Promise<void> {
     return new Promise(async (resolve) => {
       // 检查是否已经加载
-      if (window.google && window.google.maps) {
+      if ((window as any).google && (window as any).google.maps) {
         resolve();
         return;
       }
@@ -67,16 +67,26 @@ export class GoogleMapProvider extends BaseMapProvider {
     if (typeof window !== "undefined" && !this.google) {
       try {
         // 检查是否已经加载了Google Maps SDK
-        if (!window.google || !window.google.maps) {
+        if (!(window as any).google || !(window as any).google.maps) {
           await this.loadGoogleMapsSDK(config.key as string);
         }
-        this.google = window.google;
+        this.google = (window as any).google;
       } catch (error) {
         throw new Error(`Failed to load Google Maps SDK: ${error}`);
       }
     }
 
-    const container = typeof config.container === "string" ? document.getElementById(config.container) : config.container;
+    const defaultOptions = {
+      zoom: 11,
+      center: [116.397428, 39.90923],
+    };
+    const mergedOptions = {
+      ...defaultOptions,
+      ...config,
+    };
+
+    const container =
+      typeof mergedOptions.container === "string" ? document.getElementById(mergedOptions.container) : mergedOptions.container;
 
     if (!container) {
       throw new Error("Container element not found");
@@ -84,11 +94,11 @@ export class GoogleMapProvider extends BaseMapProvider {
     const { Map } = await this.google.maps.importLibrary("maps");
     this.map = new Map(container, {
       center: {
-        lat: Number(config.center?.[1]) || 39.90923,
-        lng: Number(config.center?.[0]) || 116.397428,
+        lat: Number(mergedOptions.center?.[1]),
+        lng: Number(mergedOptions.center?.[0]),
       },
-      zoom: config.zoom || 11,
-      mapId: config.id,
+      zoom: mergedOptions.zoom,
+      mapId: mergedOptions.container,
     });
   }
 
@@ -130,6 +140,9 @@ export class GoogleMapProvider extends BaseMapProvider {
     const defaultOptions = {
       map: true,
       id: markerId,
+      clickable: true,
+      draggable: false,
+      // icon: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
     };
     const mergedOptions = {
       ...defaultOptions,
@@ -193,10 +206,10 @@ export class GoogleMapProvider extends BaseMapProvider {
         googleMarker.setMap(null);
         this.removeMarkerFromCollection(markerId);
       },
-      clear: () => {
-        googleMarker.setMap(null);
-        this.removeMarkerFromCollection(markerId);
-      },
+      // clear: () => {
+      //   googleMarker.setMap(null);
+      //   this.removeMarkerFromCollection(markerId);
+      // },
     };
     if (type !== COVERING_TYPES.CLUSTER) {
       this.addMarkerToCollection(marker);
@@ -322,10 +335,10 @@ export class GoogleMapProvider extends BaseMapProvider {
         googleMarkerClusterer.clearMarkers();
         this.removeClusterFromCollection(id);
       },
-      clear: () => {
-        googleMarkerClusterer.clearMarkers();
-        this.removeClusterFromCollection(id);
-      },
+      // clear: () => {
+      //   googleMarkerClusterer.clearMarkers();
+      //   this.removeClusterFromCollection(id);
+      // },
     };
 
     this.addClusterToCollection(markerCluster);
@@ -837,15 +850,15 @@ export class GoogleMapProvider extends BaseMapProvider {
     const polygonId = this.generateId(COVERING_TYPES.POLYGON);
     const defaultOptions = {
       id: polygonId,
-      fillColor: "#FF0000",
-      fillOpacity: 0.3,
-      strokeColor: "#FF0000",
-      strokeOpacity: 1.0,
+      fillColor: "#00B2D5",
+      fillOpacity: 0.5,
+      strokeColor: "#00D3FC",
+      strokeOpacity: 0.9,
       strokeWeight: 2,
       editable: false,
       draggable: false,
       clickable: true,
-      zIndex: 1,
+      zIndex: 10,
     };
 
     const mergedOptions = { ...defaultOptions, ...config };
@@ -888,10 +901,10 @@ export class GoogleMapProvider extends BaseMapProvider {
           polyline.setMap(null);
           this.removePolygonFromCollection(polygonId);
         },
-        clear: () => {
-          polyline.setMap(null);
-          this.removePolygonFromCollection(polygonId);
-        },
+        // clear: () => {
+        //   polyline.setMap(null);
+        //   this.removePolygonFromCollection(polygonId);
+        // },
       };
 
       this.addPolygonToCollection(previewPolygon);
@@ -990,6 +1003,13 @@ export class GoogleMapProvider extends BaseMapProvider {
         googlePolygon.setDraggable(draggable);
       },
 
+      getPath: () => {
+        return googlePolygon
+          .getPath()
+          .getArray()
+          .map((latLng: any) => [latLng.lng(), latLng.lat()]);
+      },
+
       getBounds: () => {
         return googlePolygon.getBounds();
       },
@@ -1020,10 +1040,10 @@ export class GoogleMapProvider extends BaseMapProvider {
         this.removePolygonFromCollection(polygonId);
       },
 
-      clear: () => {
-        googlePolygon.setMap(null);
-        this.removePolygonFromCollection(polygonId);
-      },
+      // clear: () => {
+      //   googlePolygon.setMap(null);
+      //   this.removePolygonFromCollection(polygonId);
+      // },
     };
 
     this.addPolygonToCollection(polygon);
@@ -1279,9 +1299,9 @@ export class GoogleMapProvider extends BaseMapProvider {
         this.removeAnimationFromCollection(animationId);
       },
 
-      clear: () => {
-        googleAnimation.remove();
-      },
+      // clear: () => {
+      //   googleAnimation.remove();
+      // },
     };
 
     this.addAnimationToCollection(googleAnimation);
@@ -1337,11 +1357,3 @@ export class GoogleMapProvider extends BaseMapProvider {
 }
 
 // 扩展window对象以包含Google Maps和MarkerClusterer
-declare global {
-  interface Window {
-    google?: {
-      maps: any;
-    };
-    MarkerClusterer?: any;
-  }
-}

@@ -41,9 +41,9 @@ export interface MapConfig extends BaseConfig {
 
 export interface MarkerConfig extends BaseConfig {
   readonly position: readonly [number, number]; // [lng, lat]
-  readonly title?: string;
+  // readonly title?: string;
   readonly content?: string;
-  readonly icon?: string;
+  // readonly icon?: string;
   readonly clickable?: boolean;
   readonly draggable?: boolean;
   readonly map?: boolean;
@@ -87,7 +87,7 @@ export interface IMarkerCluster {
   points: MarkerClusterPoint[]; // 允许provider实现修改
   addPoint(point: MarkerClusterPoint): void;
   removePoint(point: MarkerClusterPoint): void;
-  clear(): void;
+  // clear(): void;
   remove(): void;
   readonly [key: string]: unknown;
 }
@@ -161,7 +161,7 @@ export interface IAnimation {
   getProgress(): number; // 获取当前进度(0-1)
   getStatus(): AnimationStatus; // 获取状态
   remove(): void; // 移除动画
-  clear(): void; // 清除动画
+  // clear(): void; // 清除动画
 }
 
 export interface MapSDKConfig extends MapConfig {}
@@ -169,10 +169,10 @@ export interface MapSDKConfig extends MapConfig {}
 // 多边形相关类型
 export interface PolygonConfig extends BaseConfig {
   readonly path: readonly (readonly [number, number])[]; // 多边形路径坐标点数组 [lng, lat][]
-  readonly fillColor?: string; // 填充颜色，默认 '#FF0000'
-  readonly fillOpacity?: number; // 填充透明度，默认 0.3
-  readonly strokeColor?: string; // 边框颜色，默认 '#FF0000'
-  readonly strokeOpacity?: number; // 边框透明度，默认 1.0
+  readonly fillColor?: string; // 填充颜色，默认 '#00B2D5'
+  readonly fillOpacity?: number; // 填充透明度，默认 0.5
+  readonly strokeColor?: string; // 边框颜色，默认 '#00D3FC'
+  readonly strokeOpacity?: number; // 边框透明度，默认 0.9
   readonly strokeWeight?: number; // 边框宽度，默认 2
   readonly editable?: boolean; // 是否可编辑，默认 false
   readonly draggable?: boolean; // 是否可拖拽，默认 false
@@ -213,6 +213,6 @@ export interface IPolygon {
   show(): void; // 显示多边形
   hide(): void; // 隐藏多边形
   remove(): void; // 移除多边形
-  clear(): void; // 清除多边形
+  // clear(): void; // 清除多边形
   readonly [key: string]: unknown;
 }

@@ -50,8 +50,3 @@ export declare class OpenLayersProvider extends BaseMapProvider {
     }): void;
     private hexToRgb;
 }
-declare global {
-    interface Window {
-        ol?: any;
-    }
-}

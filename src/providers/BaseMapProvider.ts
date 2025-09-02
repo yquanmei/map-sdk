@@ -11,7 +11,6 @@ import {
   PolygonConfig,
   IPolygon,
   ClearParams,
-COVERING_TYPES,
 } from "../types";
 
 export abstract class BaseMapProvider implements IMapProvider {

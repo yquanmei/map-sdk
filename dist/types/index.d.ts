@@ -41,9 +41,7 @@ export interface MapConfig extends BaseConfig {
 }
 export interface MarkerConfig extends BaseConfig {
     readonly position: readonly [number, number];
-    readonly title?: string;
     readonly content?: string;
-    readonly icon?: string;
     readonly clickable?: boolean;
     readonly draggable?: boolean;
     readonly map?: boolean;
@@ -80,7 +78,6 @@ export interface IMarkerCluster {
     points: MarkerClusterPoint[];
     addPoint(point: MarkerClusterPoint): void;
     removePoint(point: MarkerClusterPoint): void;
-    clear(): void;
     remove(): void;
     readonly [key: string]: unknown;
 }
@@ -146,7 +143,6 @@ export interface IAnimation {
     getProgress(): number;
     getStatus(): AnimationStatus;
     remove(): void;
-    clear(): void;
 }
 export interface MapSDKConfig extends MapConfig {
 }
@@ -192,6 +188,5 @@ export interface IPolygon {
     show(): void;
     hide(): void;
     remove(): void;
-    clear(): void;
     readonly [key: string]: unknown;
 }

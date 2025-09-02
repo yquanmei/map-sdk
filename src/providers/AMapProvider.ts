@@ -1,3 +1,5 @@
+import AMapLoader from "@amap/amap-jsapi-loader";
+import "@amap/amap-jsapi-types";
 import { BaseMapProvider } from "./BaseMapProvider";
 import {
   IMarker,
@@ -29,37 +31,35 @@ export class AMapProvider extends BaseMapProvider {
    * 动态加载高德地图SDK
    * @param apiKey 高德地图API密钥
    */
-  private async loadAMapSDK(apiKey?: string): Promise<void> {
-    return new Promise((resolve, reject) => {
+  private async loadAMapSDK(config): Promise<void> {
+    return new Promise(async (resolve, reject) => {
       // 检查是否已经加载
-      if (window.AMap) {
+      if ((window as any).AMap) {
         resolve();
         return;
       }
 
-      // 创建script标签
-      const script = document.createElement("script");
-      script.type = "text/javascript";
-      script.src = `https://webapi.amap.com/maps?v=2.0&key=${apiKey || ""}&plugin=AMap.Marker,AMap.MarkerCluster`;
-      script.async = true;
-      script.defer = true;
-
-      // 加载成功回调
-      script.onload = () => {
-        if (window.AMap) {
-          resolve();
-        } else {
-          reject(new Error("AMap SDK failed to load"));
-        }
+      const defaultLoadOptions = {
+        version: "2.0", // 指定要加载的 JSAPI 的版本，缺省时默认为 1.4.15
+        AMapUI: {
+          version: "1.1",
+          plugins: [],
+        },
       };
 
-      // 加载失败回调
-      script.onerror = () => {
-        reject(new Error("Failed to load AMap SDK"));
+      const mergedOptions = {
+        ...defaultLoadOptions,
+        ...config,
       };
 
-      // 添加到页面
-      document.head.appendChild(script);
+      await AMapLoader.load({
+        key: mergedOptions.key,
+        plugins: mergedOptions.plugins,
+        version: mergedOptions.version,
+        AMapUI: mergedOptions.AMapUI,
+      });
+
+      resolve();
     });
   }
 
@@ -70,26 +70,40 @@ export class AMapProvider extends BaseMapProvider {
     if (typeof window !== "undefined" && !this.AMap) {
       try {
         // 检查是否已经加载了高德地图SDK
-        if (!window.AMap) {
+        if (!(window as any).AMap) {
           // 动态加载高德地图SDK
-          await this.loadAMapSDK(config.key);
+          await this.loadAMapSDK(config);
         }
-        this.AMap = window.AMap;
+        this.AMap = (window as any).AMap;
       } catch (error) {
         throw new Error(`Failed to load AMap SDK: ${error}`);
       }
     }
 
-    const container = typeof config.container === "string" ? document.getElementById(config.container) : config.container;
+    const defaultOptions = {
+      zoom: 11,
+      center: [116.397428, 39.90923],
+      viewMode: "2D",
+      mapStyle: "amap://styles/whitesmoke",
+    };
+
+    const mergedOptions = {
+      ...defaultOptions,
+      ...config,
+    };
+
+    const container =
+      typeof mergedOptions.container === "string" ? document.getElementById(mergedOptions.container) : mergedOptions.container;
 
     if (!container) {
       throw new Error("Container element not found");
     }
 
     this.map = new this.AMap.Map(container, {
-      center: config.center || [116.397428, 39.90923],
-      zoom: config.zoom || 11,
-      ...config,
+      center: mergedOptions.center,
+      zoom: mergedOptions.zoom,
+      viewMode: mergedOptions.viewMode,
+      mapStyle: mergedOptions.mapStyle,
     });
   }
 
@@ -206,13 +220,16 @@ export class AMapProvider extends BaseMapProvider {
           markerCluster.points.splice(index, 1);
         }
       },
-      clear: () => {
+      // clear: () => {
+      //   markers.forEach((marker) => cluster.removeMarker(marker));
+      //   markers.length = 0;
+      //   markerCluster.points.length = 0;
+      // },
+      remove: () => {
+        cluster.setMap(null);
         markers.forEach((marker) => cluster.removeMarker(marker));
         markers.length = 0;
         markerCluster.points.length = 0;
-      },
-      remove: () => {
-        cluster.setMap(null);
         this.removeClusterFromCollection(clusterId);
       },
     };
@@ -399,10 +416,10 @@ export class AMapProvider extends BaseMapProvider {
         this.map.remove(polygon);
         this.removePolygonFromCollection(polygonId);
       },
-      clear: () => {
-        this.map.remove(polygon);
-        this.removePolygonFromCollection(polygonId);
-      },
+      // clear: () => {
+      //   this.map.remove(polygon);
+      //   this.removePolygonFromCollection(polygonId);
+      // },
     };
     this.addPolygonToCollection(amapPolygon);
     return amapPolygon;
@@ -540,9 +557,9 @@ export class AMapProvider extends BaseMapProvider {
       remove: () => {
         this.removeAnimationFromCollection(animationId);
       },
-      clear: () => {
-        this.removeAnimationFromCollection(animationId);
-      },
+      // clear: () => {
+      //   this.removeAnimationFromCollection(animationId);
+      // },
     };
     this.addAnimationToCollection(animation);
     return animation;
@@ -571,9 +588,3 @@ export class AMapProvider extends BaseMapProvider {
   }
 }
 
-// 扩展window对象以包含AMap
-declare global {
-  interface Window {
-    AMap?: any;
-  }
-}

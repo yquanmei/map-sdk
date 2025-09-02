@@ -21,6 +21,38 @@ const COVERING_TYPES = {
 // 向后兼容：提供运行时可访问的CoveringType对象
 const CoveringType = COVERING_TYPES;
 
+function getDefaultExportFromCjs (x) {
+	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
+}
+
+var dist$1 = {exports: {}};
+
+var dist = dist$1.exports;
+
+var hasRequiredDist;
+
+function requireDist () {
+	if (hasRequiredDist) return dist$1.exports;
+	hasRequiredDist = 1;
+	(function (module, exports) {
+(function(m,p){module.exports=p();})(dist,function(){function m(a){var b=[];a.AMapUI&&b.push(p(a.AMapUI));a.Loca&&b.push(r(a.Loca));return Promise.all(b)}function p(a){return new Promise(function(h,c){var f=[];if(a.plugins)for(var e=0;e<a.plugins.length;e+=1) -1==d.AMapUI.plugins.indexOf(a.plugins[e])&&f.push(a.plugins[e]);if(g.AMapUI===b.failed)c("\u524d\u6b21\u8bf7\u6c42 AMapUI \u5931\u8d25");
+		else if(g.AMapUI===b.notload){g.AMapUI=b.loading;d.AMapUI.version=a.version||d.AMapUI.version;e=d.AMapUI.version;var l=document.body||document.head,k=document.createElement("script");k.type="text/javascript";k.src="https://webapi.amap.com/ui/"+e+"/main.js";k.onerror=function(a){g.AMapUI=b.failed;c("\u8bf7\u6c42 AMapUI \u5931\u8d25");};k.onload=function(){g.AMapUI=b.loaded;if(f.length)window.AMapUI.loadUI(f,function(){for(var a=0,b=f.length;a<b;a++){var c=f[a].split("/").slice(-1)[0];window.AMapUI[c]=
+		arguments[a];}for(h();n.AMapUI.length;)n.AMapUI.splice(0,1)[0]();});else for(h();n.AMapUI.length;)n.AMapUI.splice(0,1)[0]();};l.appendChild(k);}else g.AMapUI===b.loaded?a.version&&a.version!==d.AMapUI.version?c("\u4e0d\u5141\u8bb8\u591a\u4e2a\u7248\u672c AMapUI \u6df7\u7528"):f.length?window.AMapUI.loadUI(f,function(){for(var a=0,b=f.length;a<b;a++){var c=f[a].split("/").slice(-1)[0];window.AMapUI[c]=arguments[a];}h();}):h():a.version&&a.version!==d.AMapUI.version?c("\u4e0d\u5141\u8bb8\u591a\u4e2a\u7248\u672c AMapUI \u6df7\u7528"):
+		n.AMapUI.push(function(a){a?c(a):f.length?window.AMapUI.loadUI(f,function(){for(var a=0,b=f.length;a<b;a++){var c=f[a].split("/").slice(-1)[0];window.AMapUI[c]=arguments[a];}h();}):h();});})}function r(a){return new Promise(function(h,c){if(g.Loca===b.failed)c("\u524d\u6b21\u8bf7\u6c42 Loca \u5931\u8d25");else if(g.Loca===b.notload){g.Loca=b.loading;d.Loca.version=a.version||d.Loca.version;var f=d.Loca.version,e=d.AMap.version.startsWith("2"),l=f.startsWith("2");if(e&&!l||!e&&l)c("JSAPI \u4e0e Loca \u7248\u672c\u4e0d\u5bf9\u5e94\uff01\uff01");
+		else {e=d.key;l=document.body||document.head;var k=document.createElement("script");k.type="text/javascript";k.src="https://webapi.amap.com/loca?v="+f+"&key="+e;k.onerror=function(a){g.Loca=b.failed;c("\u8bf7\u6c42 AMapUI \u5931\u8d25");};k.onload=function(){g.Loca=b.loaded;for(h();n.Loca.length;)n.Loca.splice(0,1)[0]();};l.appendChild(k);}}else g.Loca===b.loaded?a.version&&a.version!==d.Loca.version?c("\u4e0d\u5141\u8bb8\u591a\u4e2a\u7248\u672c Loca \u6df7\u7528"):h():a.version&&a.version!==d.Loca.version?
+		c("\u4e0d\u5141\u8bb8\u591a\u4e2a\u7248\u672c Loca \u6df7\u7528"):n.Loca.push(function(a){a?c(a):c();});})}if(!window)throw Error("AMap JSAPI can only be used in Browser.");var b;(function(a){a.notload="notload";a.loading="loading";a.loaded="loaded";a.failed="failed";})(b||(b={}));var d={key:"",AMap:{version:"1.4.15",plugins:[]},AMapUI:{version:"1.1",plugins:[]},Loca:{version:"1.3.2"}},g={AMap:b.notload,AMapUI:b.notload,Loca:b.notload},n={AMapUI:[],Loca:[]},q=[],t=function(a){"function"==typeof a&&
+		(g.AMap===b.loaded?a(window.AMap):q.push(a));};return {load:function(a){return new Promise(function(h,c){if(g.AMap==b.failed)c("");else if(g.AMap==b.notload){var f=a.key,e=a.version,l=a.plugins;f?(window.AMap&&"lbs.amap.com"!==location.host&&c("\u7981\u6b62\u591a\u79cdAPI\u52a0\u8f7d\u65b9\u5f0f\u6df7\u7528"),d.key=f,d.AMap.version=e||d.AMap.version,d.AMap.plugins=l||d.AMap.plugins,g.AMap=b.loading,e=document.body||document.head,window.___onAPILoaded=function(d){delete window.___onAPILoaded;if(d)g.AMap=
+		b.failed,c(d);else for(g.AMap=b.loaded,m(a).then(function(){h(window.AMap);})["catch"](c);q.length;)q.splice(0,1)[0]();},l=document.createElement("script"),l.type="text/javascript",l.src="https://webapi.amap.com/maps?callback=___onAPILoaded&v="+d.AMap.version+"&key="+f+"&plugin="+d.AMap.plugins.join(","),l.onerror=function(a){g.AMap=b.failed;c(a);},e.appendChild(l)):c("\u8bf7\u586b\u5199key");}else if(g.AMap==b.loaded)if(a.key&&a.key!==d.key)c("\u591a\u4e2a\u4e0d\u4e00\u81f4\u7684 key");else if(a.version&&
+		a.version!==d.AMap.version)c("\u4e0d\u5141\u8bb8\u591a\u4e2a\u7248\u672c JSAPI \u6df7\u7528");else {f=[];if(a.plugins)for(e=0;e<a.plugins.length;e+=1) -1==d.AMap.plugins.indexOf(a.plugins[e])&&f.push(a.plugins[e]);if(f.length)window.AMap.plugin(f,function(){m(a).then(function(){h(window.AMap);})["catch"](c);});else m(a).then(function(){h(window.AMap);})["catch"](c);}else if(a.key&&a.key!==d.key)c("\u591a\u4e2a\u4e0d\u4e00\u81f4\u7684 key");else if(a.version&&a.version!==d.AMap.version)c("\u4e0d\u5141\u8bb8\u591a\u4e2a\u7248\u672c JSAPI \u6df7\u7528");
+		else {var k=[];if(a.plugins)for(e=0;e<a.plugins.length;e+=1) -1==d.AMap.plugins.indexOf(a.plugins[e])&&k.push(a.plugins[e]);t(function(){if(k.length)window.AMap.plugin(k,function(){m(a).then(function(){h(window.AMap);})["catch"](c);});else m(a).then(function(){h(window.AMap);})["catch"](c);});}})},reset:function(){delete window.AMap;delete window.AMapUI;delete window.Loca;d={key:"",AMap:{version:"1.4.15",plugins:[]},AMapUI:{version:"1.1",plugins:[]},Loca:{version:"1.3.2"}};g={AMap:b.notload,AMapUI:b.notload,
+		Loca:b.notload};n={AMap:[],AMapUI:[],Loca:[]};}}}); 
+	} (dist$1));
+	return dist$1.exports;
+}
+
+var distExports = requireDist();
+var AMapLoader = /*@__PURE__*/getDefaultExportFromCjs(distExports);
+
 class BaseMapProvider {
     constructor() {
         this.markers = new Map();
@@ -153,34 +185,31 @@ class AMapProvider extends BaseMapProvider {
      * 动态加载高德地图SDK
      * @param apiKey 高德地图API密钥
      */
-    async loadAMapSDK(apiKey) {
-        return new Promise((resolve, reject) => {
+    async loadAMapSDK(config) {
+        return new Promise(async (resolve, reject) => {
             // 检查是否已经加载
             if (window.AMap) {
                 resolve();
                 return;
             }
-            // 创建script标签
-            const script = document.createElement("script");
-            script.type = "text/javascript";
-            script.src = `https://webapi.amap.com/maps?v=2.0&key=${apiKey || ""}&plugin=AMap.Marker,AMap.MarkerCluster`;
-            script.async = true;
-            script.defer = true;
-            // 加载成功回调
-            script.onload = () => {
-                if (window.AMap) {
-                    resolve();
-                }
-                else {
-                    reject(new Error("AMap SDK failed to load"));
-                }
+            const defaultLoadOptions = {
+                version: "2.0", // 指定要加载的 JSAPI 的版本，缺省时默认为 1.4.15
+                AMapUI: {
+                    version: "1.1",
+                    plugins: [],
+                },
             };
-            // 加载失败回调
-            script.onerror = () => {
-                reject(new Error("Failed to load AMap SDK"));
+            const mergedOptions = {
+                ...defaultLoadOptions,
+                ...config,
             };
-            // 添加到页面
-            document.head.appendChild(script);
+            await AMapLoader.load({
+                key: mergedOptions.key,
+                plugins: mergedOptions.plugins,
+                version: mergedOptions.version,
+                AMapUI: mergedOptions.AMapUI,
+            });
+            resolve();
         });
     }
     async init(config) {
@@ -191,7 +220,7 @@ class AMapProvider extends BaseMapProvider {
                 // 检查是否已经加载了高德地图SDK
                 if (!window.AMap) {
                     // 动态加载高德地图SDK
-                    await this.loadAMapSDK(config.key);
+                    await this.loadAMapSDK(config);
                 }
                 this.AMap = window.AMap;
             }
@@ -199,14 +228,25 @@ class AMapProvider extends BaseMapProvider {
                 throw new Error(`Failed to load AMap SDK: ${error}`);
             }
         }
-        const container = typeof config.container === "string" ? document.getElementById(config.container) : config.container;
+        const defaultOptions = {
+            zoom: 11,
+            center: [116.397428, 39.90923],
+            viewMode: "2D",
+            mapStyle: "amap://styles/whitesmoke",
+        };
+        const mergedOptions = {
+            ...defaultOptions,
+            ...config,
+        };
+        const container = typeof mergedOptions.container === "string" ? document.getElementById(mergedOptions.container) : mergedOptions.container;
         if (!container) {
             throw new Error("Container element not found");
         }
         this.map = new this.AMap.Map(container, {
-            center: config.center || [116.397428, 39.90923],
-            zoom: config.zoom || 11,
-            ...config,
+            center: mergedOptions.center,
+            zoom: mergedOptions.zoom,
+            viewMode: mergedOptions.viewMode,
+            mapStyle: mergedOptions.mapStyle,
         });
     }
     async addMarker(config) {
@@ -311,13 +351,16 @@ class AMapProvider extends BaseMapProvider {
                     markerCluster.points.splice(index, 1);
                 }
             },
-            clear: () => {
+            // clear: () => {
+            //   markers.forEach((marker) => cluster.removeMarker(marker));
+            //   markers.length = 0;
+            //   markerCluster.points.length = 0;
+            // },
+            remove: () => {
+                cluster.setMap(null);
                 markers.forEach((marker) => cluster.removeMarker(marker));
                 markers.length = 0;
                 markerCluster.points.length = 0;
-            },
-            remove: () => {
-                cluster.setMap(null);
                 this.removeClusterFromCollection(clusterId);
             },
         };
@@ -496,10 +539,10 @@ class AMapProvider extends BaseMapProvider {
                 this.map.remove(polygon);
                 this.removePolygonFromCollection(polygonId);
             },
-            clear: () => {
-                this.map.remove(polygon);
-                this.removePolygonFromCollection(polygonId);
-            },
+            // clear: () => {
+            //   this.map.remove(polygon);
+            //   this.removePolygonFromCollection(polygonId);
+            // },
         };
         this.addPolygonToCollection(amapPolygon);
         return amapPolygon;
@@ -623,9 +666,9 @@ class AMapProvider extends BaseMapProvider {
             remove: () => {
                 this.removeAnimationFromCollection(animationId);
             },
-            clear: () => {
-                this.removeAnimationFromCollection(animationId);
-            },
+            // clear: () => {
+            //   this.removeAnimationFromCollection(animationId);
+            // },
         };
         this.addAnimationToCollection(animation);
         return animation;
@@ -820,18 +863,26 @@ class GoogleMapProvider extends BaseMapProvider {
                 throw new Error(`Failed to load Google Maps SDK: ${error}`);
             }
         }
-        const container = typeof config.container === "string" ? document.getElementById(config.container) : config.container;
+        const defaultOptions = {
+            zoom: 11,
+            center: [116.397428, 39.90923],
+        };
+        const mergedOptions = {
+            ...defaultOptions,
+            ...config,
+        };
+        const container = typeof mergedOptions.container === "string" ? document.getElementById(mergedOptions.container) : mergedOptions.container;
         if (!container) {
             throw new Error("Container element not found");
         }
         const { Map } = await this.google.maps.importLibrary("maps");
         this.map = new Map(container, {
             center: {
-                lat: Number(config.center?.[1]) || 39.90923,
-                lng: Number(config.center?.[0]) || 116.397428,
+                lat: Number(mergedOptions.center?.[1]),
+                lng: Number(mergedOptions.center?.[0]),
             },
-            zoom: config.zoom || 11,
-            mapId: config.id,
+            zoom: mergedOptions.zoom,
+            mapId: mergedOptions.container,
         });
     }
     setCenter(position) {
@@ -867,6 +918,9 @@ class GoogleMapProvider extends BaseMapProvider {
         const defaultOptions = {
             map: true,
             id: markerId,
+            clickable: true,
+            draggable: false,
+            // icon: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
         };
         const mergedOptions = {
             ...defaultOptions,
@@ -931,10 +985,10 @@ class GoogleMapProvider extends BaseMapProvider {
                 googleMarker.setMap(null);
                 this.removeMarkerFromCollection(markerId);
             },
-            clear: () => {
-                googleMarker.setMap(null);
-                this.removeMarkerFromCollection(markerId);
-            },
+            // clear: () => {
+            //   googleMarker.setMap(null);
+            //   this.removeMarkerFromCollection(markerId);
+            // },
         };
         if (type !== COVERING_TYPES.CLUSTER) {
             this.addMarkerToCollection(marker);
@@ -1049,10 +1103,10 @@ class GoogleMapProvider extends BaseMapProvider {
                 googleMarkerClusterer.clearMarkers();
                 this.removeClusterFromCollection(id);
             },
-            clear: () => {
-                googleMarkerClusterer.clearMarkers();
-                this.removeClusterFromCollection(id);
-            },
+            // clear: () => {
+            //   googleMarkerClusterer.clearMarkers();
+            //   this.removeClusterFromCollection(id);
+            // },
         };
         this.addClusterToCollection(markerCluster);
         return markerCluster;
@@ -1515,15 +1569,15 @@ class GoogleMapProvider extends BaseMapProvider {
         const polygonId = this.generateId(COVERING_TYPES.POLYGON);
         const defaultOptions = {
             id: polygonId,
-            fillColor: "#FF0000",
-            fillOpacity: 0.3,
-            strokeColor: "#FF0000",
-            strokeOpacity: 1.0,
+            fillColor: "#00B2D5",
+            fillOpacity: 0.5,
+            strokeColor: "#00D3FC",
+            strokeOpacity: 0.9,
             strokeWeight: 2,
             editable: false,
             draggable: false,
             clickable: true,
-            zIndex: 1,
+            zIndex: 10,
         };
         const mergedOptions = { ...defaultOptions, ...config };
         // 创建Google Maps多边形
@@ -1561,10 +1615,10 @@ class GoogleMapProvider extends BaseMapProvider {
                     polyline.setMap(null);
                     this.removePolygonFromCollection(polygonId);
                 },
-                clear: () => {
-                    polyline.setMap(null);
-                    this.removePolygonFromCollection(polygonId);
-                },
+                // clear: () => {
+                //   polyline.setMap(null);
+                //   this.removePolygonFromCollection(polygonId);
+                // },
             };
             this.addPolygonToCollection(previewPolygon);
             return previewPolygon;
@@ -1650,6 +1704,12 @@ class GoogleMapProvider extends BaseMapProvider {
             setDraggable: (draggable) => {
                 googlePolygon.setDraggable(draggable);
             },
+            getPath: () => {
+                return googlePolygon
+                    .getPath()
+                    .getArray()
+                    .map((latLng) => [latLng.lng(), latLng.lat()]);
+            },
             getBounds: () => {
                 return googlePolygon.getBounds();
             },
@@ -1674,10 +1734,10 @@ class GoogleMapProvider extends BaseMapProvider {
                 googlePolygon.setMap(null);
                 this.removePolygonFromCollection(polygonId);
             },
-            clear: () => {
-                googlePolygon.setMap(null);
-                this.removePolygonFromCollection(polygonId);
-            },
+            // clear: () => {
+            //   googlePolygon.setMap(null);
+            //   this.removePolygonFromCollection(polygonId);
+            // },
         };
         this.addPolygonToCollection(polygon);
         return polygon;
@@ -1901,9 +1961,9 @@ class GoogleMapProvider extends BaseMapProvider {
                 movingMarker.remove();
                 this.removeAnimationFromCollection(animationId);
             },
-            clear: () => {
-                googleAnimation.remove();
-            },
+            // clear: () => {
+            //   googleAnimation.remove();
+            // },
         };
         this.addAnimationToCollection(googleAnimation);
         // 自动开始
@@ -1949,6 +2009,7 @@ class GoogleMapProvider extends BaseMapProvider {
         return `${type}_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
     }
 }
+// 扩展window对象以包含Google Maps和MarkerClusterer
 
 class OpenLayersProvider extends BaseMapProvider {
     /**
@@ -2162,13 +2223,16 @@ class OpenLayersProvider extends BaseMapProvider {
                     markerCluster.points.splice(index, 1);
                 }
             },
-            clear: () => {
+            // clear: () => {
+            //   features.forEach((feature) => clusterSource.removeFeature(feature));
+            //   features.length = 0;
+            //   markerCluster.points.length = 0;
+            // },
+            remove: () => {
+                this.map.removeLayer(clusterLayer);
                 features.forEach((feature) => clusterSource.removeFeature(feature));
                 features.length = 0;
                 markerCluster.points.length = 0;
-            },
-            remove: () => {
-                this.map.removeLayer(clusterLayer);
                 this.removeClusterFromCollection(clusterId);
             },
         };
@@ -2364,10 +2428,10 @@ class OpenLayersProvider extends BaseMapProvider {
                 this.vectorLayer.getSource().removeFeature(polygonFeature);
                 this.removePolygonFromCollection(polygonId);
             },
-            clear: () => {
-                this.vectorLayer.getSource().removeFeature(polygonFeature);
-                this.removePolygonFromCollection(polygonId);
-            },
+            // clear: () => {
+            //   this.vectorLayer.getSource().removeFeature(polygonFeature);
+            //   this.removePolygonFromCollection(polygonId);
+            // },
         };
         this.addPolygonToCollection(olPolygon);
         return olPolygon;
@@ -2491,9 +2555,9 @@ class OpenLayersProvider extends BaseMapProvider {
             remove: () => {
                 this.removeAnimationFromCollection(animationId);
             },
-            clear: () => {
-                this.removeAnimationFromCollection(animationId);
-            },
+            // clear: () => {
+            //   this.removeAnimationFromCollection(animationId);
+            // },
         };
         this.addAnimationToCollection(animation);
         return animation;
@@ -2521,6 +2585,7 @@ class OpenLayersProvider extends BaseMapProvider {
         return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : "255, 0, 0";
     }
 }
+// 扩展window对象以包含OpenLayers
 
 // 错误类定义
 class MapProviderError extends Error {
@@ -2809,9 +2874,9 @@ class MapSDK {
      */
     async addPolygon(config) {
         this.ensureInitialized();
-        if (!config?.path || config.path.length < 3) {
-            throw new MapSDKError("Path with at least 3 points is required", ERROR_CODES.INVALID_CONFIG);
-        }
+        // if (!config.editable && (!config?.path || config.path.length < 3)) {
+        //   throw new MapSDKError("Path with at least 3 points is required", ERROR_CODES.INVALID_CONFIG);
+        // }
         try {
             return await this.provider.addPolygon(config);
         }

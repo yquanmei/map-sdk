@@ -1,3 +1,4 @@
+import "@amap/amap-jsapi-types";
 import { BaseMapProvider } from "./BaseMapProvider";
 import { IMarker, MapConfig, MarkerConfig, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster, PolygonConfig, IPolygon, AnimationConfig, IAnimation } from "../types";
 export declare class AMapProvider extends BaseMapProvider {
@@ -47,9 +48,4 @@ export declare class AMapProvider extends BaseMapProvider {
         type?: string;
         animations?: Array<IAnimation>;
     }): void;
-}
-declare global {
-    interface Window {
-        AMap?: any;
-    }
 }

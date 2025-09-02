@@ -35,7 +35,7 @@ export class OpenLayersProvider extends BaseMapProvider {
   private async loadOpenLayersSDK(): Promise<void> {
     return new Promise((resolve, reject) => {
       // 检查是否已经加载
-      if (window.ol) {
+      if ((window as any).ol) {
         resolve();
         return;
       }
@@ -49,7 +49,7 @@ export class OpenLayersProvider extends BaseMapProvider {
 
       // 加载成功回调
       script.onload = () => {
-        if (window.ol) {
+        if ((window as any).ol) {
           resolve();
         } else {
           reject(new Error("OpenLayers SDK failed to load"));
@@ -73,11 +73,11 @@ export class OpenLayersProvider extends BaseMapProvider {
     if (typeof window !== "undefined" && !this.ol) {
       try {
         // 检查是否已经加载了OpenLayers SDK
-        if (!window.ol) {
+        if (!(window as any).ol) {
           // 动态加载OpenLayers SDK
           await this.loadOpenLayersSDK();
         }
-        this.ol = window.ol;
+        this.ol = (window as any).ol;
       } catch (error) {
         throw new Error(`Failed to load OpenLayers SDK: ${error}`);
       }
@@ -275,13 +275,16 @@ export class OpenLayersProvider extends BaseMapProvider {
           markerCluster.points.splice(index, 1);
         }
       },
-      clear: () => {
+      // clear: () => {
+      //   features.forEach((feature) => clusterSource.removeFeature(feature));
+      //   features.length = 0;
+      //   markerCluster.points.length = 0;
+      // },
+      remove: () => {
+        this.map.removeLayer(clusterLayer);
         features.forEach((feature) => clusterSource.removeFeature(feature));
         features.length = 0;
         markerCluster.points.length = 0;
-      },
-      remove: () => {
-        this.map.removeLayer(clusterLayer);
         this.removeClusterFromCollection(clusterId);
       },
     };
@@ -487,10 +490,10 @@ export class OpenLayersProvider extends BaseMapProvider {
         this.vectorLayer.getSource().removeFeature(polygonFeature);
         this.removePolygonFromCollection(polygonId);
       },
-      clear: () => {
-        this.vectorLayer.getSource().removeFeature(polygonFeature);
-        this.removePolygonFromCollection(polygonId);
-      },
+      // clear: () => {
+      //   this.vectorLayer.getSource().removeFeature(polygonFeature);
+      //   this.removePolygonFromCollection(polygonId);
+      // },
     };
     this.addPolygonToCollection(olPolygon);
     return olPolygon;
@@ -628,9 +631,9 @@ export class OpenLayersProvider extends BaseMapProvider {
       remove: () => {
         this.removeAnimationFromCollection(animationId);
       },
-      clear: () => {
-        this.removeAnimationFromCollection(animationId);
-      },
+      // clear: () => {
+      //   this.removeAnimationFromCollection(animationId);
+      // },
     };
     this.addAnimationToCollection(animation);
     return animation;
@@ -665,8 +668,3 @@ export class OpenLayersProvider extends BaseMapProvider {
 }
 
 // 扩展window对象以包含OpenLayers
-declare global {
-  interface Window {
-    ol?: any;
-  }
-}

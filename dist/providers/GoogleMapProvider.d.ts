@@ -129,12 +129,4 @@ export declare class GoogleMapProvider extends BaseMapProvider {
     }): void;
     generateId(type: string): string;
 }
-declare global {
-    interface Window {
-        google?: {
-            maps: any;
-        };
-        MarkerClusterer?: any;
-    }
-}
 export {};

@@ -55,6 +55,8 @@
     "url": "https://github.com/yquanmei/map-sdk.git"
   },
   "dependencies": {
+    "@amap/amap-jsapi-loader": "^1.0.1",
+    "@amap/amap-jsapi-types": "^0.0.15",
     "@googlemaps/js-api-loader": "^1.16.10",
     "@googlemaps/markerclusterer": "^2.6.2",
     "@types/lodash-es": "^4.17.12",
