@@ -554,6 +554,11 @@ class AMapProvider extends BaseMapProvider {
             this.map.setZoom(zoom);
         }
     }
+    setZoomAndCenter(zoom, center) {
+        if (this.map) {
+            this.map.setZoomAndCenter(zoom, center);
+        }
+    }
     destroy() {
         if (this.map) {
             this.map.destroy();
@@ -925,6 +930,15 @@ class GoogleMapProvider extends BaseMapProvider {
     getZoom() {
         if (this.map) {
             return this.map.getZoom();
+        }
+    }
+    setZoomAndCenter(zoom, center) {
+        if (this.map) {
+            this.map.setZoom(zoom);
+            this.map.setCenter({
+                lat: center[1],
+                lng: center[0],
+            });
         }
     }
     destroy() {
@@ -2287,6 +2301,12 @@ class OpenLayersProvider extends BaseMapProvider {
             this.map.getView().setZoom(zoom);
         }
     }
+    setZoomAndCenter(zoom, center) {
+        if (this.map) {
+            this.map.getView().setZoom(zoom);
+            this.map.getView().setCenter(this.ol.proj.fromLonLat(center));
+        }
+    }
     destroy() {
         if (this.map) {
             this.map.setTarget(undefined);
@@ -2825,6 +2845,21 @@ class MapSDK {
             throw new MapSDKError("Invalid zoom level", ERROR_CODES.INVALID_CONFIG);
         }
         this.provider.setZoom(zoom);
+    }
+    /**
+     * 同时设置地图缩放级别和中心点
+     * @param zoom 缩放级别
+     * @param center 中心点坐标 [经度, 纬度]
+     */
+    setZoomAndCenter(zoom, center) {
+        this.ensureInitialized();
+        if (typeof zoom !== "number" || zoom < 0) {
+            throw new MapSDKError("Invalid zoom level", ERROR_CODES.INVALID_CONFIG);
+        }
+        if (!center || center.length !== 2) {
+            throw new MapSDKError("Invalid center position format", ERROR_CODES.INVALID_CONFIG);
+        }
+        this.provider.setZoomAndCenter(zoom, center);
     }
     /**
      * 获取地图缩放级别

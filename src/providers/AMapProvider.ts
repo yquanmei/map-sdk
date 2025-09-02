@@ -296,6 +296,12 @@ export class AMapProvider extends BaseMapProvider {
     }
   }
 
+  setZoomAndCenter(zoom: number, center: [number, number]): void {
+    if (this.map) {
+      this.map.setZoomAndCenter(zoom, center);
+    }
+  }
+
   destroy(): void {
     if (this.map) {
       this.map.destroy();

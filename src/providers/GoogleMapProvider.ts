@@ -123,6 +123,16 @@ export class GoogleMapProvider extends BaseMapProvider {
     }
   }
 
+  setZoomAndCenter(zoom: number, center: [number, number]): void {
+    if (this.map) {
+      this.map.setZoom(zoom);
+      this.map.setCenter({
+        lat: center[1],
+        lng: center[0],
+      });
+    }
+  }
+
   destroy(): void {
     if (this.map) {
       // Google Maps doesn't have a destroy method

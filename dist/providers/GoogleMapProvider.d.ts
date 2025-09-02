@@ -21,6 +21,7 @@ export declare class GoogleMapProvider extends BaseMapProvider {
     setCenter(position: [number, number]): void;
     setZoom(zoom: number): void;
     getZoom(): any;
+    setZoomAndCenter(zoom: number, center: [number, number]): void;
     destroy(): void;
     addMarker(config: MarkerConfig, type?: string): Promise<IMarker>;
     addMarkerCluster(points: MarkerClusterPoint[], options?: MarkerClusterOptions): Promise<any>;

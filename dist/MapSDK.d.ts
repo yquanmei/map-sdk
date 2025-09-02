@@ -59,6 +59,12 @@ export declare class MapSDK {
      */
     setZoom(zoom: number): void;
     /**
+     * 同时设置地图缩放级别和中心点
+     * @param zoom 缩放级别
+     * @param center 中心点坐标 [经度, 纬度]
+     */
+    setZoomAndCenter(zoom: number, center: readonly [number, number]): void;
+    /**
      * 获取地图缩放级别
      */
     getZoom(): number;

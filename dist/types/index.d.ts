@@ -100,6 +100,7 @@ export interface IMapProvider {
     clearInfoWindow(params?: ClearParams<any>): void;
     setCenter(position: readonly [number, number]): void;
     setZoom(zoom: number): void;
+    setZoomAndCenter(zoom: number, center: readonly [number, number]): void;
     getZoom(): number;
     destroy(): void;
     clearMap(): Promise<void>;

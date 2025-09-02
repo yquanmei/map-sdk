@@ -15,6 +15,7 @@ export declare class AMapProvider extends BaseMapProvider {
     removeMarkerCluster(cluster: IMarkerCluster): void;
     setCenter(position: [number, number]): void;
     setZoom(zoom: number): void;
+    setZoomAndCenter(zoom: number, center: [number, number]): void;
     destroy(): void;
     getZoom(): number;
     clearMarkers(params?: {

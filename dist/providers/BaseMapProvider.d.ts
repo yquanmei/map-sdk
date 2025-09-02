@@ -27,6 +27,7 @@ export declare abstract class BaseMapProvider implements IMapProvider {
     abstract clearInfoWindow(params?: ClearParams<unknown>): void;
     abstract setCenter(position: readonly [number, number]): void;
     abstract setZoom(zoom: number): void;
+    abstract setZoomAndCenter(zoom: number, center: readonly [number, number]): void;
     abstract getZoom(): number;
     abstract destroy(): void;
     abstract clearMap(): Promise<void>;

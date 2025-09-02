@@ -174,6 +174,25 @@ export class MapSDK {
   }
 
   /**
+   * 同时设置地图缩放级别和中心点
+   * @param zoom 缩放级别
+   * @param center 中心点坐标 [经度, 纬度]
+   */
+  setZoomAndCenter(zoom: number, center: readonly [number, number]): void {
+    this.ensureInitialized();
+
+    if (typeof zoom !== "number" || zoom < 0) {
+      throw new MapSDKError("Invalid zoom level", ERROR_CODES.INVALID_CONFIG);
+    }
+
+    if (!center || center.length !== 2) {
+      throw new MapSDKError("Invalid center position format", ERROR_CODES.INVALID_CONFIG);
+    }
+
+    this.provider.setZoomAndCenter(zoom, center);
+  }
+
+  /**
    * 获取地图缩放级别
    */
   getZoom(): number {

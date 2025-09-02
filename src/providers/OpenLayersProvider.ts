@@ -321,6 +321,13 @@ export class OpenLayersProvider extends BaseMapProvider {
     }
   }
 
+  setZoomAndCenter(zoom: number, center: [number, number]): void {
+    if (this.map) {
+      this.map.getView().setZoom(zoom);
+      this.map.getView().setCenter(this.ol.proj.fromLonLat(center));
+    }
+  }
+
   destroy(): void {
     if (this.map) {
       this.map.setTarget(undefined);
