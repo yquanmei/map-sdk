@@ -1,5 +1,5 @@
 import { BaseMapProvider } from "./BaseMapProvider";
-import {
+import { createDomContent } from "../utils";import {
   IMarker,
   MapConfig,
   MarkerConfig,
@@ -326,6 +326,23 @@ export class OpenLayersProvider extends BaseMapProvider {
       this.map.getView().setZoom(zoom);
       this.map.getView().setCenter(this.ol.proj.fromLonLat(center));
     }
+  }
+
+  async addInfoWindow(options: { content: string | HTMLElement; position: [number, number]; open?: boolean }): Promise<any> {
+    if (!this.map) {
+      throw new Error("Map not initialized");
+    }
+
+    const overlay = new this.ol.Overlay({
+      element: typeof options.content === "string" ? createDomContent(options.content) : options.content,
+      position: this.ol.proj.fromLonLat(options.position),
+      positioning: "bottom-center",
+      stopEvent: false,
+    });
+
+    this.map.addOverlay(overlay);
+    this.addInfoWindowToCollection(overlay);
+    return overlay;
   }
 
   destroy(): void {

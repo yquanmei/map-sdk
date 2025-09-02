@@ -559,6 +559,23 @@ class AMapProvider extends BaseMapProvider {
             this.map.setZoomAndCenter(zoom, center);
         }
     }
+    async addInfoWindow(options) {
+        if (!this.map) {
+            throw new Error("Map not initialized");
+        }
+        const infoWindow = new window.AMap.InfoWindow({
+            content: options.content,
+            position: options.position,
+            isCustom: true,
+            autoMove: true,
+            closeWhenClickMap: true,
+        });
+        if (options.open !== false) {
+            infoWindow.open(this.map, options.position);
+        }
+        this.addInfoWindowToCollection(infoWindow);
+        return infoWindow;
+    }
     destroy() {
         if (this.map) {
             this.map.destroy();
@@ -2306,6 +2323,20 @@ class OpenLayersProvider extends BaseMapProvider {
             this.map.getView().setZoom(zoom);
             this.map.getView().setCenter(this.ol.proj.fromLonLat(center));
         }
+    }
+    async addInfoWindow(options) {
+        if (!this.map) {
+            throw new Error("Map not initialized");
+        }
+        const overlay = new this.ol.Overlay({
+            element: typeof options.content === "string" ? createDomContent(options.content) : options.content,
+            position: this.ol.proj.fromLonLat(options.position),
+            positioning: "bottom-center",
+            stopEvent: false,
+        });
+        this.map.addOverlay(overlay);
+        this.addInfoWindowToCollection(overlay);
+        return overlay;
     }
     destroy() {
         if (this.map) {

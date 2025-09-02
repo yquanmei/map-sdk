@@ -16,6 +16,11 @@ export declare class OpenLayersProvider extends BaseMapProvider {
     setCenter(position: [number, number]): void;
     setZoom(zoom: number): void;
     setZoomAndCenter(zoom: number, center: [number, number]): void;
+    addInfoWindow(options: {
+        content: string | HTMLElement;
+        position: [number, number];
+        open?: boolean;
+    }): Promise<any>;
     destroy(): void;
     getZoom(): number;
     clearMarkers(params?: {

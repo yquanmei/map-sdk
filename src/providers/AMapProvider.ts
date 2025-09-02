@@ -302,6 +302,27 @@ export class AMapProvider extends BaseMapProvider {
     }
   }
 
+  async addInfoWindow(options: { content: string | HTMLElement; position: [number, number]; open?: boolean }): Promise<any> {
+    if (!this.map) {
+      throw new Error("Map not initialized");
+    }
+
+    const infoWindow = new (window as any).AMap.InfoWindow({
+      content: options.content,
+      position: options.position,
+      isCustom: true,
+      autoMove: true,
+      closeWhenClickMap: true,
+    });
+
+    if (options.open !== false) {
+      infoWindow.open(this.map, options.position);
+    }
+
+    this.addInfoWindowToCollection(infoWindow);
+    return infoWindow;
+  }
+
   destroy(): void {
     if (this.map) {
       this.map.destroy();

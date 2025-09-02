@@ -111,7 +111,7 @@ export interface IMapProvider {
   clearPolygons(params?: ClearParams<IPolygon>): void;
   clearPathPlannings(params?: ClearParams<any>): void;
   clearInfoWindow(params?: ClearParams<any>): void;
-  setCenter(position: readonly [number, number]): void;
+  addInfoWindow(options: { content: string | HTMLElement; position: readonly [number, number]; open?: boolean }): Promise<any>;  setCenter(position: readonly [number, number]): void;
   setZoom(zoom: number): void;
   setZoomAndCenter(zoom: number, center: readonly [number, number]): void;
   getZoom(): number;
