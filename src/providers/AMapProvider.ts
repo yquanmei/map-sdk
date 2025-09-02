@@ -14,6 +14,7 @@ import {
   IAnimation,
   COVERING_TYPES,
 } from "../types";
+import { createDomContent } from "../utils";
 
 interface AMapMarker extends IMarker {
   amapMarker: any;
@@ -50,6 +51,11 @@ export class AMapProvider extends BaseMapProvider {
       const mergedOptions = {
         ...defaultLoadOptions,
         ...config,
+      };
+
+      const newWindow = window as any;
+      newWindow._AMapSecurityConfig = {
+        securityJsCode: mergedOptions.token,
       };
 
       await AMapLoader.load({
@@ -114,23 +120,42 @@ export class AMapProvider extends BaseMapProvider {
 
     const markerId = this.generateId(COVERING_TYPES.MARKER);
 
-    const { position, ...otherConfig } = config;
-    const amapMarker = new this.AMap.Marker({
-      position,
-      title: config.title,
-      content: config.content,
-      icon: config.icon,
-      clickable: config.clickable !== false,
-      draggable: config.draggable || false,
-      ...otherConfig,
-    });
+    const defaultOptions = {
+      position: [],
+      content: "",
+      clickable: true,
+      data: {},
+    };
 
-    this.map.add(amapMarker);
+    const mergedOptions = {
+      ...defaultOptions,
+      ...config,
+    };
+
+    const content = createDomContent(mergedOptions.content || "");
+    const { position } = mergedOptions;
+
+    const markerOptions: any = {
+      position: {
+        lat: position[1],
+        lng: position[0],
+      },
+      content,
+    };
+
+    if (mergedOptions.map) {
+      markerOptions.map = this.map;
+    }
+
+    const amapMarker = new this.AMap.Marker({
+      ...markerOptions,
+    });
 
     const marker: AMapMarker = {
       id: markerId,
-      position: [...config.position] as [number, number],
+      position: [...mergedOptions.position] as [number, number],
       amapMarker,
+      data: mergedOptions.data,
       setPosition: (position: [number, number]) => {
         amapMarker.setPosition(position);
         marker.position = position;
@@ -146,6 +171,11 @@ export class AMapProvider extends BaseMapProvider {
         this.removeMarkerFromCollection(markerId);
       },
     };
+    if (typeof mergedOptions.onClick === "function") {
+      amapMarker.on("click", (e: any) => {
+        mergedOptions.onClick({ event: e, content, data: mergedOptions.data, position, marker });
+      });
+    }
 
     this.addMarkerToCollection(marker);
     return marker;
@@ -508,13 +538,8 @@ export class AMapProvider extends BaseMapProvider {
   }
 
   async clearMap(): Promise<void> {
-    this.clearMarkers();
-    this.clearMarkerClusters();
-    this.clearPolylines();
-    this.clearPolygons();
-    this.clearPathPlannings();
-    this.clearInfoWindow();
-    this.clearAnimations();
+    if (!this.map) return;
+    this.map.clearMap();
   }
 
   async addAnimation(config: AnimationConfig): Promise<IAnimation> {
@@ -587,4 +612,3 @@ export class AMapProvider extends BaseMapProvider {
     });
   }
 }
-

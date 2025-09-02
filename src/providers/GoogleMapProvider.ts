@@ -186,7 +186,7 @@ export class GoogleMapProvider extends BaseMapProvider {
       id: markerId,
       position: [...mergedOptions.position] as [number, number],
       googleMarker,
-      data: mergedOptions.data || {},
+      data: mergedOptions.data,
       setPosition: (position: [number, number]) => {
         googleMarker.setPosition({
           lat: position[1],
