@@ -1,6 +1,6 @@
 import "@amap/amap-jsapi-types";
 import { BaseMapProvider } from "./BaseMapProvider";
-import { IMarker, MapConfig, MarkerConfig, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster, PolygonConfig, IPolygon, AnimationConfig, IAnimation } from "../types";
+import { IMarker, MapConfig, MarkerConfig, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster, PolygonConfig, IPolygon, AnimationConfig, IAnimation, PolylineConfig, IPolyline } from "../types";
 export declare class AMapProvider extends BaseMapProvider {
     private AMap;
     /**
@@ -13,9 +13,9 @@ export declare class AMapProvider extends BaseMapProvider {
     addMarkerCluster(points: MarkerClusterPoint[], options?: MarkerClusterOptions): Promise<IMarkerCluster>;
     removeMarker(marker: IMarker): void;
     removeMarkerCluster(cluster: IMarkerCluster): void;
-    setCenter(position: [number, number]): void;
+    setCenter(position: [number, number], immediately?: boolean, duration?: number): void;
     setZoom(zoom: number): void;
-    setZoomAndCenter(zoom: number, center: [number, number]): void;
+    setZoomAndCenter(zoom: number, center: [number, number], immediately?: boolean, duration?: number): void;
     addInfoWindow(options: {
         content: string | HTMLElement;
         position: [number, number];
@@ -31,6 +31,7 @@ export declare class AMapProvider extends BaseMapProvider {
         type?: string;
         clusters?: Array<IMarkerCluster>;
     }): void;
+    addPolyline(options: PolylineConfig): Promise<IPolyline>;
     clearPolylines(params?: {
         type?: string;
         polylines?: any[];
@@ -54,4 +55,5 @@ export declare class AMapProvider extends BaseMapProvider {
         type?: string;
         animations?: Array<IAnimation>;
     }): void;
+    setFitView(): void;
 }

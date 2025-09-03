@@ -1,4 +1,4 @@
-import { IMapProvider, IMarker, MapConfig, MarkerConfig, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster, IAnimation, AnimationConfig, PolygonConfig, IPolygon, ClearParams } from "../types";
+import { IMapProvider, IMarker, MapConfig, MarkerConfig, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster, IAnimation, AnimationConfig, PolylineConfig, PolygonConfig, IPolyline, IPolygon, ClearParams } from "../types";
 export declare abstract class BaseMapProvider implements IMapProvider {
     protected map: any;
     protected readonly markers: Map<string, IMarker>;
@@ -20,6 +20,7 @@ export declare abstract class BaseMapProvider implements IMapProvider {
     abstract clearMarkerClusters(params?: ClearParams<IMarkerCluster>): void;
     abstract addAnimation(config: AnimationConfig): Promise<IAnimation>;
     abstract clearAnimations(params?: ClearParams<IAnimation>): void;
+    abstract addPolyline(config: PolylineConfig): Promise<IPolyline>;
     abstract clearPolylines(params?: ClearParams<unknown>): void;
     abstract addPolygon(config: PolygonConfig): Promise<IPolygon>;
     abstract clearPolygons(params?: ClearParams<IPolygon>): void;
@@ -34,6 +35,10 @@ export declare abstract class BaseMapProvider implements IMapProvider {
     abstract setZoom(zoom: number): void;
     abstract setZoomAndCenter(zoom: number, center: readonly [number, number]): void;
     abstract getZoom(): number;
+    abstract setFitView(options?: {
+        padding?: number;
+        maxZoom?: number;
+    }): void;
     abstract destroy(): void;
     abstract clearMap(): Promise<void>;
     protected generateId(type: string): string;

@@ -69,6 +69,14 @@ export declare class MapSDK {
      */
     getZoom(): number;
     /**
+     * 自动调整地图视图以显示所有标记点
+     * @param options
+     */
+    setFitView(options?: {
+        padding?: number;
+        maxZoom?: number;
+    }): void;
+    /**
      * 添加路径规划：驾车
      */
     addPathPlanning(options?: {

@@ -8,6 +8,8 @@ import {
   MarkerClusterOptions,
   IMarkerCluster,
   PolygonConfig,
+  PolylineConfig,
+  IPolyline,
   IPolygon,
   AnimationConfig,
   IAnimation,
@@ -313,22 +315,24 @@ export class OpenLayersProvider extends BaseMapProvider {
   }
 
   setCenter(position: [number, number]): void {
-    if (this.map) {
-      this.map.getView().setCenter(this.ol.proj.fromLonLat(position));
-    }
+    if (!this.map) return;
+    this.map.getView().setCenter(this.ol.proj.fromLonLat(position));
   }
 
   setZoom(zoom: number): void {
-    if (this.map) {
-      this.map.getView().setZoom(zoom);
-    }
+    if (!this.map) return;
+    this.map.getView().setZoom(zoom);
   }
 
   setZoomAndCenter(zoom: number, center: [number, number]): void {
-    if (this.map) {
-      this.map.getView().setZoom(zoom);
-      this.map.getView().setCenter(this.ol.proj.fromLonLat(center));
-    }
+    if (!this.map) return;
+    this.map.getView().setZoom(zoom);
+    this.map.getView().setCenter(this.ol.proj.fromLonLat(center));
+  }
+
+  setFitView(options?: { padding?: number; maxZoom?: number }): void {
+    if (!this.map) return;
+    this.map.fitView(options);
   }
 
   async addInfoWindow(options: { content: string | HTMLElement; position: [number, number]; open?: boolean }): Promise<any> {
@@ -420,6 +424,91 @@ export class OpenLayersProvider extends BaseMapProvider {
     explicitClusters.forEach((cluster) => {
       cluster.remove();
     });
+  }
+
+  async addPolyline(options: PolylineConfig): Promise<IPolyline> {
+    if (!this.map || !this.vectorLayer) {
+      throw new Error("Map not initialized");
+    }
+    const polylineId = this.generateId(COVERING_TYPES.POLYLINE);
+    const defaultOptions = {
+      id: polylineId,
+      path: [],
+      color: "#FF0000",
+      opacity: 1,
+      width: 2,
+      clickable: true,
+      draggable: false,
+      editable: false,
+      zIndex: 1,
+    };
+    const mergedOptions = { ...defaultOptions, ...options };
+    const polylineFeature = new this.ol.Feature({
+      geometry: new this.ol.geom.LineString(mergedOptions.path.map((point: any) => this.ol.proj.fromLonLat([point[0], point[1]]))),
+    });
+    const polylineStyle = new this.ol.style.Style({
+      stroke: new this.ol.style.Stroke({
+        color: mergedOptions.color,
+        width: mergedOptions.width,
+        opacity: mergedOptions.opacity,
+      }),
+    });
+    polylineFeature.setStyle(polylineStyle);
+    this.vectorLayer.getSource().addFeature(polylineFeature);
+    const olPolyline: IPolyline = {
+      id: polylineId,
+      path: mergedOptions.path.map((p) => [...p] as [number, number]),
+      googlePolyline: polylineFeature,
+      setPath: (path: [number, number][]) => {
+        const geometry = polylineFeature.getGeometry() as any;
+        geometry.setCoordinates(path.map(([lng, lat]) => this.ol.proj.fromLonLat([lng, lat])));
+        olPolyline.path = path;
+      },
+      setOptions: (options: any) => {
+        const newStyle = new this.ol.style.Style({
+          stroke: new this.ol.style.Stroke({
+            color: options.color || mergedOptions.color,
+            width: options.width || mergedOptions.width,
+            opacity: options.opacity || mergedOptions.opacity,
+          }),
+        });
+        polylineFeature.setStyle(newStyle);
+      },
+      setEditable: (editable: boolean) => {
+        // OpenLayers polyline editing implementation
+        if (editable) {
+          polylineFeature.setStyle(
+            new this.ol.style.Style({
+              stroke: new this.ol.style.Stroke({
+                color: mergedOptions.color,
+                width: mergedOptions.width,
+                opacity: mergedOptions.opacity,
+              }),
+            })
+          );
+        }
+      },
+      setDraggable: (draggable: boolean) => {
+        // OpenLayers polyline dragging implementation
+        if (draggable) {
+          polylineFeature.setStyle(
+            new this.ol.style.Style({
+              stroke: new this.ol.style.Stroke({
+                color: mergedOptions.color,
+                width: mergedOptions.width + 2,
+                opacity: mergedOptions.opacity,
+              }),
+            })
+          );
+        }
+      },
+      remove: () => {
+        this.vectorLayer.getSource().removeFeature(polylineFeature);
+        this.removePolylineFromCollection(olPolyline);
+      },
+    };
+    this.addPolylinesToCollection(olPolyline);
+    return olPolyline;
   }
 
   clearPolylines(params?: { type?: string; polylines?: any[] }): void {

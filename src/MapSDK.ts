@@ -201,6 +201,15 @@ export class MapSDK {
   }
 
   /**
+   * 自动调整地图视图以显示所有标记点
+   * @param options
+   */
+  setFitView(options?: { padding?: number; maxZoom?: number }): void {
+    this.ensureInitialized();
+    this.provider.setFitView(options);
+  }
+
+  /**
    * 添加路径规划：驾车
    */
   async addPathPlanning(options?: {

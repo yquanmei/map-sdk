@@ -106,42 +106,42 @@ export class GoogleMapProvider extends BaseMapProvider {
   }
 
   setCenter(position: [number, number]): void {
-    if (this.map) {
-      this.map.setCenter({
-        lat: position[1],
-        lng: position[0],
-      });
-    }
+    if (!this.map) return;
+    this.map.setCenter({
+      lat: position[1],
+      lng: position[0],
+    });
   }
 
   setZoom(zoom: number): void {
-    if (this.map) {
-      this.map.setZoom(zoom);
-    }
+    if (!this.map) return;
+    this.map.setZoom(zoom);
   }
 
   getZoom() {
-    if (this.map) {
-      return this.map.getZoom();
-    }
+    if (!this.map) return;
+    return this.map.getZoom();
   }
 
   setZoomAndCenter(zoom: number, center: [number, number]): void {
-    if (this.map) {
-      this.map.setZoom(zoom);
-      this.map.setCenter({
-        lat: center[1],
-        lng: center[0],
-      });
-    }
+    if (!this.map) return;
+    this.map.setZoom(zoom);
+    this.map.setCenter({
+      lat: center[1],
+      lng: center[0],
+    });
+  }
+
+  setFitView(options?: { padding?: number; maxZoom?: number }): void {
+    if (!this.map) return;
+    this.map.fitView(options);
   }
 
   destroy(): void {
-    if (this.map) {
-      // Google Maps doesn't have a destroy method
-      // Just clear the map reference
-      this.map = null;
-    }
+    if (!this.map) return;
+    // Google Maps doesn't have a destroy method
+    // Just clear the map reference
+    this.map = null;
   }
 
   async addMarker(config: MarkerConfig, type?: string): Promise<IMarker> {
@@ -1122,7 +1122,7 @@ export class GoogleMapProvider extends BaseMapProvider {
     let pausedTime = 0;
     let currentIndex = 0;
     let status: "idle" | "playing" | "paused" | "stopped" | "completed" = "idle";
-    let currentSpeed = mergedOptions.animation.speed;
+    let currentSpeed: number = (mergedOptions.animation.speed as number) || 1;
 
     const googleAnimation: IAnimation = {
       id: animationId,
@@ -1213,7 +1213,7 @@ export class GoogleMapProvider extends BaseMapProvider {
         googleAnimation.start();
         if (mergedOptions.onResume) {
           mergedOptions.onResume({
-            path: mergedOptions.line.path,
+            path: mergedOptions.line.path.map((p) => [p[0], p[1]] as [number, number]),
             status: status as AnimationStatus,
           });
         }

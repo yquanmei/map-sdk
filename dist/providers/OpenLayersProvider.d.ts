@@ -1,5 +1,5 @@
 import { BaseMapProvider } from "./BaseMapProvider";
-import { IMarker, MapConfig, MarkerConfig, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster, PolygonConfig, IPolygon, AnimationConfig, IAnimation } from "../types";
+import { IMarker, MapConfig, MarkerConfig, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster, PolygonConfig, PolylineConfig, IPolyline, IPolygon, AnimationConfig, IAnimation } from "../types";
 export declare class OpenLayersProvider extends BaseMapProvider {
     private ol;
     private vectorLayer;
@@ -16,6 +16,10 @@ export declare class OpenLayersProvider extends BaseMapProvider {
     setCenter(position: [number, number]): void;
     setZoom(zoom: number): void;
     setZoomAndCenter(zoom: number, center: [number, number]): void;
+    setFitView(options?: {
+        padding?: number;
+        maxZoom?: number;
+    }): void;
     addInfoWindow(options: {
         content: string | HTMLElement;
         position: [number, number];
@@ -31,6 +35,7 @@ export declare class OpenLayersProvider extends BaseMapProvider {
         type?: string;
         clusters?: Array<IMarkerCluster>;
     }): void;
+    addPolyline(options: PolylineConfig): Promise<IPolyline>;
     clearPolylines(params?: {
         type?: string;
         polylines?: any[];

@@ -1,5 +1,5 @@
 import { BaseMapProvider } from "./BaseMapProvider";
-import { IMarker, MapConfig, MarkerConfig, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster, IAnimation, AnimationConfig, PolygonConfig, IPolygon } from "../types";
+import { IMarker, MapConfig, MarkerConfig, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster, IAnimation, AnimationConfig, PolygonConfig, IPolygon, PolylineConfig, IPolyline } from "../types";
 import "../css/google.css";
 interface GoogleMarker extends IMarker {
     googleMarker: any;
@@ -22,6 +22,10 @@ export declare class GoogleMapProvider extends BaseMapProvider {
     setZoom(zoom: number): void;
     getZoom(): any;
     setZoomAndCenter(zoom: number, center: [number, number]): void;
+    setFitView(options?: {
+        padding?: number;
+        maxZoom?: number;
+    }): void;
     destroy(): void;
     addMarker(config: MarkerConfig, type?: string): Promise<IMarker>;
     addMarkerCluster(points: MarkerClusterPoint[], options?: MarkerClusterOptions): Promise<any>;
@@ -62,17 +66,7 @@ export declare class GoogleMapProvider extends BaseMapProvider {
     /**
      * 绘制折线（Polyline）
      */
-    addPolyline(options: {
-        path: [number, number][];
-        css?: {
-            color?: string;
-            opacity?: number;
-            width?: number;
-        };
-        color?: string;
-        width?: number;
-        opacity?: number;
-    }): Promise<any>;
+    addPolyline(options: PolylineConfig): Promise<IPolyline>;
     clearPolylines(params?: {
         type?: string;
         polylines?: any[];

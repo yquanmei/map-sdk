@@ -93,6 +93,7 @@ export interface IMapProvider {
     clearMarkerClusters(params?: ClearParams<IMarkerCluster>): void;
     addAnimation(config: AnimationConfig): Promise<IAnimation>;
     clearAnimations(params?: ClearParams<IAnimation>): void;
+    addPolyline(config: PolylineConfig): Promise<IPolyline>;
     clearPolylines(params?: ClearParams<any>): void;
     addPolygon(config: PolygonConfig): Promise<IPolygon>;
     clearPolygons(params?: ClearParams<IPolygon>): void;
@@ -107,6 +108,10 @@ export interface IMapProvider {
     setZoom(zoom: number): void;
     setZoomAndCenter(zoom: number, center: readonly [number, number]): void;
     getZoom(): number;
+    setFitView(options?: {
+        padding?: number;
+        maxZoom?: number;
+    }): void;
     destroy(): void;
     clearMap(): Promise<void>;
 }
@@ -119,38 +124,64 @@ export interface IMarker {
     remove(): void;
     readonly [key: string]: unknown;
 }
+export interface AnimationPlayConfig extends MarkerConfig {
+    duration: number;
+    autoStart?: boolean;
+    loop?: boolean;
+}
+export interface AnimationInfo {
+    path: [number, number][];
+    status: AnimationStatus;
+}
 export interface AnimationConfig extends BaseConfig {
-    readonly path: readonly (readonly [number, number])[];
-    readonly duration?: number;
-    readonly speed?: number;
-    readonly markerOptions?: MarkerConfig;
-    readonly autoStart?: boolean;
-    readonly loop?: boolean;
+    line: PolylineConfig;
+    passedLine: PolygonConfig;
+    marker?: MarkerConfig;
+    animation?: AnimationPlayConfig;
+    onMoving?: (params: any) => void;
     readonly onStart?: () => void;
     readonly onPause?: () => void;
-    readonly onResume?: () => void;
+    readonly onResume?: (params: AnimationInfo) => void;
     readonly onStop?: () => void;
+    onStepEnd?: () => void;
     readonly onComplete?: () => void;
     readonly onProgress?: (progress: number, position: readonly [number, number]) => void;
     readonly onStep?: (currentIndex: number, position: readonly [number, number]) => void;
 }
-export type AnimationStatus = "idle" | "playing" | "paused" | "stopped" | "completed";
 export interface IAnimation {
     readonly id: string;
     start(): void;
     pause(): void;
     resume(): void;
     stop(): void;
-    next(): void;
-    previous(): void;
-    seek(progress: number): void;
-    setSpeed(speed: number): void;
     getCurrentPosition(): readonly [number, number];
     getProgress(): number;
-    getStatus(): AnimationStatus;
     remove(): void;
+    changeSteps(step: number, callback?: (data: any) => void): void;
+    changeSpeed(duration: number): void;
+    seek(progress: number): void;
+    setSpeed(speed: number): void;
+    getInfo(): AnimationInfo;
+    remove(): void;
+    readonly [key: string]: unknown;
 }
 export interface MapSDKConfig extends MapConfig {
+}
+export interface PolylineConfig extends BaseConfig {
+    readonly path: readonly (readonly [number, number])[];
+    readonly color?: string;
+    readonly width?: number;
+    readonly opacity?: number;
+    readonly [key: string]: unknown;
+}
+export interface IPolyline {
+    readonly id: string;
+    path: [number, number][];
+    setPath(path: readonly (readonly [number, number])[]): void;
+    setOptions(options: Partial<PolylineConfig>): void;
+    setEditable(editable: boolean): void;
+    setDraggable(draggable: boolean): void;
+    readonly [key: string]: unknown;
 }
 export interface PolygonConfig extends BaseConfig {
     readonly path: readonly (readonly [number, number])[];
@@ -195,4 +226,12 @@ export interface IPolygon {
     hide(): void;
     remove(): void;
     readonly [key: string]: unknown;
+}
+export declare enum AnimationStatus {
+    IDLE = "idle",
+    PLAYING = "playing",
+    PAUSED = "paused",
+    RESUMED = "resumed",
+    STOPPED = "stopped",
+    COMPLETED = "completed"
 }

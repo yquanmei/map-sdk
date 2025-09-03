@@ -117,6 +117,7 @@ export interface IMapProvider {
   setZoom(zoom: number): void;
   setZoomAndCenter(zoom: number, center: readonly [number, number]): void;
   getZoom(): number;
+  setFitView(options?: { padding?: number; maxZoom?: number }): void;
   destroy(): void;
   clearMap(): Promise<void>;
 }

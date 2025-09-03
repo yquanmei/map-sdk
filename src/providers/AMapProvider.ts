@@ -926,4 +926,9 @@ export class AMapProvider extends BaseMapProvider {
       animation.remove();
     });
   }
+
+  setFitView() {
+    if (!this.map) return;
+    this.map.setFitView();
+  }
 }
