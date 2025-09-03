@@ -8,7 +8,9 @@ import {
   IMarkerCluster,
   IAnimation,
   AnimationConfig,
+  PolylineConfig,
   PolygonConfig,
+  IPolyline,
   IPolygon,
   ClearParams,
 } from "../types";
@@ -35,6 +37,7 @@ export abstract class BaseMapProvider implements IMapProvider {
   abstract clearMarkerClusters(params?: ClearParams<IMarkerCluster>): void;
   abstract addAnimation(config: AnimationConfig): Promise<IAnimation>;
   abstract clearAnimations(params?: ClearParams<IAnimation>): void;
+  abstract addPolyline(config: PolylineConfig): Promise<IPolyline>;
   abstract clearPolylines(params?: ClearParams<unknown>): void;
   abstract addPolygon(config: PolygonConfig): Promise<IPolygon>;
   abstract clearPolygons(params?: ClearParams<IPolygon>): void;

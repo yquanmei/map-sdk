@@ -13,6 +13,8 @@ import {
   IPolygon,
   PolylineConfig,
   IPolyline,
+  AnimationStatus,
+  AnimationInfo,
 } from "../types";
 import { createDomContent } from "../utils";
 import { Loader } from "@googlemaps/js-api-loader";
@@ -1096,17 +1098,19 @@ export class GoogleMapProvider extends BaseMapProvider {
 
     const animationId = this.generateId(COVERING_TYPES.ANIMATION);
     const defaultOptions = {
-      duration: 5000,
-      speed: 1,
-      autoStart: false,
-      loop: false,
+      animation: {
+        duration: 5000,
+        speed: 1,
+        autoStart: false,
+        loop: false,
+      },
     };
 
     const mergedOptions = { ...defaultOptions, ...config };
 
     // 创建移动标记
-    const markerOptions = mergedOptions.markerOptions || {
-      position: mergedOptions.path[0],
+    const markerOptions = mergedOptions.marker || {
+      position: mergedOptions.line.path[0],
       content: "🚗",
       map: true,
     };
@@ -1118,11 +1122,11 @@ export class GoogleMapProvider extends BaseMapProvider {
     let pausedTime = 0;
     let currentIndex = 0;
     let status: "idle" | "playing" | "paused" | "stopped" | "completed" = "idle";
-    let currentSpeed = mergedOptions.speed;
+    let currentSpeed = mergedOptions.animation.speed;
 
     const googleAnimation: IAnimation = {
       id: animationId,
-
+      googleMarker: movingMarker,
       start: () => {
         if (status === "playing") return;
         if (status === "completed" || status === "stopped") {
@@ -1137,11 +1141,11 @@ export class GoogleMapProvider extends BaseMapProvider {
           if (status !== "playing") return;
 
           const elapsed = Date.now() - startTime;
-          const totalDuration = mergedOptions.duration / currentSpeed;
+          const totalDuration = mergedOptions.animation.duration / currentSpeed;
           let progress = Math.min(elapsed / totalDuration, 1);
 
           if (progress >= 1) {
-            if (mergedOptions.loop) {
+            if (mergedOptions.animation.loop) {
               progress = 0;
               currentIndex = 0;
               startTime = Date.now();
@@ -1155,20 +1159,20 @@ export class GoogleMapProvider extends BaseMapProvider {
           }
 
           // 计算当前位置
-          const totalPoints = mergedOptions.path.length;
+          const totalPoints = mergedOptions.line.path.length;
           const targetIndex = Math.floor(progress * (totalPoints - 1));
           const segmentProgress = (progress * (totalPoints - 1)) % 1;
 
           if (targetIndex !== currentIndex) {
             currentIndex = targetIndex;
             if (mergedOptions.onStep) {
-              mergedOptions.onStep(currentIndex, mergedOptions.path[currentIndex]);
+              mergedOptions.onStep(currentIndex, mergedOptions.line.path[currentIndex]);
             }
           }
 
           // 插值计算当前位置
-          const currentPos = mergedOptions.path[Math.min(currentIndex, totalPoints - 2)];
-          const nextPos = mergedOptions.path[Math.min(currentIndex + 1, totalPoints - 1)];
+          const currentPos = mergedOptions.line.path[Math.min(currentIndex, totalPoints - 2)];
+          const nextPos = mergedOptions.line.path[Math.min(currentIndex + 1, totalPoints - 1)];
 
           const lat = currentPos[1] + (nextPos[1] - currentPos[1]) * segmentProgress;
           const lng = currentPos[0] + (nextPos[0] - currentPos[0]) * segmentProgress;
@@ -1208,7 +1212,10 @@ export class GoogleMapProvider extends BaseMapProvider {
         if (status !== "paused") return;
         googleAnimation.start();
         if (mergedOptions.onResume) {
-          mergedOptions.onResume();
+          mergedOptions.onResume({
+            path: mergedOptions.line.path,
+            status: status as AnimationStatus,
+          });
         }
       },
 
@@ -1221,43 +1228,59 @@ export class GoogleMapProvider extends BaseMapProvider {
           animationFrameId = null;
         }
         // 重置到起始位置
-        movingMarker.setPosition(mergedOptions.path[0]);
+        movingMarker.setPosition(mergedOptions.line.path[0]);
         if (mergedOptions.onStop) {
           mergedOptions.onStop();
         }
       },
-
-      next: () => {
-        if (status === "playing") return;
-        currentIndex = Math.min(currentIndex + 1, mergedOptions.path.length - 1);
-        const position = mergedOptions.path[currentIndex];
-        movingMarker.setPosition(position);
-        if (mergedOptions.onStep) {
-          mergedOptions.onStep(currentIndex, position);
+      changeSteps: (step: number, callback?: (params: any) => void) => {
+        if (status === AnimationStatus.PLAYING) return;
+        if (typeof callback === "function") {
+          callback({
+            path: mergedOptions.line.path as [number, number][],
+            status: status,
+          });
         }
       },
-
-      previous: () => {
-        if (status === "playing") return;
-        currentIndex = Math.max(currentIndex - 1, 0);
-        const position = mergedOptions.path[currentIndex];
-        movingMarker.setPosition(position);
-        if (mergedOptions.onStep) {
-          mergedOptions.onStep(currentIndex, position);
-        }
+      changeSpeed: (duration: number) => {
+        console.warn("GoogleMap does not support trajectory animation");
       },
+      getInfo: (): AnimationInfo => {
+        return {
+          path: mergedOptions.line.path as [number, number][],
+          status: status as AnimationStatus,
+        };
+      },
+      // next: () => {
+      //   currentIndex = Math.min(currentIndex + 1, mergedOptions.line.path.length - 1);
+      //   const position = mergedOptions.line.path[currentIndex];
+      //   movingMarker.setPosition(position);
+      //   if (mergedOptions.onStep) {
+      //     mergedOptions.onStep(currentIndex, position);
+      //   }
+      // },
+
+      // previous: () => {
+      //   if (status === "playing") return;
+      //   currentIndex = Math.max(currentIndex - 1, 0);
+      //   const position = mergedOptions.line.path[currentIndex];
+      //   movingMarker.setPosition(position);
+      //   if (mergedOptions.onStep) {
+      //     mergedOptions.onStep(currentIndex, position);
+      //   }
+      // },
 
       seek: (progress: number) => {
         const clampedProgress = Math.max(0, Math.min(1, progress));
-        const totalPoints = mergedOptions.path.length;
+        const totalPoints = mergedOptions.line.path.length;
         currentIndex = Math.floor(clampedProgress * (totalPoints - 1));
-        const position = mergedOptions.path[currentIndex];
+        const position = mergedOptions.line.path[currentIndex];
         movingMarker.setPosition(position);
 
         if (status === "playing") {
-          startTime = Date.now() - (clampedProgress * mergedOptions.duration) / currentSpeed;
+          startTime = Date.now() - (clampedProgress * mergedOptions.animation.duration) / currentSpeed;
         } else {
-          pausedTime = (clampedProgress * mergedOptions.duration) / currentSpeed;
+          pausedTime = (clampedProgress * mergedOptions.animation.duration) / currentSpeed;
         }
 
         if (mergedOptions.onProgress) {
@@ -1276,7 +1299,7 @@ export class GoogleMapProvider extends BaseMapProvider {
       },
 
       getCurrentPosition: (): [number, number] => {
-        return [...mergedOptions.path[Math.min(currentIndex, mergedOptions.path.length - 1)]] as [number, number];
+        return [...mergedOptions.line.path[Math.min(currentIndex, mergedOptions.line.path.length - 1)]] as [number, number];
       },
 
       getProgress: (): number => {
@@ -1285,7 +1308,7 @@ export class GoogleMapProvider extends BaseMapProvider {
 
         const elapsed = status === "playing" ? Date.now() - startTime : pausedTime;
 
-        return Math.min(elapsed / (mergedOptions.duration / currentSpeed), 1);
+        return Math.min(elapsed / (mergedOptions.animation.duration / currentSpeed), 1);
       },
 
       getStatus: (): "idle" | "playing" | "paused" | "stopped" | "completed" => {
@@ -1306,7 +1329,7 @@ export class GoogleMapProvider extends BaseMapProvider {
     this.addAnimationToCollection(googleAnimation);
 
     // 自动开始
-    if (mergedOptions.autoStart) {
+    if (mergedOptions.animation.autoStart) {
       setTimeout(() => googleAnimation.start(), 100);
     }
 

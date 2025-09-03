@@ -1,5 +1,6 @@
 import { BaseMapProvider } from "./BaseMapProvider";
-import { createDomContent } from "../utils";import {
+import { createDomContent } from "../utils";
+import {
   IMarker,
   MapConfig,
   MarkerConfig,
@@ -11,6 +12,8 @@ import { createDomContent } from "../utils";import {
   AnimationConfig,
   IAnimation,
   COVERING_TYPES,
+  AnimationInfo,
+  AnimationStatus,
 } from "../types";
 
 interface OpenLayersMarker extends IMarker {
@@ -342,7 +345,7 @@ export class OpenLayersProvider extends BaseMapProvider {
 
     this.map.addOverlay(overlay);
     this.addInfoWindowToCollection(overlay);
-    
+
     // 为overlay添加open、close、remove方法
     const overlayWithMethods = {
       ...overlay,
@@ -357,10 +360,11 @@ export class OpenLayersProvider extends BaseMapProvider {
       remove: () => {
         this.map.removeOverlay(overlay);
         this.removeInfoWindowFromCollection(overlay);
-      }
+      },
     };
-    
-    return overlayWithMethods;  }
+
+    return overlayWithMethods;
+  }
 
   destroy(): void {
     if (this.map) {
@@ -648,11 +652,22 @@ export class OpenLayersProvider extends BaseMapProvider {
       stop: () => {
         console.warn("OpenLayers does not support trajectory animation");
       },
-      next: () => {
+      changeSteps: (step: number, callback?: (params: any) => void) => {
+        if (typeof callback === "function") {
+          callback({
+            path: [0, 0],
+            status: "status",
+          });
+        }
+      },
+      changeSpeed: (duration: number) => {
         console.warn("OpenLayers does not support trajectory animation");
       },
-      previous: () => {
-        console.warn("OpenLayers does not support trajectory animation");
+      getInfo: (): AnimationInfo => {
+        return {
+          path: [0, 0] as unknown as [number, number][],
+          status: AnimationStatus.IDLE,
+        };
       },
       seek: (progress: number) => {
         console.warn("OpenLayers does not support trajectory animation");

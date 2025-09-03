@@ -181,7 +181,7 @@ export class AMapProvider extends BaseMapProvider {
     };
     if (typeof mergedOptions.onClick === "function") {
       aMapMarker.on("click", (e: any) => {
-        mergedOptions.onClick({ event: e, content, data: mergedOptions.data, position, marker });
+        mergedOptions.onClick!({ event: e, content, data: mergedOptions.data, position, marker });
       });
     }
 
@@ -441,15 +441,24 @@ export class AMapProvider extends BaseMapProvider {
 
     const polyline = {
       id: mergedOptions.id,
+      path: mergedOptions.path.map((p: [number, number]) => [...p] as [number, number]),
       aMapPolyline: line,
       setPath: (path: [number, number][]) => {
         line.setPath(path);
+        polyline.path = path.map((p) => [...p] as [number, number]);
       },
-      setOptions: (options: any) => {},
+      setOptions: (options: any) => {
+        line.setOptions(options);
+      },
+      setEditable: (editable: boolean) => {
+        line.setOptions({ editable });
+      },
+      setDraggable: (draggable: boolean) => {
+        line.setOptions({ draggable });
+      },
     };
-
     this.addPolylinesToCollection([polyline]);
-    return polyline;
+    return Promise.resolve(polyline);
   }
 
   clearPolylines(params?: { type?: string; polylines?: any[] }): void {
@@ -645,8 +654,11 @@ export class AMapProvider extends BaseMapProvider {
   async addAnimation(config: AnimationConfig): Promise<IAnimation> {
     const animationId = this.generateId(COVERING_TYPES.ANIMATION);
     const defaultOptions = {
-      start: () => {
-        console.warn("AMap does not support trajectory animation");
+      animation: {
+        duration: 5000,
+        speed: 1,
+        autoStart: false,
+        loop: false,
       },
     };
     const mergedOptions = {
@@ -655,7 +667,7 @@ export class AMapProvider extends BaseMapProvider {
     };
     // const aMapAnimation = () => {
     const allLineArr = mergedOptions.line.path;
-    if (!allLineArr || !Array.isArray(allLineArr) || allLineArr?.length === 0) return;
+    if (!allLineArr || !Array.isArray(allLineArr) || allLineArr?.length === 0) throw new Error("Animation path is required");
     const polyline = this.map.addPolyline(mergedOptions.line);
     const passedLine = this.map.addPolyline(mergedOptions.passedLine);
     const marker = this.map.addMarker(mergedOptions.marker);
@@ -666,7 +678,7 @@ export class AMapProvider extends BaseMapProvider {
       allPath: allLineArr, // 线路
       animationPath: allLineArr, // 线路
       shouldConcatBefore: false,
-      oldPath: [],
+      oldPath: [] as any[],
       status: AnimationStatus.IDLE,
       duration: mergedOptions.animation?.duration || 5000,
       directResume: true,
@@ -784,7 +796,7 @@ export class AMapProvider extends BaseMapProvider {
       stop: () => {
         marker.stopMove();
       },
-      changeSteps: (step: number, changeStepsCall) => {
+      changeSteps: (step: number, callback?: (params: any) => void) => {
         if (step === 0) return;
         marker.pause();
 
@@ -837,10 +849,10 @@ export class AMapProvider extends BaseMapProvider {
           const markerPosition = stepPassedPath[stepPassedPath.length - 1];
           marker.setPosition(markerPosition);
           this.setCenter(markerPosition, true);
-          // 注意，如果animationOptions.onMoving() 写了setCenter。这里的setCenter(markerPosition, true)会不生效，因为虽然没有在moving，但是moving中的setCenter还在执行，会将这里覆盖，导致这里不生效，所以可以在changeStepsCall中执行
+          // 注意，如果animationOptions.onMoving() 写了setCenter。这里的setCenter(markerPosition, true)会不生效，因为虽然没有在moving，但是moving中的setCenter还在执行，会将这里覆盖，导致这里不生效，所以可以在onStepChange中执行
         }
-        if (typeof changeStepsCall === "function")
-          changeStepsCall({
+        if (typeof callback === "function")
+          callback({
             step,
             path: currentPoint.path,
             status: currentPoint.status,
