@@ -106,6 +106,7 @@ export interface IMapProvider {
   clearMarkerClusters(params?: ClearParams<IMarkerCluster>): void;
   addAnimation(config: AnimationConfig): Promise<IAnimation>;
   clearAnimations(params?: ClearParams<IAnimation>): void;
+  addPolyline(config: PolylineConfig): Promise<IPolyline>;
   clearPolylines(params?: ClearParams<any>): void;
   addPolygon(config: PolygonConfig): Promise<IPolygon>;
   clearPolygons(params?: ClearParams<IPolygon>): void;
@@ -130,24 +131,33 @@ export interface IMarker {
   readonly [key: string]: unknown;
 }
 
+export interface AnimationPlayConfig extends MarkerConfig {
+  duration: number;
+  autoStart?: boolean; // 是否自动开始，默认false
+  loop?: boolean; // 是否循环播放，默认false
+}
+
+export interface AnimationInfo {
+  path: [number, number][];
+  status: AnimationStatus;
+}
+
 // 轨迹动画相关类型
 export interface AnimationConfig extends BaseConfig {
-  readonly path: readonly (readonly [number, number])[]; // 轨迹路径 [lng, lat][]
-  readonly duration?: number; // 动画总时长(毫秒)，默认5000ms
-  readonly speed?: number; // 播放倍速，默认1倍
-  readonly markerOptions?: MarkerConfig; // 移动标记的配置
-  readonly autoStart?: boolean; // 是否自动开始，默认false
-  readonly loop?: boolean; // 是否循环播放，默认false
+  line: PolylineConfig;
+  passedLine: PolygonConfig;
+  marker?: MarkerConfig;
+  animation?: AnimationPlayConfig;
+  onMoving?: (params: any) => void;
   readonly onStart?: () => void; // 开始回调
   readonly onPause?: () => void; // 暂停回调
-  readonly onResume?: () => void; // 继续回调
+  readonly onResume?: (params: AnimationInfo) => void; // 继续回调
   readonly onStop?: () => void; // 停止回调
+  onStepEnd?: () => void; // 每走完一个point，onStepEnd
   readonly onComplete?: () => void; // 完成回调
   readonly onProgress?: (progress: number, position: readonly [number, number]) => void; // 进度回调
   readonly onStep?: (currentIndex: number, position: readonly [number, number]) => void; // 步骤回调
 }
-
-export type AnimationStatus = "idle" | "playing" | "paused" | "stopped" | "completed";
 
 export interface IAnimation {
   readonly id: string;
@@ -155,18 +165,37 @@ export interface IAnimation {
   pause(): void; // 暂停动画
   resume(): void; // 继续动画
   stop(): void; // 停止动画
-  next(): void; // 下一步
-  previous(): void; // 上一步
-  seek(progress: number): void; // 跳转到指定进度(0-1)
-  setSpeed(speed: number): void; // 设置倍速
   getCurrentPosition(): readonly [number, number]; // 获取当前位置
   getProgress(): number; // 获取当前进度(0-1)
-  getStatus(): AnimationStatus; // 获取状态
   remove(): void; // 移除动画
-  // clear(): void; // 清除动画
+  changeSteps(step: number, callback?: (data: any) => void): void; // 改变步数
+  changeSpeed(duration: number): void; // 改变速度  //
+  seek(progress: number): void; // 跳转到指定进度(0-1)
+  setSpeed(speed: number): void; // 设置倍速
+  getInfo(): AnimationInfo; // 获取动画信息
+  remove(): void; // 清除动画
+  readonly [key: string]: unknown;
 }
 
 export interface MapSDKConfig extends MapConfig {}
+
+export interface PolylineConfig extends BaseConfig {
+  readonly path: readonly (readonly [number, number])[]; // 轨迹路径 [lng, lat][]
+  readonly color?: string; // 颜色
+  readonly width?: number; // 宽度
+  readonly opacity?: number; // 透明度
+  readonly [key: string]: unknown;
+}
+
+export interface IPolyline {
+  readonly id: string;
+  path: [number, number][]; // 允许provider实现修改
+  setPath(path: readonly (readonly [number, number])[]): void; // 设置多边形路径
+  setOptions(options: Partial<PolylineConfig>): void;
+  setEditable(editable: boolean): void; // 设置是否可编辑
+  setDraggable(draggable: boolean): void; // 设置是否可拖拽
+  readonly [key: string]: unknown;
+}
 
 // 多边形相关类型
 export interface PolygonConfig extends BaseConfig {

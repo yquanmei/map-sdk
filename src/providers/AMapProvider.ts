@@ -14,16 +14,18 @@ import {
   IAnimation,
   COVERING_TYPES,
   AnimationStatus,
+  PolylineConfig,
+  IPolyline,
 } from "../types";
 import { createDomContent } from "../utils";
 
 interface AMapMarker extends IMarker {
-  amapMarker: any;
+  aMapMarker: any;
 }
 
 interface AMapMarkerCluster extends IMarkerCluster {
-  amapCluster: any;
-  amapMarkers: any[];
+  aMapCluster: any;
+  aMapMarkers: any[];
 }
 
 export class AMapProvider extends BaseMapProvider {
@@ -150,7 +152,7 @@ export class AMapProvider extends BaseMapProvider {
     //   markerOptions.map = this.map;
     // }
 
-    const amapMarker = new this.AMap.Marker({
+    const aMapMarker = new this.AMap.Marker({
       map: this.map,
       position: [position[0], position[1]],
       content,
@@ -160,25 +162,25 @@ export class AMapProvider extends BaseMapProvider {
     const marker: AMapMarker = {
       id: markerId,
       position: [...mergedOptions.position] as [number, number],
-      amapMarker,
+      aMapMarker,
       data: mergedOptions.data,
       setPosition: (position: [number, number]) => {
-        amapMarker.setPosition(position);
+        aMapMarker.setPosition(position);
         marker.position = position;
       },
       setTitle: (title: string) => {
-        amapMarker.setTitle(title);
+        aMapMarker.setTitle(title);
       },
       setContent: (content: string) => {
-        amapMarker.setContent(content);
+        aMapMarker.setContent(content);
       },
       remove: () => {
-        this.map.remove(amapMarker);
+        this.map.remove(aMapMarker);
         this.removeMarkerFromCollection(markerId);
       },
     };
     if (typeof mergedOptions.onClick === "function") {
-      amapMarker.on("click", (e: any) => {
+      aMapMarker.on("click", (e: any) => {
         mergedOptions.onClick({ event: e, content, data: mergedOptions.data, position, marker });
       });
     }
@@ -233,8 +235,8 @@ export class AMapProvider extends BaseMapProvider {
     const markerCluster: AMapMarkerCluster = {
       id: clusterId,
       points: [...points],
-      amapCluster: cluster,
-      amapMarkers: markers,
+      aMapCluster: cluster,
+      aMapMarkers: markers,
       addPoint: (point: MarkerClusterPoint) => {
         const { position: _, ...renderMarkerConfig } = defaultOptions.renderMarker!;
         const { position: pointPosition, ...pointConfig } = point;
@@ -275,24 +277,24 @@ export class AMapProvider extends BaseMapProvider {
   }
 
   removeMarker(marker: IMarker): void {
-    const amapMarker = (marker as AMapMarker).amapMarker;
-    if (amapMarker) {
-      this.map.remove(amapMarker);
+    const aMapMarker = (marker as AMapMarker).aMapMarker;
+    if (aMapMarker) {
+      this.map.remove(aMapMarker);
       this.removeMarkerFromCollection(marker.id);
     }
   }
 
   removeMarkerCluster(cluster: IMarkerCluster): void {
-    const amapCluster = (cluster as AMapMarkerCluster).amapCluster;
-    if (amapCluster) {
-      amapCluster.setMap(null);
+    const aMapCluster = (cluster as AMapMarkerCluster).aMapCluster;
+    if (aMapCluster) {
+      aMapCluster.setMap(null);
       this.removeClusterFromCollection(cluster.id);
     }
   }
 
-  setCenter(position: [number, number]): void {
+  setCenter(position: [number, number], immediately?: boolean, duration?: number): void {
     if (this.map) {
-      this.map.setCenter(position);
+      this.map.setCenter(position, immediately, duration);
     }
   }
 
@@ -302,9 +304,9 @@ export class AMapProvider extends BaseMapProvider {
     }
   }
 
-  setZoomAndCenter(zoom: number, center: [number, number]): void {
+  setZoomAndCenter(zoom: number, center: [number, number], immediately?: boolean, duration?: number): void {
     if (this.map) {
-      this.map.setZoomAndCenter(zoom, center);
+      this.map.setZoomAndCenter(zoom, center, immediately, duration);
     }
   }
 
@@ -414,6 +416,42 @@ export class AMapProvider extends BaseMapProvider {
     });
   }
 
+  addPolyline(options: PolylineConfig): Promise<IPolyline> {
+    if (!this.map) {
+      throw new Error("Map not initialized");
+    }
+    const polylineId = this.generateId(COVERING_TYPES.POLYLINE);
+    const defaultOptions = {
+      id: polylineId,
+      color: "#f00",
+      opacity: 0.8,
+      width: 3,
+    };
+    const mergedOptions = {
+      ...defaultOptions,
+      ...options,
+    };
+    const line = new this.AMap.Polyline({
+      map: this.map,
+      path: mergedOptions.path,
+      strokeColor: mergedOptions.color,
+      strokeOpacity: mergedOptions.opacity,
+      strokeWeight: mergedOptions.width,
+    });
+
+    const polyline = {
+      id: mergedOptions.id,
+      aMapPolyline: line,
+      setPath: (path: [number, number][]) => {
+        line.setPath(path);
+      },
+      setOptions: (options: any) => {},
+    };
+
+    this.addPolylinesToCollection([polyline]);
+    return polyline;
+  }
+
   clearPolylines(params?: { type?: string; polylines?: any[] }): void {
     if (!this.map) return;
     const typeToClear = params?.type;
@@ -459,7 +497,7 @@ export class AMapProvider extends BaseMapProvider {
       zIndex: 1,
     };
     const mergedOptions = { ...defaultOptions, ...config };
-    const polygon = new this.AMap.Polygon({
+    const aMapPolygon = new this.AMap.Polygon({
       path: mergedOptions.path.map((p) => [...p] as [number, number]),
       strokeColor: mergedOptions.strokeColor,
       strokeOpacity: mergedOptions.strokeOpacity,
@@ -471,50 +509,50 @@ export class AMapProvider extends BaseMapProvider {
       editable: mergedOptions.editable,
       zIndex: mergedOptions.zIndex,
     });
-    this.map.add(polygon);
-    const amapPolygon: IPolygon = {
+    this.map.add(aMapPolygon);
+    const polygon: IPolygon = {
       id: polygonId,
       path: mergedOptions.path.map((point) => [...point] as [number, number]),
-      googlePolygon: polygon,
+      aMapPolygon,
       setPath: (path: [number, number][]) => {
-        polygon.setPath(path);
-        amapPolygon.path = path;
+        aMapPolygon.setPath(path);
+        polygon.path = path;
       },
       setOptions: (options: any) => {
-        polygon.setOptions(options);
+        aMapPolygon.setOptions(options);
       },
       setEditable: (editable: boolean) => {
-        polygon.setOptions({ editable });
+        aMapPolygon.setOptions({ editable });
       },
       setDraggable: (draggable: boolean) => {
-        polygon.setOptions({ draggable });
+        aMapPolygon.setOptions({ draggable });
       },
       getBounds: () => {
-        return polygon.getBounds();
+        return aMapPolygon.getBounds();
       },
       contains: (point: [number, number]) => {
-        return polygon.contains(point);
+        return aMapPolygon.contains(point);
       },
       getArea: () => {
-        return polygon.getArea();
+        return aMapPolygon.getArea();
       },
       show: () => {
-        polygon.show();
+        aMapPolygon.show();
       },
       hide: () => {
-        polygon.hide();
+        aMapPolygon.hide();
       },
       remove: () => {
-        this.map.remove(polygon);
-        this.removePolygonFromCollection(polygonId);
+        this.map.remove(aMapPolygon);
+        this.removePolygonFromCollection(aMapPolygon);
       },
       // clear: () => {
       //   this.map.remove(polygon);
       //   this.removePolygonFromCollection(polygonId);
       // },
     };
-    this.addPolygonToCollection(amapPolygon);
-    return amapPolygon;
+    this.addPolygonToCollection(polygon);
+    return polygon;
   }
 
   clearPolygons(params?: { type?: string; polygons?: Array<IPolygon> }): void {
@@ -629,13 +667,13 @@ export class AMapProvider extends BaseMapProvider {
       animationPath: allLineArr, // 线路
       shouldConcatBefore: false,
       oldPath: [],
-      animationStatus: AnimationStatus.IDEA,
-      duration: mergedOptions.animation.duration,
+      status: AnimationStatus.IDLE,
+      duration: mergedOptions.animation?.duration || 5000,
       directResume: true,
     };
-    let startAnimationTimeout;
+    let startAnimationTimeout: any;
     if (typeof mergedOptions.onMoving === "function") {
-      marker.on("moving", (e) => {
+      marker.on("moving", (e: any) => {
         // 移动过程中
         // 从当前点开始运功，但是需要加上之前的轨迹
         if (currentPoint.shouldConcatBefore === true) {
@@ -655,20 +693,20 @@ export class AMapProvider extends BaseMapProvider {
         }
         passedLine.setPath(currentPoint.pathWithRInfo);
         this.setCenter(e.target.getPosition(), true);
-        mergedOptions.onMoving(e);
+        mergedOptions.onMoving?.(e);
       });
     }
     if (typeof mergedOptions.onStepEnd === "function") {
       marker.on("moveend", () => {
         // 每走完一个point，就会执行moveend
-        mergedOptions.onStepEnd();
+        mergedOptions.onStepEnd?.();
       });
     }
-    if (typeof mergedOptions.onEnd === "function") {
+    if (typeof mergedOptions.onComplete === "function") {
       marker.on("movealong", () => {
         currentPoint.shouldConcatBefore = false;
-        currentPoint.animationStatus = AnimationStatus.COMPLETED;
-        mergedOptions.onEnd();
+        currentPoint.status = AnimationStatus.COMPLETED;
+        mergedOptions.onComplete?.();
       });
     }
 
@@ -686,9 +724,9 @@ export class AMapProvider extends BaseMapProvider {
           });
           currentPoint = {
             ...currentPoint,
-            animationStatus: AnimationStatus.PLAYING,
+            status: AnimationStatus.PLAYING,
           };
-          this.setZoomAndCenter(18, mergedOptions.line.path[0], false, 100);
+          this.setZoomAndCenter(18, mergedOptions.line.path[0] as [number, number], false, 100);
           // this.setZoomAndCenter(18, animationOptions.line.path[0], true)
         }, 800);
         typeof mergedOptions.onStart === "function" && mergedOptions.onStart();
@@ -698,7 +736,7 @@ export class AMapProvider extends BaseMapProvider {
         currentPoint = {
           ...currentPoint,
           oldPath: currentPoint.path,
-          animationStatus: AnimationStatus.PAUSED,
+          status: AnimationStatus.PAUSED,
         };
       },
       resume: () => {
@@ -735,12 +773,12 @@ export class AMapProvider extends BaseMapProvider {
         currentPoint = {
           ...currentPoint,
           directResume: true,
-          animationStatus: AnimationStatus.RESUMED,
+          status: AnimationStatus.RESUMED,
         };
-        typeof animationOptions.onResume === "function" &&
-          animationOptions.onResume({
+        typeof mergedOptions.onResume === "function" &&
+          mergedOptions.onResume({
             path: currentPoint.animationPath,
-            animationStatus: currentPoint.animationStatus,
+            status: currentPoint.status,
           });
       },
       stop: () => {
@@ -781,7 +819,7 @@ export class AMapProvider extends BaseMapProvider {
         if (stepPassedPath.length === allLen) {
           currentPoint = {
             ...currentPoint,
-            animationStatus: AnimationStatus.COMPLETED,
+            status: AnimationStatus.COMPLETED,
             shouldConcatBefore: false,
           };
           if (startAnimationTimeout) clearTimeout(startAnimationTimeout);
@@ -789,7 +827,7 @@ export class AMapProvider extends BaseMapProvider {
         if (stepPassedPath.length === 1) {
           currentPoint = {
             ...currentPoint,
-            animationStatus: AnimationStatus.IDLE,
+            status: AnimationStatus.IDLE,
             shouldConcatBefore: false,
           };
           if (startAnimationTimeout) clearTimeout(startAnimationTimeout);
@@ -805,7 +843,7 @@ export class AMapProvider extends BaseMapProvider {
           changeStepsCall({
             step,
             path: currentPoint.path,
-            animationStatus: currentPoint.animationStatus,
+            status: currentPoint.status,
           });
       },
       changeSpeed: (duration: number) => {
@@ -816,7 +854,7 @@ export class AMapProvider extends BaseMapProvider {
           shouldConcatBefore: true,
           oldPath: currentPoint.path,
         };
-        if (currentPoint.animationStatus === AnimationStatus.PLAYING || currentPoint.animationStatus === AnimationStatus.RESUMED) {
+        if (currentPoint.status === AnimationStatus.PLAYING || currentPoint.status === AnimationStatus.RESUMED) {
           marker.resume();
         }
       },
@@ -838,10 +876,10 @@ export class AMapProvider extends BaseMapProvider {
       getProgress: (): number => {
         return 0;
       },
-      getStatus: () => {
+      getInfo: () => {
         return {
           path: currentPoint.path,
-          animationStatus: currentPoint.animationStatus,
+          status: currentPoint.status,
         };
       },
       remove: () => {

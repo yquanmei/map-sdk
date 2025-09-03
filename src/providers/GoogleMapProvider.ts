@@ -11,12 +11,13 @@ import {
   AnimationConfig,
   PolygonConfig,
   IPolygon,
+  PolylineConfig,
+  IPolyline,
 } from "../types";
 import { createDomContent } from "../utils";
 import { Loader } from "@googlemaps/js-api-loader";
-import { AlgorithmInput, MarkerClusterer } from "@googlemaps/markerclusterer";
+import { MarkerClusterer } from "@googlemaps/markerclusterer";
 import "../css/google.css";
-import { merge } from "lodash-es";
 
 interface GoogleMarker extends IMarker {
   googleMarker: any;
@@ -532,13 +533,7 @@ export class GoogleMapProvider extends BaseMapProvider {
   /**
    * 绘制折线（Polyline）
    */
-  async addPolyline(options: {
-    path: [number, number][];
-    css?: { color?: string; opacity?: number; width?: number };
-    color?: string;
-    width?: number;
-    opacity?: number;
-  }): Promise<any> {
+  async addPolyline(options: PolylineConfig): Promise<IPolyline> {
     if (!this.map || !this.google) {
       throw new Error("Map not initialized");
     }

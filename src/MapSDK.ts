@@ -334,9 +334,9 @@ export class MapSDK {
   async addAnimation(config: AnimationConfig): Promise<IAnimation> {
     this.ensureInitialized();
 
-    if (!config?.path || config.path.length < 2) {
-      throw new MapSDKError("Animation path with at least 2 points is required", ERROR_CODES.INVALID_CONFIG);
-    }
+    // if (!config?.path || config.path.length < 2) {
+    //   throw new MapSDKError("Animation path with at least 2 points is required", ERROR_CODES.INVALID_CONFIG);
+    // }
 
     try {
       return await this.provider.addAnimation(config);
