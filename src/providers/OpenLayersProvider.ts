@@ -20,7 +20,6 @@ import {
 
 interface OpenLayersMarker extends IMarker {
   olMarker: any;
-  olFeature: any;
 }
 
 interface OpenLayersMarkerCluster extends IMarkerCluster {
@@ -121,45 +120,55 @@ export class OpenLayersProvider extends BaseMapProvider {
     }
 
     const markerId = this.generateId(COVERING_TYPES.MARKER);
-    const { position, ...otherConfig } = config;
+    const defaultOptions = {
+      id: markerId,
+    };
+    const mergedOptions = { ...defaultOptions, ...config };
+    const { position } = mergedOptions;
 
-    // 创建marker要素
-    const feature = new this.ol.Feature({
-      geometry: new this.ol.geom.Point(this.ol.proj.fromLonLat(position)),
+    // // 创建marker要素
+    // const feature = new this.ol.Feature({
+    //   geometry: new this.ol.geom.Point(this.ol.proj.fromLonLat(position)),
+    // });
+
+    // // 创建marker样式
+    // const markerStyle = new this.ol.style.Style({
+    //   image: new this.ol.style.Icon({
+    //     src:
+    //       config.icon ||
+    //       'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="8" fill="red"/></svg>',
+    //     scale: 1,
+    //   }),
+    // });
+
+    // feature.setStyle(markerStyle);
+
+    // // 添加到矢量图层
+    // this.vectorLayer.getSource().addFeature(feature);
+    const overlay = new this.ol.Overlay({
+      position: this.ol.proj.fromLonLat(mergedOptions.position), // 例如，经纬度 [5, 48]
+      positioning: "bottom-center", // 可以调整定位方式，例如 'top-left' 等
+      element: mergedOptions.content,
+      // offset: [0, -10], // 可选，调整偏移量以调整位置
     });
-
-    // 创建marker样式
-    const markerStyle = new this.ol.style.Style({
-      image: new this.ol.style.Icon({
-        src:
-          config.icon ||
-          'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="8" fill="red"/></svg>',
-        scale: 1,
-      }),
-    });
-
-    feature.setStyle(markerStyle);
-
-    // 添加到矢量图层
-    this.vectorLayer.getSource().addFeature(feature);
+    this.map.addOverlay(overlay);
 
     const marker: OpenLayersMarker = {
-      id: markerId,
+      id: mergedOptions.id,
       position: [...position] as [number, number],
-      olMarker: feature,
-      olFeature: feature,
+      olMarker: overlay,
       setPosition: (newPosition: [number, number]) => {
-        feature.getGeometry().setCoordinates(this.ol.proj.fromLonLat(newPosition));
+        overlay.getGeometry().setCoordinates(this.ol.proj.fromLonLat(newPosition));
         marker.position = newPosition;
       },
       setTitle: (title: string) => {
-        feature.set("title", title);
+        overlay.set("title", title);
       },
       setContent: (content: string) => {
-        feature.set("content", content);
+        overlay.set("content", content);
       },
       remove: () => {
-        this.vectorLayer.getSource().removeFeature(feature);
+        this.map.removeOverlay(overlay);
         this.removeMarkerFromCollection(markerId);
       },
     };
@@ -340,34 +349,44 @@ export class OpenLayersProvider extends BaseMapProvider {
       throw new Error("Map not initialized");
     }
 
-    const overlay = new this.ol.Overlay({
-      element: typeof options.content === "string" ? createDomContent(options.content) : options.content,
-      position: this.ol.proj.fromLonLat(options.position),
+    const id = this.generateId(COVERING_TYPES.INFO_WINDOW);
+    const defaultOptions = {
+      id,
+      content: "",
+      position: [0, 0],
+      open: false,
+    };
+    const mergedOptions = { ...defaultOptions, ...options };
+
+    const olInfoWindow = new this.ol.Overlay({
+      element: createDomContent(mergedOptions.content),
+      position: this.ol.proj.fromLonLat(mergedOptions.position),
       positioning: "bottom-center",
       stopEvent: false,
     });
 
-    this.map.addOverlay(overlay);
-    this.addInfoWindowToCollection(overlay);
+    this.map.addOverlay(olInfoWindow);
 
     // 为overlay添加open、close、remove方法
-    const overlayWithMethods = {
-      ...overlay,
+    const infoWindow = {
+      olInfoWindow,
       open: (position?: [number, number]) => {
         if (this.map) {
-          overlay.setPosition(this.ol.proj.fromLonLat(position || options.position));
+          olInfoWindow.setPosition(this.ol.proj.fromLonLat(position || options.position));
         }
       },
       close: () => {
-        overlay.setPosition(undefined);
+        olInfoWindow.setPosition(undefined);
       },
       remove: () => {
-        this.map.removeOverlay(overlay);
-        this.removeInfoWindowFromCollection(overlay);
+        this.map.removeOverlay(olInfoWindow);
+        this.removeInfoWindowFromCollection(olInfoWindow);
       },
     };
 
-    return overlayWithMethods;
+    this.addInfoWindowToCollection(olInfoWindow);
+
+    return infoWindow;
   }
 
   destroy(): void {

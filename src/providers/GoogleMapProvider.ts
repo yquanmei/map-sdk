@@ -173,22 +173,25 @@ export class GoogleMapProvider extends BaseMapProvider {
       },
       content,
     });
-    googleMarker.addListener("click", ({ domEvent, latLng }: { domEvent: any; latLng: any }) => {
-      if (typeof mergedOptions.onClick !== "function") return;
-      const data = mergedOptions.data;
-      const position: [number, number] = [latLng.lng(), latLng.lat()];
-      mergedOptions.onClick({ event: domEvent, content, data, position, marker });
-    });
-    content.addEventListener("mouseover", (event) => {
-      if (typeof mergedOptions.onMouseover !== "function") return;
-      const data = mergedOptions.data;
-      mergedOptions.onMouseover({ event, content, data });
-    });
-    content.addEventListener("mouseout", (event) => {
-      if (typeof mergedOptions.onMouseout !== "function") return;
-      const data = mergedOptions.data;
-      mergedOptions.onMouseout({ event, content, data });
-    });
+    if (typeof mergedOptions.onClick === "function") {
+      googleMarker.addListener("click", ({ domEvent, latLng }: { domEvent: any; latLng: any }) => {
+        const data = mergedOptions.data;
+        const position: [number, number] = [latLng.lng(), latLng.lat()];
+        mergedOptions.onClick?.({ event: domEvent, content, data, position, marker });
+      });
+    }
+    if (typeof mergedOptions.onMouseover === "function") {
+      content.addEventListener("mouseover", (event) => {
+        const data = mergedOptions.data;
+        mergedOptions.onMouseover?.({ event, content, data });
+      });
+    }
+    if (typeof mergedOptions.onMouseout === "function") {
+      content.addEventListener("mouseout", (event) => {
+        const data = mergedOptions.data;
+        mergedOptions.onMouseout?.({ event, content, data });
+      });
+    }
     const marker: GoogleMarker = {
       id: markerId,
       position: [...mergedOptions.position] as [number, number],

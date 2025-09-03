@@ -667,7 +667,7 @@ export class AMapProvider extends BaseMapProvider {
     };
     const allLineArr = mergedOptions.line.path;
     if (!allLineArr || !Array.isArray(allLineArr) || allLineArr?.length === 0) throw new Error("Animation path is required");
-    const polyline = await this.addPolyline(mergedOptions.line);
+    await this.addPolyline(mergedOptions.line);
     const passedLine = await this.addPolyline(mergedOptions.passedLine);
     const marker = await this.addMarker(mergedOptions.marker as MarkerConfig);
     let currentPoint = {
