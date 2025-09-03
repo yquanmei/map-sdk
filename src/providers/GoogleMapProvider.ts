@@ -560,7 +560,7 @@ export class GoogleMapProvider extends BaseMapProvider {
       ...options,
     };
     const id = mergedOptions.id;
-    const polyline = new Polyline({
+    const googlePolyline = new Polyline({
       id,
       map: this.map,
       path: mergedOptions.path.map(([lng, lat]) => ({ lat, lng })),
@@ -568,6 +568,15 @@ export class GoogleMapProvider extends BaseMapProvider {
       strokeOpacity: mergedOptions.opacity,
       strokeWeight: mergedOptions.width,
     });
+
+    const polyline = {
+      id,
+      googlePolyline,
+      setPath: (path: [number, number][]) => {},
+      setEditable: (editable: boolean) => {},
+      setDraggable: (draggable: boolean) => {},
+      setOptions: (options: any) => {},
+    };
     this.addPolylinesToCollection(polyline);
 
     return polyline;

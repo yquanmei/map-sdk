@@ -176,7 +176,6 @@ export interface PolylineConfig extends BaseConfig {
 }
 export interface IPolyline {
     readonly id: string;
-    path: [number, number][];
     setPath(path: readonly (readonly [number, number])[]): void;
     setOptions(options: Partial<PolylineConfig>): void;
     setEditable(editable: boolean): void;

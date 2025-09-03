@@ -441,11 +441,11 @@ export class AMapProvider extends BaseMapProvider {
 
     const polyline = {
       id: mergedOptions.id,
-      path: mergedOptions.path.map((p: [number, number]) => [...p] as [number, number]),
+      // path: mergedOptions.path.map((p: [number, number]) => [...p] as [number, number]),
       aMapPolyline: line,
       setPath: (path: [number, number][]) => {
         line.setPath(path);
-        polyline.path = path.map((p) => [...p] as [number, number]);
+        // polyline.path = path.map((p) => [...p] as [number, number]);
       },
       setOptions: (options: any) => {
         line.setOptions(options);
@@ -665,12 +665,11 @@ export class AMapProvider extends BaseMapProvider {
       ...defaultOptions,
       ...config,
     };
-    // const aMapAnimation = () => {
     const allLineArr = mergedOptions.line.path;
     if (!allLineArr || !Array.isArray(allLineArr) || allLineArr?.length === 0) throw new Error("Animation path is required");
-    const polyline = this.map.addPolyline(mergedOptions.line);
-    const passedLine = this.map.addPolyline(mergedOptions.passedLine);
-    const marker = this.map.addMarker(mergedOptions.marker);
+    const polyline = await this.addPolyline(mergedOptions.line);
+    const passedLine = await this.addPolyline(mergedOptions.passedLine);
+    const marker = await this.addMarker(mergedOptions.marker as MarkerConfig);
     let currentPoint = {
       betweenTwoPoint: false,
       path: [allLineArr[0]], // 取线路的第一个点
@@ -684,43 +683,40 @@ export class AMapProvider extends BaseMapProvider {
       directResume: true,
     };
     let startAnimationTimeout: any;
-    if (typeof mergedOptions.onMoving === "function") {
-      marker.on("moving", (e: any) => {
-        // 移动过程中
-        // 从当前点开始运功，但是需要加上之前的轨迹
-        if (currentPoint.shouldConcatBefore === true) {
-          currentPoint = {
-            ...currentPoint,
-            betweenTwoPoint: true,
-            path: [...currentPoint.oldPath].concat(e.passedPath.slice(0, e.passedPath.length - 1)).filter((item) => item[2] !== 0),
-            pathWithRInfo: [...currentPoint.oldPath].concat(e.passedPath).filter((item) => item[2] !== 0),
-          };
-        } else {
-          currentPoint = {
-            ...currentPoint,
-            betweenTwoPoint: true,
-            path: e.passedPath.slice(0, e.passedPath.length - 1),
-            pathWithRInfo: e.passedPath,
-          };
-        }
-        passedLine.setPath(currentPoint.pathWithRInfo);
-        this.setCenter(e.target.getPosition(), true);
-        mergedOptions.onMoving?.(e);
-      });
-    }
-    if (typeof mergedOptions.onStepEnd === "function") {
-      marker.on("moveend", () => {
-        // 每走完一个point，就会执行moveend
-        mergedOptions.onStepEnd?.();
-      });
-    }
-    if (typeof mergedOptions.onComplete === "function") {
-      marker.on("movealong", () => {
-        currentPoint.shouldConcatBefore = false;
-        currentPoint.status = AnimationStatus.COMPLETED;
-        mergedOptions.onComplete?.();
-      });
-    }
+
+    (marker as AMapMarker).aMapMarker.on("moving", (e: any) => {
+      // 移动过程中
+      // 从当前点开始运功，但是需要加上之前的轨迹
+      if (currentPoint.shouldConcatBefore === true) {
+        currentPoint = {
+          ...currentPoint,
+          betweenTwoPoint: true,
+          path: [...currentPoint.oldPath].concat(e.passedPath.slice(0, e.passedPath.length - 1)).filter((item) => item[2] !== 0),
+          pathWithRInfo: [...currentPoint.oldPath].concat(e.passedPath).filter((item) => item[2] !== 0),
+        };
+      } else {
+        currentPoint = {
+          ...currentPoint,
+          betweenTwoPoint: true,
+          path: e.passedPath.slice(0, e.passedPath.length - 1),
+          pathWithRInfo: e.passedPath,
+        };
+      }
+      passedLine.setPath(currentPoint.pathWithRInfo);
+      this.setCenter(e.target.getPosition(), true);
+      typeof mergedOptions.onMoving === "function" && mergedOptions.onMoving?.(e);
+    });
+
+    (marker as AMapMarker).aMapMarker.on("moveend", () => {
+      // 每走完一个point，就会执行moveend
+      typeof mergedOptions.onStepEnd === "function" && mergedOptions.onStepEnd?.();
+    });
+
+    (marker as AMapMarker).aMapMarker.on("movealong", () => {
+      currentPoint.shouldConcatBefore = false;
+      currentPoint.status = AnimationStatus.COMPLETED;
+      typeof mergedOptions.onComplete === "function" && mergedOptions.onComplete?.();
+    });
 
     const animation: IAnimation = {
       id: animationId,
@@ -730,7 +726,7 @@ export class AMapProvider extends BaseMapProvider {
         if (startAnimationTimeout) clearTimeout(startAnimationTimeout);
 
         startAnimationTimeout = setTimeout(() => {
-          marker.moveAlong(mergedOptions.line.path, {
+          (marker as AMapMarker).aMapMarker.moveAlong(mergedOptions.line.path, {
             duration: currentPoint.duration,
             autoRotation: false,
           });
@@ -739,12 +735,11 @@ export class AMapProvider extends BaseMapProvider {
             status: AnimationStatus.PLAYING,
           };
           this.setZoomAndCenter(18, mergedOptions.line.path[0] as [number, number], false, 100);
-          // this.setZoomAndCenter(18, animationOptions.line.path[0], true)
         }, 800);
         typeof mergedOptions.onStart === "function" && mergedOptions.onStart();
       },
       pause: () => {
-        marker.pauseMove();
+        (marker as AMapMarker).aMapMarker.pauseMove();
         currentPoint = {
           ...currentPoint,
           oldPath: currentPoint.path,
@@ -753,7 +748,7 @@ export class AMapProvider extends BaseMapProvider {
       },
       resume: () => {
         if (currentPoint.directResume) {
-          marker.resumeMove();
+          (marker as AMapMarker).aMapMarker.resumeMove();
         } else {
           let animationPath;
           const pathWithRInfo: any = currentPoint.pathWithRInfo;
@@ -777,7 +772,7 @@ export class AMapProvider extends BaseMapProvider {
             animationPath,
             shouldConcatBefore: true,
           };
-          marker.moveAlong(animationPath, {
+          (marker as AMapMarker).aMapMarker.moveAlong(animationPath, {
             duration: currentPoint.duration,
             autoRotation: false,
           });
@@ -794,11 +789,11 @@ export class AMapProvider extends BaseMapProvider {
           });
       },
       stop: () => {
-        marker.stopMove();
+        (marker as AMapMarker).aMapMarker.stopMove();
       },
       changeSteps: (step: number, callback?: (params: any) => void) => {
         if (step === 0) return;
-        marker.pause();
+        animation.pause();
 
         const allLen = allLineArr.length;
         const len = currentPoint.path.length;
@@ -847,7 +842,7 @@ export class AMapProvider extends BaseMapProvider {
         if (stepPassedPath.length > 0) {
           passedLine.setPath(stepPassedPath);
           const markerPosition = stepPassedPath[stepPassedPath.length - 1];
-          marker.setPosition(markerPosition);
+          (marker as AMapMarker).aMapMarker.setPosition(markerPosition);
           this.setCenter(markerPosition, true);
           // 注意，如果animationOptions.onMoving() 写了setCenter。这里的setCenter(markerPosition, true)会不生效，因为虽然没有在moving，但是moving中的setCenter还在执行，会将这里覆盖，导致这里不生效，所以可以在onStepChange中执行
         }
@@ -867,7 +862,7 @@ export class AMapProvider extends BaseMapProvider {
           oldPath: currentPoint.path,
         };
         if (currentPoint.status === AnimationStatus.PLAYING || currentPoint.status === AnimationStatus.RESUMED) {
-          marker.resume();
+          animation.resume();
         }
       },
       // next: () => {

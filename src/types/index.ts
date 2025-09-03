@@ -190,7 +190,7 @@ export interface PolylineConfig extends BaseConfig {
 
 export interface IPolyline {
   readonly id: string;
-  path: [number, number][]; // 允许provider实现修改
+  // path: [number, number][]; // 允许provider实现修改
   setPath(path: readonly (readonly [number, number])[]): void; // 设置多边形路径
   setOptions(options: Partial<PolylineConfig>): void;
   setEditable(editable: boolean): void; // 设置是否可编辑

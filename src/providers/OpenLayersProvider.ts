@@ -457,12 +457,12 @@ export class OpenLayersProvider extends BaseMapProvider {
     this.vectorLayer.getSource().addFeature(polylineFeature);
     const olPolyline: IPolyline = {
       id: polylineId,
-      path: mergedOptions.path.map((p) => [...p] as [number, number]),
+      // path: mergedOptions.path.map((p) => [...p] as [number, number]),
       googlePolyline: polylineFeature,
       setPath: (path: [number, number][]) => {
         const geometry = polylineFeature.getGeometry() as any;
         geometry.setCoordinates(path.map(([lng, lat]) => this.ol.proj.fromLonLat([lng, lat])));
-        olPolyline.path = path;
+        // olPolyline.path = path;
       },
       setOptions: (options: any) => {
         const newStyle = new this.ol.style.Style({
