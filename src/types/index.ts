@@ -111,7 +111,8 @@ export interface IMapProvider {
   clearPolygons(params?: ClearParams<IPolygon>): void;
   clearPathPlannings(params?: ClearParams<any>): void;
   clearInfoWindows(params?: ClearParams<any>): void;
-  addInfoWindow(options: { content: string | HTMLElement; position: readonly [number, number]; open?: boolean }): Promise<any>;  setCenter(position: readonly [number, number]): void;
+  addInfoWindow(options: { content: string | HTMLElement; position: readonly [number, number]; open?: boolean }): Promise<any>;
+  setCenter(position: readonly [number, number]): void;
   setZoom(zoom: number): void;
   setZoomAndCenter(zoom: number, center: readonly [number, number]): void;
   getZoom(): number;
@@ -216,4 +217,13 @@ export interface IPolygon {
   remove(): void; // 移除多边形
   // clear(): void; // 清除多边形
   readonly [key: string]: unknown;
+}
+
+export enum AnimationStatus {
+  IDLE = "idle",
+  PLAYING = "playing",
+  PAUSED = "paused",
+  RESUMED = "resumed",
+  STOPPED = "stopped",
+  COMPLETED = "completed",
 }

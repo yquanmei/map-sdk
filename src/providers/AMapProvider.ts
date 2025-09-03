@@ -13,6 +13,7 @@ import {
   AnimationConfig,
   IAnimation,
   COVERING_TYPES,
+  AnimationStatus,
 } from "../types";
 import { createDomContent } from "../utils";
 
@@ -312,31 +313,49 @@ export class AMapProvider extends BaseMapProvider {
       throw new Error("Map not initialized");
     }
 
-    const infoWindow = new (window as any).AMap.InfoWindow({
-      content: options.content,
-      position: options.position,
+    const defaultOptions = {
+      open: true,
       isCustom: true,
       autoMove: true,
-      closeWhenClickMap: true,
+      // closeWhenClickMap: true,
+    };
+
+    const mergedOptions = {
+      ...defaultOptions,
+      ...options,
+    };
+
+    const aMapInfoWindow = new (window as any).AMap.InfoWindow({
+      content: mergedOptions.content,
+      position: mergedOptions.position,
+      isCustom: mergedOptions.isCustom,
+      autoMove: mergedOptions.autoMove,
+      // closeWhenClickMap: mergedOptions.closeWhenClickMap,
     });
 
-    if (options.open !== false) {
-      infoWindow.open(this.map, options.position);
-    }
-
-    this.addInfoWindowToCollection(infoWindow);
+    // if (options.open !== false) {
+    //   infoWindow.open(this.map, options.position);
+    // }
 
     // 为信息窗口添加open方法
-    const infoWindowWithOpen = {
-      aMapInfoWindow: infoWindow,
+    const infoWindow = {
+      aMapInfoWindow,
       open: (position?: [number, number]) => {
         if (this.map) {
-          infoWindow.open(this.map, position || options.position);
+          aMapInfoWindow.open(this.map, position || mergedOptions.position);
         }
+      },
+      close: () => {
+        aMapInfoWindow.close();
+      },
+      remove: () => {
+        aMapInfoWindow.close();
+        this.removeInfoWindowFromCollection(infoWindow);
       },
     };
 
-    return infoWindowWithOpen;
+    this.addInfoWindowToCollection(infoWindow);
+    return infoWindow;
   }
 
   destroy(): void {
@@ -587,26 +606,226 @@ export class AMapProvider extends BaseMapProvider {
 
   async addAnimation(config: AnimationConfig): Promise<IAnimation> {
     const animationId = this.generateId(COVERING_TYPES.ANIMATION);
-    const animation: IAnimation = {
-      id: animationId,
+    const defaultOptions = {
       start: () => {
         console.warn("AMap does not support trajectory animation");
       },
+    };
+    const mergedOptions = {
+      ...defaultOptions,
+      ...config,
+    };
+    // const aMapAnimation = () => {
+    const allLineArr = mergedOptions.line.path;
+    if (!allLineArr || !Array.isArray(allLineArr) || allLineArr?.length === 0) return;
+    const polyline = this.map.addPolyline(mergedOptions.line);
+    const passedLine = this.map.addPolyline(mergedOptions.passedLine);
+    const marker = this.map.addMarker(mergedOptions.marker);
+    let currentPoint = {
+      betweenTwoPoint: false,
+      path: [allLineArr[0]], // 取线路的第一个点
+      pathWithRInfo: [allLineArr[0]], // 取线路的第一个点
+      allPath: allLineArr, // 线路
+      animationPath: allLineArr, // 线路
+      shouldConcatBefore: false,
+      oldPath: [],
+      animationStatus: AnimationStatus.IDEA,
+      duration: mergedOptions.animation.duration,
+      directResume: true,
+    };
+    let startAnimationTimeout;
+    if (typeof mergedOptions.onMoving === "function") {
+      marker.on("moving", (e) => {
+        // 移动过程中
+        // 从当前点开始运功，但是需要加上之前的轨迹
+        if (currentPoint.shouldConcatBefore === true) {
+          currentPoint = {
+            ...currentPoint,
+            betweenTwoPoint: true,
+            path: [...currentPoint.oldPath].concat(e.passedPath.slice(0, e.passedPath.length - 1)).filter((item) => item[2] !== 0),
+            pathWithRInfo: [...currentPoint.oldPath].concat(e.passedPath).filter((item) => item[2] !== 0),
+          };
+        } else {
+          currentPoint = {
+            ...currentPoint,
+            betweenTwoPoint: true,
+            path: e.passedPath.slice(0, e.passedPath.length - 1),
+            pathWithRInfo: e.passedPath,
+          };
+        }
+        passedLine.setPath(currentPoint.pathWithRInfo);
+        this.setCenter(e.target.getPosition(), true);
+        mergedOptions.onMoving(e);
+      });
+    }
+    if (typeof mergedOptions.onStepEnd === "function") {
+      marker.on("moveend", () => {
+        // 每走完一个point，就会执行moveend
+        mergedOptions.onStepEnd();
+      });
+    }
+    if (typeof mergedOptions.onEnd === "function") {
+      marker.on("movealong", () => {
+        currentPoint.shouldConcatBefore = false;
+        currentPoint.animationStatus = AnimationStatus.COMPLETED;
+        mergedOptions.onEnd();
+      });
+    }
+
+    const animation: IAnimation = {
+      id: animationId,
+      aMapMarker: marker,
+      start: () => {
+        if (!mergedOptions.line.path || mergedOptions.line.path.length === 0) return;
+        if (startAnimationTimeout) clearTimeout(startAnimationTimeout);
+
+        startAnimationTimeout = setTimeout(() => {
+          marker.moveAlong(mergedOptions.line.path, {
+            duration: currentPoint.duration,
+            autoRotation: false,
+          });
+          currentPoint = {
+            ...currentPoint,
+            animationStatus: AnimationStatus.PLAYING,
+          };
+          this.setZoomAndCenter(18, mergedOptions.line.path[0], false, 100);
+          // this.setZoomAndCenter(18, animationOptions.line.path[0], true)
+        }, 800);
+        typeof mergedOptions.onStart === "function" && mergedOptions.onStart();
+      },
       pause: () => {
-        console.warn("AMap does not support trajectory animation");
+        marker.pauseMove();
+        currentPoint = {
+          ...currentPoint,
+          oldPath: currentPoint.path,
+          animationStatus: AnimationStatus.PAUSED,
+        };
       },
       resume: () => {
-        console.warn("AMap does not support trajectory animation");
+        if (currentPoint.directResume) {
+          marker.resumeMove();
+        } else {
+          let animationPath;
+          const pathWithRInfo: any = currentPoint.pathWithRInfo;
+          const pathWithRInfoLen = pathWithRInfo.length;
+          if (currentPoint.betweenTwoPoint) {
+            let firstPos;
+            const otherPos = currentPoint.allPath.slice(pathWithRInfo.length - 1);
+            if (pathWithRInfo && !Array.isArray(pathWithRInfo[pathWithRInfoLen - 1])) {
+              firstPos = [pathWithRInfo[pathWithRInfoLen - 1].lng, pathWithRInfo[pathWithRInfoLen - 1].lat, 0];
+              animationPath = [firstPos].concat(otherPos);
+            } else {
+              animationPath = otherPos;
+            }
+          } else {
+            const firstPos = [pathWithRInfo[pathWithRInfoLen - 1][0], pathWithRInfo[pathWithRInfoLen - 1][1], 0];
+            const otherPos = currentPoint.allPath.slice(pathWithRInfoLen);
+            animationPath = [firstPos].concat(otherPos);
+          }
+          currentPoint = {
+            ...currentPoint,
+            animationPath,
+            shouldConcatBefore: true,
+          };
+          marker.moveAlong(animationPath, {
+            duration: currentPoint.duration,
+            autoRotation: false,
+          });
+        }
+        currentPoint = {
+          ...currentPoint,
+          directResume: true,
+          animationStatus: AnimationStatus.RESUMED,
+        };
+        typeof animationOptions.onResume === "function" &&
+          animationOptions.onResume({
+            path: currentPoint.animationPath,
+            animationStatus: currentPoint.animationStatus,
+          });
       },
       stop: () => {
-        console.warn("AMap does not support trajectory animation");
+        marker.stopMove();
       },
-      next: () => {
-        console.warn("AMap does not support trajectory animation");
+      changeSteps: (step: number, changeStepsCall) => {
+        if (step === 0) return;
+        marker.pause();
+
+        const allLen = allLineArr.length;
+        const len = currentPoint.path.length;
+        let stepPassedPath;
+        const currentLen = len + step;
+        if (step > 0) {
+          stepPassedPath = allLineArr.slice(0, currentLen);
+          if (currentLen > allLen) {
+            stepPassedPath = allLineArr;
+          }
+        } else {
+          if (currentPoint.betweenTwoPoint) {
+            stepPassedPath = allLineArr.slice(0, currentLen + 1);
+          } else {
+            stepPassedPath = allLineArr.slice(0, currentLen);
+          }
+          if (currentLen === 0) {
+            stepPassedPath = [allLineArr[0]];
+          }
+        }
+        currentPoint = {
+          ...currentPoint,
+          shouldConcatBefore: true,
+          betweenTwoPoint: false,
+          path: stepPassedPath,
+          pathWithRInfo: stepPassedPath,
+          oldPath: stepPassedPath,
+          directResume: false,
+        };
+        if (stepPassedPath.length === allLen) {
+          currentPoint = {
+            ...currentPoint,
+            animationStatus: AnimationStatus.COMPLETED,
+            shouldConcatBefore: false,
+          };
+          if (startAnimationTimeout) clearTimeout(startAnimationTimeout);
+        }
+        if (stepPassedPath.length === 1) {
+          currentPoint = {
+            ...currentPoint,
+            animationStatus: AnimationStatus.IDLE,
+            shouldConcatBefore: false,
+          };
+          if (startAnimationTimeout) clearTimeout(startAnimationTimeout);
+        }
+        if (stepPassedPath.length > 0) {
+          passedLine.setPath(stepPassedPath);
+          const markerPosition = stepPassedPath[stepPassedPath.length - 1];
+          marker.setPosition(markerPosition);
+          this.setCenter(markerPosition, true);
+          // 注意，如果animationOptions.onMoving() 写了setCenter。这里的setCenter(markerPosition, true)会不生效，因为虽然没有在moving，但是moving中的setCenter还在执行，会将这里覆盖，导致这里不生效，所以可以在changeStepsCall中执行
+        }
+        if (typeof changeStepsCall === "function")
+          changeStepsCall({
+            step,
+            path: currentPoint.path,
+            animationStatus: currentPoint.animationStatus,
+          });
       },
-      previous: () => {
-        console.warn("AMap does not support trajectory animation");
+      changeSpeed: (duration: number) => {
+        currentPoint = {
+          ...currentPoint,
+          directResume: false,
+          duration,
+          shouldConcatBefore: true,
+          oldPath: currentPoint.path,
+        };
+        if (currentPoint.animationStatus === AnimationStatus.PLAYING || currentPoint.animationStatus === AnimationStatus.RESUMED) {
+          marker.resume();
+        }
       },
+      // next: () => {
+      //   console.warn("AMap does not support trajectory animation");
+      // },
+      // previous: () => {
+      //   console.warn("AMap does not support trajectory animation");
+      // },
       seek: (progress: number) => {
         console.warn("AMap does not support trajectory animation");
       },
@@ -619,8 +838,11 @@ export class AMapProvider extends BaseMapProvider {
       getProgress: (): number => {
         return 0;
       },
-      getStatus: (): "idle" | "playing" | "paused" | "stopped" | "completed" => {
-        return "idle";
+      getStatus: () => {
+        return {
+          path: currentPoint.path,
+          animationStatus: currentPoint.animationStatus,
+        };
       },
       remove: () => {
         this.removeAnimationFromCollection(animationId);

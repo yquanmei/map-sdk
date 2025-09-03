@@ -343,17 +343,24 @@ export class OpenLayersProvider extends BaseMapProvider {
     this.map.addOverlay(overlay);
     this.addInfoWindowToCollection(overlay);
     
-    // 为overlay添加open方法
-    const overlayWithOpen = {
+    // 为overlay添加open、close、remove方法
+    const overlayWithMethods = {
       ...overlay,
       open: (position?: [number, number]) => {
         if (this.map) {
           overlay.setPosition(this.ol.proj.fromLonLat(position || options.position));
         }
+      },
+      close: () => {
+        overlay.setPosition(undefined);
+      },
+      remove: () => {
+        this.map.removeOverlay(overlay);
+        this.removeInfoWindowFromCollection(overlay);
       }
     };
     
-    return overlayWithOpen;  }
+    return overlayWithMethods;  }
 
   destroy(): void {
     if (this.map) {
