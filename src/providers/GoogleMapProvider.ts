@@ -177,7 +177,8 @@ export class GoogleMapProvider extends BaseMapProvider {
       googleMarker.addListener("click", ({ domEvent, latLng }: { domEvent: any; latLng: any }) => {
         const data = mergedOptions.data;
         const position: [number, number] = [latLng.lng(), latLng.lat()];
-        mergedOptions.onClick?.({ event: domEvent, content, data, position, marker });
+        // mergedOptions.onClick?.({ event: domEvent, content, data, position, marker });
+        mergedOptions.onClick?.({ event: domEvent, content, data, position });
       });
     }
     if (typeof mergedOptions.onMouseover === "function") {

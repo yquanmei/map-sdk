@@ -126,49 +126,65 @@ export class OpenLayersProvider extends BaseMapProvider {
     const mergedOptions = { ...defaultOptions, ...config };
     const { position } = mergedOptions;
 
-    // // 创建marker要素
-    // const feature = new this.ol.Feature({
-    //   geometry: new this.ol.geom.Point(this.ol.proj.fromLonLat(position)),
-    // });
-
-    // // 创建marker样式
-    // const markerStyle = new this.ol.style.Style({
-    //   image: new this.ol.style.Icon({
-    //     src:
-    //       config.icon ||
-    //       'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="8" fill="red"/></svg>',
-    //     scale: 1,
-    //   }),
-    // });
-
-    // feature.setStyle(markerStyle);
-
-    // // 添加到矢量图层
-    // this.vectorLayer.getSource().addFeature(feature);
-    const overlay = new this.ol.Overlay({
+    const olMarker = new this.ol.Overlay({
       position: this.ol.proj.fromLonLat(mergedOptions.position), // 例如，经纬度 [5, 48]
-      positioning: "bottom-center", // 可以调整定位方式，例如 'top-left' 等
       element: mergedOptions.content,
+      positioning: "bottom-center", // 可以调整定位方式，例如 'top-left' 等
+      stopEvent: false,
       // offset: [0, -10], // 可选，调整偏移量以调整位置
     });
-    this.map.addOverlay(overlay);
+    this.map.addOverlay(olMarker);
+    const content = createDomContent(mergedOptions.content || "");
+
+    if (typeof mergedOptions.onClick === "function") {
+      content.addEventListener("click", (event) => {
+        console.log(`%c yqm click了::: `, "color: pink;", event);
+        // 方法2：通过地图获取点击像素对应的坐标
+        const pixel = this.map.getEventPixel(event);
+        const coordinate = this.map.getCoordinateFromPixel(pixel);
+        const position = this.ol.proj.toLonLat(coordinate);
+        event.stopPropagation(); // 阻止事件冒泡到地图
+        event.preventDefault(); // 阻止默认行为
+        const data = mergedOptions.data;
+        // mergedOptions.onClick?.({ event, content, data, position, marker });
+        mergedOptions.onClick?.({ event, content, data, position });
+      });
+    }
+    if (typeof mergedOptions.onMouseover === "function") {
+      content.addEventListener("mouseover", (event) => {
+        console.log(`%c yqm mouseover了::: `, "color: pink;", event);
+        const data = mergedOptions.data;
+        mergedOptions.onMouseover?.({ event, content, data });
+      });
+    }
+    if (typeof mergedOptions.onMouseout === "function") {
+      content.addEventListener("mouseout", (event) => {
+        const data = mergedOptions.data;
+        mergedOptions.onMouseout?.({ event, content, data });
+      });
+    }
 
     const marker: OpenLayersMarker = {
       id: mergedOptions.id,
       position: [...position] as [number, number],
-      olMarker: overlay,
+      olMarker: olMarker,
       setPosition: (newPosition: [number, number]) => {
-        overlay.getGeometry().setCoordinates(this.ol.proj.fromLonLat(newPosition));
+        olMarker.getGeometry().setCoordinates(this.ol.proj.fromLonLat(newPosition));
         marker.position = newPosition;
       },
       setTitle: (title: string) => {
-        overlay.set("title", title);
+        olMarker.set("title", title);
       },
       setContent: (content: string) => {
-        overlay.set("content", content);
+        olMarker.set("content", content);
       },
       remove: () => {
-        this.map.removeOverlay(overlay);
+        const element = olMarker.getElement();
+        if (element) {
+          const clone = element.cloneNode(true); // 移除事件监听
+          olMarker.setElement(clone as HTMLElement);
+        }
+        this.map.removeOverlay(olMarker);
         this.removeMarkerFromCollection(markerId);
       },
     };

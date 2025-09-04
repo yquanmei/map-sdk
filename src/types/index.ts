@@ -59,7 +59,7 @@ export interface MarkerEventParams {
   readonly content: HTMLElement;
   readonly data: unknown;
   readonly position: readonly [number, number];
-  readonly marker: unknown;
+  // readonly marker: unknown;
 }
 
 export interface MarkerMouseEventParams {

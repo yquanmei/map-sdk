@@ -181,7 +181,8 @@ export class AMapProvider extends BaseMapProvider {
     };
     if (typeof mergedOptions.onClick === "function") {
       aMapMarker.on("click", (e: any) => {
-        mergedOptions.onClick!({ event: e, content, data: mergedOptions.data, position, marker });
+        // mergedOptions.onClick!({ event: e, content, data: mergedOptions.data, position, marker });
+        mergedOptions.onClick!({ event: e, content, data: mergedOptions.data, position });
       });
     }
 
@@ -703,7 +704,12 @@ export class AMapProvider extends BaseMapProvider {
         };
       }
       passedLine.setPath(currentPoint.pathWithRInfo);
-      this.setCenter(e.target.getPosition(), true);
+      const position = e.target.getPosition();
+      if (typeof mergedOptions.animation.setCenterRealTime === "function") {
+        mergedOptions.animation.setCenterRealTime?.(position);
+      } else if (mergedOptions.animation.setCenterRealTime !== false) {
+        this.setCenter(position, true);
+      }
       typeof mergedOptions.onMoving === "function" && mergedOptions.onMoving?.(e);
     });
 
