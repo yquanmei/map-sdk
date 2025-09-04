@@ -166,7 +166,7 @@ export class AMapProvider extends BaseMapProvider {
       data: mergedOptions.data,
       setPosition: (position: [number, number]) => {
         aMapMarker.setPosition(position);
-        marker.position = position;
+        // marker.position = position;
       },
       setTitle: (title: string) => {
         aMapMarker.setTitle(title);
@@ -657,9 +657,9 @@ export class AMapProvider extends BaseMapProvider {
     const defaultOptions = {
       animation: {
         duration: 5000,
-        speed: 1,
         autoStart: false,
         loop: false,
+        setCenterRealTime: true,
       },
     };
     const mergedOptions = {
@@ -705,9 +705,9 @@ export class AMapProvider extends BaseMapProvider {
       }
       passedLine.setPath(currentPoint.pathWithRInfo);
       const position = e.target.getPosition();
-      if (typeof mergedOptions.animation.setCenterRealTime === "function") {
-        mergedOptions.animation.setCenterRealTime?.(position);
-      } else if (mergedOptions.animation.setCenterRealTime !== false) {
+      if (typeof mergedOptions.animation?.setCenterRealTime === "function") {
+        mergedOptions.animation?.setCenterRealTime?.(position);
+      } else if (mergedOptions.animation?.setCenterRealTime !== false) {
         this.setCenter(position, true);
       }
       typeof mergedOptions.onMoving === "function" && mergedOptions.onMoving?.(e);

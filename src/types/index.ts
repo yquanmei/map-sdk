@@ -124,7 +124,7 @@ export interface IMapProvider {
 
 export interface IMarker {
   readonly id: string;
-  position: [number, number]; // 允许provider实现修改
+  // position: [number, number]; // 允许provider实现修改
   setPosition(position: readonly [number, number]): void;
   setTitle(title: string): void;
   setContent(content: string): void;
@@ -136,6 +136,7 @@ export interface AnimationPlayConfig extends MarkerConfig {
   duration: number;
   autoStart?: boolean; // 是否自动开始，默认false
   loop?: boolean; // 是否循环播放，默认false
+  setCenterRealTime?: ((position: [number, number]) => void) | boolean; // 是否实时设置地图中心，默认true
 }
 
 export interface AnimationInfo {

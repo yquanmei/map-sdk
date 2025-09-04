@@ -60,6 +60,8 @@
     "@googlemaps/js-api-loader": "^1.16.10",
     "@googlemaps/markerclusterer": "^2.6.2",
     "@types/lodash-es": "^4.17.12",
-    "lodash-es": "^4.17.21"
+    "@types/openlayers": "^4.6.23",
+    "lodash-es": "^4.17.21",
+    "ol": "^10.6.1"
   }
 }

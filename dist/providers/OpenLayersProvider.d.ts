@@ -1,3 +1,4 @@
+import "ol/ol.css";
 import { BaseMapProvider } from "./BaseMapProvider";
 import { IMarker, MapConfig, MarkerConfig, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster, PolygonConfig, PolylineConfig, IPolyline, IPolygon, AnimationConfig, IAnimation } from "../types";
 export declare class OpenLayersProvider extends BaseMapProvider {

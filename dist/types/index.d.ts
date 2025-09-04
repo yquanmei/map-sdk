@@ -55,7 +55,6 @@ export interface MarkerEventParams {
     readonly content: HTMLElement;
     readonly data: unknown;
     readonly position: readonly [number, number];
-    readonly marker: unknown;
 }
 export interface MarkerMouseEventParams {
     readonly event: Event;
@@ -117,7 +116,6 @@ export interface IMapProvider {
 }
 export interface IMarker {
     readonly id: string;
-    position: [number, number];
     setPosition(position: readonly [number, number]): void;
     setTitle(title: string): void;
     setContent(content: string): void;
@@ -128,6 +126,7 @@ export interface AnimationPlayConfig extends MarkerConfig {
     duration: number;
     autoStart?: boolean;
     loop?: boolean;
+    setCenterRealTime?: ((position: [number, number]) => void) | boolean;
 }
 export interface AnimationInfo {
     path: [number, number][];

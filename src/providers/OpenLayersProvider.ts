@@ -1,3 +1,17 @@
+import "ol/ol.css";
+import { Map, View } from "ol";
+import { Tile as TileLayer, Vector as VectorLayer } from "ol/layer";
+import XYZ from "ol/source/XYZ";
+// 图标
+import Feature from "ol/Feature";
+import { Icon, Style, Stroke, Fill } from "ol/style";
+import { Vector as VectorSource } from "ol/source";
+import Overlay from "ol/Overlay";
+import { Point, LineString, Polygon } from "ol/geom";
+import { extend as extentExtend } from "ol/extent";
+import { getDistance, getArea } from "ol/sphere";
+import * as ol from "ol";
+import { fromLonLat, toLonLat } from "ol/proj";
 import { BaseMapProvider } from "./BaseMapProvider";
 import { createDomContent } from "../utils";
 import {
@@ -37,85 +51,92 @@ export class OpenLayersProvider extends BaseMapProvider {
    * 动态加载OpenLayers SDK
    */
   private async loadOpenLayersSDK(): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       // 检查是否已经加载
-      if ((window as any).ol) {
-        resolve();
-        return;
-      }
-
-      // 创建script标签
-      const script = document.createElement("script");
-      script.type = "text/javascript";
-      script.src = "https://cdn.jsdelivr.net/npm/ol@v7.4.0/dist/ol.js";
-      script.async = true;
-      script.defer = true;
-
-      // 加载成功回调
-      script.onload = () => {
-        if ((window as any).ol) {
-          resolve();
-        } else {
-          reject(new Error("OpenLayers SDK failed to load"));
-        }
-      };
-
-      // 加载失败回调
-      script.onerror = () => {
-        reject(new Error("Failed to load OpenLayers SDK"));
-      };
-
-      // 添加到页面
-      document.head.appendChild(script);
+      // if ((window as any).ol) {
+      //   resolve();
+      //   return;
+      // }
+      resolve();
     });
   }
 
   async init(config: MapConfig): Promise<void> {
-    this.config = config;
-
     // 动态加载OpenLayers SDK
     if (typeof window !== "undefined" && !this.ol) {
       try {
         // 检查是否已经加载了OpenLayers SDK
-        if (!(window as any).ol) {
+        if (!ol) {
           // 动态加载OpenLayers SDK
           await this.loadOpenLayersSDK();
         }
-        this.ol = (window as any).ol;
+        // this.ol = (window as any).ol;
+        this.ol = ol;
       } catch (error) {
         throw new Error(`Failed to load OpenLayers SDK: ${error}`);
       }
     }
 
-    const container = typeof config.container === "string" ? document.getElementById(config.container) : config.container;
+    const defaultOptions = {
+      container: "container",
+      zoom: 18,
+      center: [104.06, 30.67],
+      url: "http://webrd01.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scale=1&style=8",
+    };
+    const mergedOptions = { ...defaultOptions, ...config };
+
+    const container =
+      typeof mergedOptions.container === "string" ? document.getElementById(mergedOptions.container) : mergedOptions.container;
 
     if (!container) {
       throw new Error("Container element not found");
     }
+    console.log(`%c yqm this.ol::: `, "color: pink;", this.ol);
 
-    // 创建矢量图层用于放置markers
-    this.vectorLayer = new this.ol.layer.Vector({
-      source: new this.ol.source.Vector(),
-    });
-
-    this.map = new this.ol.Map({
-      target: container,
-      layers: [
-        new this.ol.layer.Tile({
-          source: new this.ol.source.OSM(),
-        }),
-        this.vectorLayer,
-      ],
-      view: new this.ol.View({
-        center: this.ol.proj.fromLonLat(config.center || [116.397428, 39.90923]),
-        zoom: config.zoom || 11,
+    const openStreetMapLayer = new TileLayer({
+      source: new XYZ({
+        // url: mergedOptions.url, // testtt
+        url: defaultOptions.url,
       }),
-      ...config,
     });
+
+    this.map = new Map({
+      layers: [openStreetMapLayer],
+      view: new View({
+        center: mergedOptions.center as unknown as [number, number],
+        projection: "EPSG:4326",
+        zoom: mergedOptions.zoom,
+        minZoom: 6, // 最小缩放级别
+        maxZoom: 18, // 最大缩放级别
+      }),
+      target: container,
+      controls: [],
+    });
+
+    // // 创建矢量图层用于放置markers
+    // this.vectorLayer = new VectorLayer({
+    //   source: new VectorSource(),
+    // });
+
+    // this.map = new Map({
+    //   target: container,
+    //   layers: [
+    //     new TileLayer({
+    //       source: new OSM(),
+    //     }),
+    //     this.vectorLayer,
+    //   ],
+    //   view: new View({
+    //     center: fromLonLat(config.center || [116.397428, 39.90923]),
+    //     zoom: config.zoom || 11,
+    //   }),
+    //   // ...config,
+    // });
   }
 
   async addMarker(config: MarkerConfig): Promise<IMarker> {
-    if (!this.map || !this.vectorLayer) {
+    // if (!this.map || !this.vectorLayer) {
+    if (!this.map) {
       throw new Error("Map not initialized");
     }
 
@@ -124,53 +145,47 @@ export class OpenLayersProvider extends BaseMapProvider {
       id: markerId,
     };
     const mergedOptions = { ...defaultOptions, ...config };
-    const { position } = mergedOptions;
-
-    const olMarker = new this.ol.Overlay({
-      position: this.ol.proj.fromLonLat(mergedOptions.position), // 例如，经纬度 [5, 48]
-      element: mergedOptions.content,
+    const olMarker = new Overlay({
+      position: [...mergedOptions.position], // 例如，经纬度 [5, 48]
+      element: createDomContent(mergedOptions.content || ""),
       positioning: "bottom-center", // 可以调整定位方式，例如 'top-left' 等
       stopEvent: false,
       // offset: [0, -10], // 可选，调整偏移量以调整位置
     });
     this.map.addOverlay(olMarker);
-    const content = createDomContent(mergedOptions.content || "");
 
     if (typeof mergedOptions.onClick === "function") {
-      content.addEventListener("click", (event) => {
-        console.log(`%c yqm click了::: `, "color: pink;", event);
-        // 方法2：通过地图获取点击像素对应的坐标
+      olMarker.getElement()?.addEventListener("click", (event) => {
         const pixel = this.map.getEventPixel(event);
         const coordinate = this.map.getCoordinateFromPixel(pixel);
-        const position = this.ol.proj.toLonLat(coordinate);
+        const position = toLonLat(coordinate);
         event.stopPropagation(); // 阻止事件冒泡到地图
         event.preventDefault(); // 阻止默认行为
         const data = mergedOptions.data;
         // mergedOptions.onClick?.({ event, content, data, position, marker });
-        mergedOptions.onClick?.({ event, content, data, position });
+        mergedOptions.onClick?.({ event, content: olMarker.getElement()!, data, position: position as [number, number] });
       });
     }
     if (typeof mergedOptions.onMouseover === "function") {
-      content.addEventListener("mouseover", (event) => {
-        console.log(`%c yqm mouseover了::: `, "color: pink;", event);
+      olMarker.getElement()?.addEventListener("mouseover", (event) => {
         const data = mergedOptions.data;
-        mergedOptions.onMouseover?.({ event, content, data });
+        mergedOptions.onMouseover?.({ event, content: olMarker.getElement()!, data });
       });
     }
     if (typeof mergedOptions.onMouseout === "function") {
-      content.addEventListener("mouseout", (event) => {
+      olMarker.getElement()?.addEventListener("mouseout", (event) => {
         const data = mergedOptions.data;
-        mergedOptions.onMouseout?.({ event, content, data });
+        mergedOptions.onMouseout?.({ event, content: olMarker.getElement()!, data });
       });
     }
 
     const marker: OpenLayersMarker = {
       id: mergedOptions.id,
-      position: [...position] as [number, number],
+      // position: [...position] as [number, number],
       olMarker: olMarker,
       setPosition: (newPosition: [number, number]) => {
-        olMarker.getGeometry().setCoordinates(this.ol.proj.fromLonLat(newPosition));
-        marker.position = newPosition;
+        olMarker.setPosition([...newPosition]);
+        // marker.position = newPosition;
       },
       setTitle: (title: string) => {
         olMarker.set("title", title);
@@ -212,21 +227,18 @@ export class OpenLayersProvider extends BaseMapProvider {
     };
 
     // 创建聚合源
-    const clusterSource = new this.ol.source.Vector();
+    const clusterSource = new VectorSource();
 
     // 创建要素数组
     const features: any[] = [];
     points.forEach((point) => {
-      const feature = new this.ol.Feature({
-        geometry: new this.ol.geom.Point(this.ol.proj.fromLonLat(point.position)),
+      const feature = new Feature({
+        geometry: new Point([...point.position]),
       });
 
       // 设置样式
-      const markerStyle = new this.ol.style.Style({
-        image: new this.ol.style.Icon({
-          src:
-            defaultOptions.renderMarker?.icon ||
-            'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="8" fill="red"/></svg>',
+      const markerStyle = new Style({
+        image: new Icon({
           scale: 1,
         }),
       });
@@ -237,7 +249,7 @@ export class OpenLayersProvider extends BaseMapProvider {
     });
 
     // 创建聚合图层
-    const clusterLayer = new this.ol.layer.Vector({
+    const clusterLayer = new VectorLayer({
       source: clusterSource,
       style: (feature: any) => {
         const features = feature.get("features");
@@ -248,18 +260,18 @@ export class OpenLayersProvider extends BaseMapProvider {
           div.innerHTML = defaultOptions.renderClusterMarker!.replace("{count}", count.toString());
           const element = div.firstChild as HTMLElement;
 
-          return new this.ol.style.Style({
-            image: new this.ol.style.Icon({
+          return new Style({
+            image: new Icon({
               src: "data:image/svg+xml;utf8," + element.outerHTML,
               scale: 1,
             }),
           });
         } else {
           // 单个标记点样式
-          return new this.ol.style.Style({
-            image: new this.ol.style.Icon({
+          return new Style({
+            image: new Icon({
               src:
-                defaultOptions.renderMarker?.icon ||
+                String(defaultOptions.renderMarker?.icon) ||
                 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="8" fill="red"/></svg>',
               scale: 1,
             }),
@@ -278,15 +290,12 @@ export class OpenLayersProvider extends BaseMapProvider {
       olClusterLayer: clusterLayer,
       olFeatures: features,
       addPoint: (point: MarkerClusterPoint) => {
-        const feature = new this.ol.Feature({
-          geometry: new this.ol.geom.Point(this.ol.proj.fromLonLat(point.position)),
+        const feature = new Feature({
+          geometry: new Point([...point.position]),
         });
 
-        const markerStyle = new this.ol.style.Style({
-          image: new this.ol.style.Icon({
-            src:
-              defaultOptions.renderMarker?.icon ||
-              'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="8" fill="red"/></svg>',
+        const markerStyle = new Style({
+          image: new Icon({
             scale: 1,
           }),
         });
@@ -326,6 +335,7 @@ export class OpenLayersProvider extends BaseMapProvider {
   removeMarker(marker: IMarker): void {
     const olMarker = (marker as OpenLayersMarker).olFeature;
     if (olMarker && this.vectorLayer) {
+      // if (olMarker && this.vectorLayer) {
       this.vectorLayer.getSource().removeFeature(olMarker);
       this.removeMarkerFromCollection(marker.id);
     }
@@ -341,7 +351,7 @@ export class OpenLayersProvider extends BaseMapProvider {
 
   setCenter(position: [number, number]): void {
     if (!this.map) return;
-    this.map.getView().setCenter(this.ol.proj.fromLonLat(position));
+    this.map.getView().setCenter(position);
   }
 
   setZoom(zoom: number): void {
@@ -352,13 +362,42 @@ export class OpenLayersProvider extends BaseMapProvider {
   setZoomAndCenter(zoom: number, center: [number, number]): void {
     if (!this.map) return;
     this.map.getView().setZoom(zoom);
-    this.map.getView().setCenter(this.ol.proj.fromLonLat(center));
+    this.map.getView().setCenter(center);
   }
 
   setFitView(options?: { padding?: number; maxZoom?: number }): void {
     if (!this.map) return;
     this.map.fitView(options);
   }
+
+  // setFitView1() {
+  //   // 获取所有矢量图层的 extent
+  //   const getAllVectorLayersExtent = () => {
+  //     let allExtents: ol.Extent[] = [];
+  //     // 遍历所有图层
+  //     this.map.getLayers().forEach((layer) => {
+  //       // 判断图层是否为矢量图层
+  //       if (layer instanceof VectorLayer) {
+  //         // 获取矢量图层的数据源
+  //         const vectorSource = layer.getSource();
+  //         // 获取数据源的 extent
+  //         const extent: ol.Extent = vectorSource.getExtent();
+  //         // 将 extent 添加到数组
+  //         allExtents.push(extent);
+  //       }
+  //     });
+
+  //     // 合并所有 extents
+  //     const mergedExtent = allExtents.reduce((acc: any, extent) => {
+  //       return acc ? this.ol.extentExtend(acc, extent) : extent;
+  //     }, null);
+
+  //     return mergedExtent;
+  //   };
+
+  //   const allLayerExtent = getAllVectorLayersExtent();
+  //   this.map.getView().fit(allLayerExtent, { padding: [100, 100, 100, 100] });
+  // }
 
   async addInfoWindow(options: { content: string | HTMLElement; position: [number, number]; open?: boolean }): Promise<any> {
     if (!this.map) {
@@ -374,21 +413,24 @@ export class OpenLayersProvider extends BaseMapProvider {
     };
     const mergedOptions = { ...defaultOptions, ...options };
 
-    const olInfoWindow = new this.ol.Overlay({
+    const olInfoWindow = new Overlay({
+      position: mergedOptions.position,
       element: createDomContent(mergedOptions.content),
-      position: this.ol.proj.fromLonLat(mergedOptions.position),
       positioning: "bottom-center",
       stopEvent: false,
     });
 
     this.map.addOverlay(olInfoWindow);
+    if (mergedOptions.open) {
+      olInfoWindow.setPosition(mergedOptions.position);
+    }
 
     // 为overlay添加open、close、remove方法
     const infoWindow = {
       olInfoWindow,
       open: (position?: [number, number]) => {
         if (this.map) {
-          olInfoWindow.setPosition(this.ol.proj.fromLonLat(position || options.position));
+          olInfoWindow.setPosition(position || mergedOptions.position);
         }
       },
       close: () => {
@@ -396,6 +438,7 @@ export class OpenLayersProvider extends BaseMapProvider {
       },
       remove: () => {
         this.map.removeOverlay(olInfoWindow);
+        olInfoWindow.setPosition(undefined);
         this.removeInfoWindowFromCollection(olInfoWindow);
       },
     };
@@ -478,14 +521,13 @@ export class OpenLayersProvider extends BaseMapProvider {
       zIndex: 1,
     };
     const mergedOptions = { ...defaultOptions, ...options };
-    const polylineFeature = new this.ol.Feature({
-      geometry: new this.ol.geom.LineString(mergedOptions.path.map((point: any) => this.ol.proj.fromLonLat([point[0], point[1]]))),
+    const polylineFeature = new Feature({
+      geometry: new LineString(mergedOptions.path.map((point: any) => [point[0], point[1]])),
     });
-    const polylineStyle = new this.ol.style.Style({
-      stroke: new this.ol.style.Stroke({
+    const polylineStyle = new Style({
+      stroke: new Stroke({
         color: mergedOptions.color,
         width: mergedOptions.width,
-        opacity: mergedOptions.opacity,
       }),
     });
     polylineFeature.setStyle(polylineStyle);
@@ -496,15 +538,14 @@ export class OpenLayersProvider extends BaseMapProvider {
       googlePolyline: polylineFeature,
       setPath: (path: [number, number][]) => {
         const geometry = polylineFeature.getGeometry() as any;
-        geometry.setCoordinates(path.map(([lng, lat]) => this.ol.proj.fromLonLat([lng, lat])));
+        geometry.setCoordinates(path.map(([lng, lat]) => [lng, lat]));
         // olPolyline.path = path;
       },
       setOptions: (options: any) => {
-        const newStyle = new this.ol.style.Style({
-          stroke: new this.ol.style.Stroke({
+        const newStyle = new Style({
+          stroke: new Stroke({
             color: options.color || mergedOptions.color,
             width: options.width || mergedOptions.width,
-            opacity: options.opacity || mergedOptions.opacity,
           }),
         });
         polylineFeature.setStyle(newStyle);
@@ -513,11 +554,10 @@ export class OpenLayersProvider extends BaseMapProvider {
         // OpenLayers polyline editing implementation
         if (editable) {
           polylineFeature.setStyle(
-            new this.ol.style.Style({
-              stroke: new this.ol.style.Stroke({
+            new Style({
+              stroke: new Stroke({
                 color: mergedOptions.color,
                 width: mergedOptions.width,
-                opacity: mergedOptions.opacity,
               }),
             })
           );
@@ -527,11 +567,9 @@ export class OpenLayersProvider extends BaseMapProvider {
         // OpenLayers polyline dragging implementation
         if (draggable) {
           polylineFeature.setStyle(
-            new this.ol.style.Style({
-              stroke: new this.ol.style.Stroke({
+            new Style({
+              stroke: new Stroke({
                 color: mergedOptions.color,
-                width: mergedOptions.width + 2,
-                opacity: mergedOptions.opacity,
               }),
             })
           );
@@ -591,17 +629,15 @@ export class OpenLayersProvider extends BaseMapProvider {
       zIndex: 1,
     };
     const mergedOptions = { ...defaultOptions, ...config };
-    const polygonFeature = new this.ol.Feature({
-      geometry: new this.ol.geom.Polygon([mergedOptions.path.map((point: any) => this.ol.proj.fromLonLat([point[0], point[1]]))]),
+    const polygonFeature = new Feature({
+      geometry: new Polygon([mergedOptions.path.map((point: any) => [point[0], point[1]])]),
     });
-    const polygonStyle = new this.ol.style.Style({
-      fill: new this.ol.style.Fill({
+    const polygonStyle = new Style({
+      fill: new Fill({
         color: `rgba(${this.hexToRgb(mergedOptions.fillColor)}, ${mergedOptions.fillOpacity})`,
       }),
-      stroke: new this.ol.style.Stroke({
+      stroke: new Stroke({
         color: mergedOptions.strokeColor,
-        width: mergedOptions.strokeWeight,
-        opacity: mergedOptions.strokeOpacity,
       }),
     });
     polygonFeature.setStyle(polygonStyle);
@@ -612,20 +648,19 @@ export class OpenLayersProvider extends BaseMapProvider {
       googlePolygon: polygonFeature,
       setPath: (path: [number, number][]) => {
         const geometry = polygonFeature.getGeometry() as any;
-        geometry.setCoordinates([path.map(([lng, lat]) => this.ol.proj.fromLonLat([lng, lat]))]);
+        geometry.setCoordinates([path.map(([lng, lat]) => [lng, lat])]);
         olPolygon.path = path;
       },
       setOptions: (options: any) => {
-        const newStyle = new this.ol.style.Style({
-          fill: new this.ol.style.Fill({
+        const newStyle = new Style({
+          fill: new Fill({
             color: `rgba(${this.hexToRgb(options.fillColor || mergedOptions.fillColor)}, ${
               options.fillOpacity || mergedOptions.fillOpacity
             })`,
           }),
-          stroke: new this.ol.style.Stroke({
+          stroke: new Stroke({
             color: options.strokeColor || mergedOptions.strokeColor,
             width: options.strokeWeight || mergedOptions.strokeWeight,
-            opacity: options.strokeOpacity || mergedOptions.strokeOpacity,
           }),
         });
         polygonFeature.setStyle(newStyle);
@@ -643,17 +678,17 @@ export class OpenLayersProvider extends BaseMapProvider {
       },
       contains: (point: [number, number]) => {
         const geometry = polygonFeature.getGeometry();
-        return geometry.intersectsCoordinate(this.ol.proj.fromLonLat(point));
+        return geometry.intersectsCoordinate(point);
       },
       getArea: () => {
         const geometry = polygonFeature.getGeometry();
-        return this.ol.Sphere.getArea(geometry);
+        return getArea(geometry);
       },
       show: () => {
         polygonFeature.setStyle(polygonStyle);
       },
       hide: () => {
-        polygonFeature.setStyle(new this.ol.style.Style({}));
+        polygonFeature.setStyle(new Style({}));
       },
       remove: () => {
         this.vectorLayer.getSource().removeFeature(polygonFeature);
