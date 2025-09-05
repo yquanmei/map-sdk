@@ -166,14 +166,12 @@ export abstract class BaseMapProvider implements IMapProvider {
   }
 
   protected clearAllInfoWindows(): void {
-    console.log(`%c yqm base, enter closeall, this.infoWindows::: `, "color: pink;", this.infoWindows);
     this.infoWindows.forEach((infoWindow) => {
       if (infoWindow && typeof infoWindow.remove === "function") {
-        console.log(`%c yqm 遍历中nfoWindow::: `, "color: pink;", infoWindow);
         infoWindow.remove();
       }
     });
-    // this.infoWindows.length = 0;
+    this.infoWindows.length = 0;
   }
 
   protected clearAllAnimations(): void {

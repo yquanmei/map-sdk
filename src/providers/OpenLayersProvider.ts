@@ -12,6 +12,7 @@ import { extend as extentExtend } from "ol/extent";
 import { getDistance, getArea } from "ol/sphere";
 import * as ol from "ol";
 import { fromLonLat, toLonLat } from "ol/proj";
+import { merge } from "lodash";
 import { BaseMapProvider } from "./BaseMapProvider";
 import { createDomContent, createAnimation } from "../utils";
 import {
@@ -84,7 +85,7 @@ export class OpenLayersProvider extends BaseMapProvider {
       center: [104.06, 30.67],
       url: "http://webrd01.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scale=1&style=8",
     };
-    const mergedOptions = { ...defaultOptions, ...config };
+    const mergedOptions = merge(defaultOptions, config);
 
     const container =
       typeof mergedOptions.container === "string" ? document.getElementById(mergedOptions.container) : mergedOptions.container;
@@ -92,15 +93,15 @@ export class OpenLayersProvider extends BaseMapProvider {
     if (!container) {
       throw new Error("Container element not found");
     }
-
-    const openStreetMapLayer = new TileLayer({
+    console.log(`%c yqm mergedOptions::: `, "color: pink;", mergedOptions);
+    const tileLayer = new TileLayer({
       source: new XYZ({
         // url: mergedOptions.url, // testtt
         url: defaultOptions.url,
       }),
     });
 
-    // // 创建矢量图层用于放置markers
+    // 创建矢量图层用于放置markers
     this.vectorLayer = new VectorLayer({
       source: new VectorSource(),
     });
@@ -114,7 +115,7 @@ export class OpenLayersProvider extends BaseMapProvider {
     });
 
     this.map = new Map({
-      layers: [openStreetMapLayer, this.vectorLayer],
+      layers: [tileLayer, this.vectorLayer],
       view,
       target: container,
       controls: [],
@@ -146,7 +147,7 @@ export class OpenLayersProvider extends BaseMapProvider {
     const defaultOptions = {
       id: markerId,
     };
-    const mergedOptions = { ...defaultOptions, ...config };
+    const mergedOptions = merge(defaultOptions, config);
     const olMarker = new Overlay({
       position: [...mergedOptions.position], // 例如，经纬度 [5, 48]
       element: createDomContent(mergedOptions.content || ""),
@@ -351,9 +352,9 @@ export class OpenLayersProvider extends BaseMapProvider {
     }
   }
 
-  setCenter(position: [number, number]): void {
+  setCenter(position: [number, number], immediately: boolean = false): void {
     if (!this.map) return;
-    this.map.getView().setCenter(position);
+    this.map.getView().setCenter(position, immediately);
   }
 
   setZoom(zoom: number): void {
@@ -363,8 +364,8 @@ export class OpenLayersProvider extends BaseMapProvider {
 
   setZoomAndCenter(zoom: number, center: [number, number]): void {
     if (!this.map) return;
-    this.map.getView().setZoom(zoom);
-    this.map.getView().setCenter(center);
+    this.setZoom(zoom);
+    this.setCenter(center);
   }
 
   async setFitView(options?: { padding?: number; maxZoom?: number }): Promise<void> {
@@ -372,7 +373,7 @@ export class OpenLayersProvider extends BaseMapProvider {
       padding: [100, 100, 100, 100],
       maxZoom: 18,
     };
-    const mergedOptions = { ...defaultOptions, ...options };
+    const mergedOptions = merge(defaultOptions, options);
     // 获取所有矢量图层的 extent
     const getAllVectorLayersExtent = () => {
       let allExtents: ol.Extent[] = [];
@@ -443,7 +444,7 @@ export class OpenLayersProvider extends BaseMapProvider {
       position: [0, 0],
       open: false,
     };
-    const mergedOptions = { ...defaultOptions, ...options };
+    const mergedOptions = merge(defaultOptions, options);
 
     const olInfoWindow = new Overlay({
       position: mergedOptions.position,
@@ -552,15 +553,12 @@ export class OpenLayersProvider extends BaseMapProvider {
       editable: false,
       zIndex: 1,
     };
-    const mergedOptions = { ...defaultOptions, ...options };
+    const mergedOptions = merge(defaultOptions, options);
     const lineString = new LineString(mergedOptions.path.map((item) => [item[0], item[1]]));
     const olPolyline = new Feature({
       type: "route",
       geometry: lineString,
     });
-    // const polylineFeature = new Feature({
-    //   geometry: new LineString(mergedOptions.path.map((point: any) => [point[0], point[1]])),
-    // });
     const polylineStyle = new Style({
       stroke: new Stroke({
         color: mergedOptions.color,
@@ -665,7 +663,7 @@ export class OpenLayersProvider extends BaseMapProvider {
       editable: false,
       zIndex: 1,
     };
-    const mergedOptions = { ...defaultOptions, ...config };
+    const mergedOptions = merge(defaultOptions, config);
     const polygonFeature = new Feature({
       geometry: new Polygon([mergedOptions.path.map((point: any) => [point[0], point[1]])]),
     });
@@ -844,14 +842,12 @@ export class OpenLayersProvider extends BaseMapProvider {
         startZoom: 18,
       },
     };
-    const mergedOptions = { ...defaultOptions, ...config };
+    const mergedOptions = merge(defaultOptions, config);
     const allLineArr = mergedOptions.line.path;
     if (!allLineArr || !Array.isArray(allLineArr) || allLineArr?.length === 0) throw new Error("Animation path is required");
     this.addPolyline(mergedOptions.line);
     // this.addPolyline(mergedOptions.line);
     const passedLine = (await this.addPolyline(mergedOptions.passedLine)).olPolyline;
-    // const passedLine = passedLine1.olPolyline;
-    // console.log(`%c yqm passedLine1,passedLine::: `, "color: pink;", passedLine1, passedLine);
     const marker = await this.addMarker(mergedOptions.marker as MarkerConfig);
     let currentPoint = {
       betweenTwoPoint: false,
@@ -911,8 +907,6 @@ export class OpenLayersProvider extends BaseMapProvider {
         if (startAnimationTimeout) clearTimeout(startAnimationTimeout);
 
         startAnimationTimeout = setTimeout(() => {
-          console.log(`%c yqm animationMarker::: `, "color: pink;", animationMarker);
-          console.log(`%c yqm animationObserver::: `, "color: pink;", animationObserver);
           animationMarker._moveAlong(mergedOptions.line.path, {
             duration: currentPoint.duration,
             autoRotation: false,
@@ -921,6 +915,12 @@ export class OpenLayersProvider extends BaseMapProvider {
             ...currentPoint,
             animationStatus: AnimationStatus.PLAYING,
           };
+          console.log(
+            `%c yqm mergedOptions.line.path[0]::: `,
+            "color: pink;",
+            mergedOptions.animation.startZoom,
+            mergedOptions.line.path[0]
+          );
           this.setZoomAndCenter(mergedOptions.animation.startZoom, mergedOptions.line.path[0]);
         }, timeoutTimer);
         typeof mergedOptions.onStart === "function" && mergedOptions.onStart();
@@ -1032,7 +1032,8 @@ export class OpenLayersProvider extends BaseMapProvider {
         if (stepPassedPath.length > 0) {
           passedLine.getGeometry().setCoordinates(stepPassedPath);
           const markerPosition = stepPassedPath[stepPassedPath.length - 1];
-          marker.olMarker.getGeometry().setCoordinates(markerPosition);
+          // marker.olMarker.getGeometry().setCoordinates(markerPosition);
+          marker.olMarker.setPosition(markerPosition);
           this.setCenter(markerPosition, true);
         }
         if (typeof changeStepsCall === "function")
@@ -1084,7 +1085,10 @@ export class OpenLayersProvider extends BaseMapProvider {
       //   this.removeAnimationFromCollection(animationId);
       // },
     };
-    const animationMarker = createAnimation(marker, animationObserver, getDistance);
+    const changePosition = (position: [number, number]) => {
+      marker.olMarker.setPosition(position);
+    };
+    const animationMarker = createAnimation(marker, animationObserver, getDistance, changePosition);
     this.addAnimationToCollection(animation);
     return animation;
   }

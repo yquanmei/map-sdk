@@ -1,3 +1,4 @@
+import { merge } from "lodash";
 import { BaseMapProvider } from "./BaseMapProvider";
 import {
   IMarker,
@@ -83,10 +84,7 @@ export class GoogleMapProvider extends BaseMapProvider {
       zoom: 11,
       center: [116.397428, 39.90923],
     };
-    const mergedOptions = {
-      ...defaultOptions,
-      ...config,
-    };
+    const mergedOptions = merge(defaultOptions, config);
 
     const container =
       typeof mergedOptions.container === "string" ? document.getElementById(mergedOptions.container) : mergedOptions.container;
@@ -157,10 +155,7 @@ export class GoogleMapProvider extends BaseMapProvider {
       draggable: false,
       // icon: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
     };
-    const mergedOptions = {
-      ...defaultOptions,
-      ...config,
-    };
+    const mergedOptions = merge(defaultOptions, config);
     const { AdvancedMarkerElement } = await this.google.maps.importLibrary("marker");
     const content = createDomContent(mergedOptions.content || "");
     const { position } = mergedOptions;
@@ -467,7 +462,7 @@ export class GoogleMapProvider extends BaseMapProvider {
     }
 
     const defaultOptions = { open: false };
-    const mergedOptions = { ...defaultOptions, ...options };
+    const mergedOptions = merge(defaultOptions, options);
     const { InfoWindow } = await this.google.maps.importLibrary("maps");
     const googleInfoWindow = new InfoWindow({
       content: createDomContent(mergedOptions.content),
@@ -551,18 +546,7 @@ export class GoogleMapProvider extends BaseMapProvider {
       opacity: 0.8,
       width: 3,
     };
-    // 合并顺序：默认样式 <- options.css(如果有) <- 直接传入的顶层样式与其他字段
-    // const mergedOptions = merge({}, defaultOptions, options?.css || {}, options) as {
-    //   path: [number, number][]
-    //   color: string
-    //   opacity: number
-    //   width: number
-    //   css?: unknown
-    // }
-    const mergedOptions = {
-      ...defaultOptions,
-      ...options,
-    };
+    const mergedOptions = merge(defaultOptions, options);
     const id = mergedOptions.id;
     const googlePolyline = new Polyline({
       id,
@@ -654,7 +638,7 @@ export class GoogleMapProvider extends BaseMapProvider {
         travelMode: this.google.maps.TravelMode.DRIVING,
         optimizeWaypoints: false,
       };
-      const mergedOptions = { ...defaultOptions, ...options };
+      const mergedOptions = merge(defaultOptions, options);
       const origin =
         typeof mergedOptions.start === "string"
           ? { query: mergedOptions.start }
@@ -875,7 +859,7 @@ export class GoogleMapProvider extends BaseMapProvider {
       zIndex: 10,
     };
 
-    const mergedOptions = { ...defaultOptions, ...config };
+    const mergedOptions = merge(defaultOptions, config);
 
     // 创建Google Maps多边形
     const { Polygon } = await this.google.maps.importLibrary("maps");
@@ -1119,7 +1103,7 @@ export class GoogleMapProvider extends BaseMapProvider {
       },
     };
 
-    const mergedOptions = { ...defaultOptions, ...config };
+    const mergedOptions = merge(defaultOptions, config);
 
     // 创建移动标记
     const markerOptions = mergedOptions.marker || {

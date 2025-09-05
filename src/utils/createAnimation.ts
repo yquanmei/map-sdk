@@ -52,7 +52,7 @@ class Observer {
   }
 }
 
-const createAnimation = (marker: any, animation: any, getDistance: any) => {
+const createAnimation = (marker: any, animation: any, getDistance: any, changePosition: (position: [number, number]) => void) => {
   // 自定义动画
   let timeout = false;
   let timeoutTimer: any;
@@ -103,9 +103,7 @@ const createAnimation = (marker: any, animation: any, getDistance: any) => {
           animation.emit("moveend", "这是测试");
         }
         //改变坐标点
-        // marker.olMarker.getGeometry().setCoordinates(nextPosition);
-        console.log(`%c yqm nextPosition::: `, "color: pink;", nextPosition);
-        marker.olMarker.setPosition(nextPosition);
+        changePosition(nextPosition);
         timeoutTimer = setTimeout(time, timer);
       };
       time();

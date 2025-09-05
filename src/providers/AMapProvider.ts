@@ -1,5 +1,6 @@
 import AMapLoader from "@amap/amap-jsapi-loader";
 import "@amap/amap-jsapi-types";
+import { merge } from "lodash";
 import { BaseMapProvider } from "./BaseMapProvider";
 import {
   IMarker,
@@ -51,10 +52,7 @@ export class AMapProvider extends BaseMapProvider {
         },
       };
 
-      const mergedOptions = {
-        ...defaultLoadOptions,
-        ...config,
-      };
+      const mergedOptions = merge(defaultLoadOptions, config);
 
       const newWindow = window as any;
       newWindow._AMapSecurityConfig = {
@@ -99,10 +97,7 @@ export class AMapProvider extends BaseMapProvider {
       rotation: -15,
     };
 
-    const mergedOptions = {
-      ...defaultOptions,
-      ...config,
-    };
+    const mergedOptions = merge(defaultOptions, config);
 
     const container =
       typeof mergedOptions.container === "string" ? document.getElementById(mergedOptions.container) : mergedOptions.container;
@@ -138,10 +133,7 @@ export class AMapProvider extends BaseMapProvider {
       anchor: "bottom-center",
     };
 
-    const mergedOptions = {
-      ...defaultOptions,
-      ...config,
-    };
+    const mergedOptions = merge(defaultOptions, config);
 
     const content = createDomContent(mergedOptions.content || "");
     const { position } = mergedOptions;
@@ -323,10 +315,7 @@ export class AMapProvider extends BaseMapProvider {
       // closeWhenClickMap: true,
     };
 
-    const mergedOptions = {
-      ...defaultOptions,
-      ...options,
-    };
+    const mergedOptions = merge(defaultOptions, options);
 
     const aMapInfoWindow = new (window as any).AMap.InfoWindow({
       content: mergedOptions.content,
@@ -428,10 +417,7 @@ export class AMapProvider extends BaseMapProvider {
       opacity: 0.8,
       width: 3,
     };
-    const mergedOptions = {
-      ...defaultOptions,
-      ...options,
-    };
+    const mergedOptions = merge(defaultOptions, options);
     const line = new this.AMap.Polyline({
       map: this.map,
       path: mergedOptions.path,
@@ -506,7 +492,7 @@ export class AMapProvider extends BaseMapProvider {
       editable: false,
       zIndex: 1,
     };
-    const mergedOptions = { ...defaultOptions, ...config };
+    const mergedOptions = merge(defaultOptions, config);
     const aMapPolygon = new this.AMap.Polygon({
       path: mergedOptions.path.map((p) => [...p] as [number, number]),
       strokeColor: mergedOptions.strokeColor,
@@ -662,10 +648,7 @@ export class AMapProvider extends BaseMapProvider {
         setCenterRealTime: true,
       },
     };
-    const mergedOptions = {
-      ...defaultOptions,
-      ...config,
-    };
+    const mergedOptions = merge(defaultOptions, config);
     const allLineArr = mergedOptions.line.path;
     if (!allLineArr || !Array.isArray(allLineArr) || allLineArr?.length === 0) throw new Error("Animation path is required");
     await this.addPolyline(mergedOptions.line);
