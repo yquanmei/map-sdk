@@ -2,7 +2,9 @@ class Observer {
   _moveAlong?: (path: any, options: any) => void;
   _pauseMove?: () => void;
   _stopMove?: () => void;
-  message;
+  message: {
+    [key: string]: ((...args: any[]) => void)[];
+  };
   constructor() {
     this.message = {}; // 消息队列
   }
@@ -12,7 +14,7 @@ class Observer {
    * @param {*} type 事件名 (事件类型)
    * @param {*} callback 回调函数
    */
-  on(type, callback) {
+  on(type: string, callback: (...args: any[]) => void) {
     // 判断有没有这个属性（事件类型）
     if (!this.message[type]) {
       // 如果没有这个属性，就初始化一个空的数组
@@ -27,13 +29,13 @@ class Observer {
    * @param {*} type 事件名 (事件类型)
    * @param {*} callback 回调函数
    */
-  off(type, callback) {
+  off(type: string, callback: (...args: any[]) => void) {
     // 判断是否有订阅，即消息队列里是否有type这个类型的事件，没有的话就直接return
     if (!this.message[type]) return;
     // 判断是否有callback这个参数
     if (!callback) {
       // 如果没有callback,就删掉整个事件
-      this.message[type] = undefined;
+      this.message[type] = undefined as any;
       return;
     }
     // 如果有callback,就仅仅删掉callback这个消息(过滤掉这个消息方法)
@@ -44,7 +46,7 @@ class Observer {
    * emit 触发消息队列里的内容
    * @param {*} type 事件名 (事件类型)
    */
-  emit(type, ...arg) {
+  emit(type: string, ...arg: any[]) {
     // 判断是否有订阅
     if (!this.message[type]) return;
     // 如果有订阅，就对这个`type`事件做一个轮询 (for循环)
