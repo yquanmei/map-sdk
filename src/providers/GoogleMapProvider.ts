@@ -1,4 +1,6 @@
-import { merge } from "lodash";
+import { Loader } from "@googlemaps/js-api-loader";
+import { MarkerClusterer } from "@googlemaps/markerclusterer";
+import { merge } from "lodash-es";
 import { BaseMapProvider } from "./BaseMapProvider";
 import {
   IMarker,
@@ -18,8 +20,6 @@ import {
   AnimationInfo,
 } from "../types";
 import { createDomContent } from "../utils";
-import { Loader } from "@googlemaps/js-api-loader";
-import { MarkerClusterer } from "@googlemaps/markerclusterer";
 import "../css/google.css";
 
 interface GoogleMarker extends IMarker {

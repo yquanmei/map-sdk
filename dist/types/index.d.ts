@@ -127,6 +127,8 @@ export interface AnimationPlayConfig extends MarkerConfig {
     autoStart?: boolean;
     loop?: boolean;
     setCenterRealTime?: ((position: [number, number]) => void) | boolean;
+    startTimer?: number;
+    startZoom?: number;
 }
 export interface AnimationInfo {
     path: [number, number][];

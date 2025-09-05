@@ -1,3 +1,4 @@
+import { merge } from 'lodash-es';
 import { Loader } from '@googlemaps/js-api-loader';
 import { MarkerClusterer } from '@googlemaps/markerclusterer';
 
@@ -163,14 +164,12 @@ class BaseMapProvider {
         this.pathPlannings.length = 0;
     }
     clearAllInfoWindows() {
-        console.log(`%c yqm this.infoWindows::: `, "color: pink;", this.infoWindows);
         this.infoWindows.forEach((infoWindow) => {
             if (infoWindow && typeof infoWindow.remove === "function") {
-                console.log(`%c yqm infoWindow::: `, "color: pink;", infoWindow);
                 infoWindow.remove();
             }
         });
-        // this.infoWindows.length = 0;
+        this.infoWindows.length = 0;
     }
     clearAllAnimations() {
         this.animations.forEach((animation) => animation.remove());
@@ -190,6 +189,156 @@ class BaseMapProvider {
         this.polygons.clear();
     }
 }
+
+class Observer {
+    constructor() {
+        this.message = {}; // 消息队列
+    }
+    /**
+     * `$on` 向消息队列添加内容
+     * @param {*} type 事件名 (事件类型)
+     * @param {*} callback 回调函数
+     */
+    on(type, callback) {
+        // 判断有没有这个属性（事件类型）
+        if (!this.message[type]) {
+            // 如果没有这个属性，就初始化一个空的数组
+            this.message[type] = [];
+        }
+        // 如果有这个属性，就往他的后面push一个新的callback
+        this.message[type].push(callback);
+    }
+    /**
+     * off 删除消息队列里的内容
+     * @param {*} type 事件名 (事件类型)
+     * @param {*} callback 回调函数
+     */
+    off(type, callback) {
+        // 判断是否有订阅，即消息队列里是否有type这个类型的事件，没有的话就直接return
+        if (!this.message[type])
+            return;
+        // 判断是否有callback这个参数
+        if (!callback) {
+            // 如果没有callback,就删掉整个事件
+            this.message[type] = undefined;
+            return;
+        }
+        // 如果有callback,就仅仅删掉callback这个消息(过滤掉这个消息方法)
+        this.message[type] = this.message[type].filter((item) => item !== callback);
+    }
+    /**
+     * emit 触发消息队列里的内容
+     * @param {*} type 事件名 (事件类型)
+     */
+    emit(type, ...arg) {
+        // 判断是否有订阅
+        if (!this.message[type])
+            return;
+        // 如果有订阅，就对这个`type`事件做一个轮询 (for循环)
+        this.message[type].forEach((item) => {
+            // 挨个执行每一个消息的回调函数callback
+            item(...arg);
+        });
+    }
+}
+const createAnimation = (marker, animation, getDistance, changePosition) => {
+    // 自定义动画
+    let timeout = false;
+    let timeoutTimer;
+    let animationObserver = new Observer();
+    animationObserver._moveAlong = (path, options) => {
+        const duration = options.duration;
+        let movingPoint;
+        // let movingIndex
+        const timer = 10;
+        const movingPath = path;
+        let currentIndex = 0;
+        // movingIndex = currentPoint.routeIndex
+        //计时器开始
+        const timeStart = () => {
+            movingPoint = movingPath[currentIndex];
+            timeout = false;
+            const time = () => {
+                if (timeout)
+                    return;
+                if (currentIndex + 1 >= movingPath.length) {
+                    //从头开始
+                    // currentPoint.routeIndex = 0;
+                    //移除要素
+                    animation.emit("movealong");
+                    currentIndex = 0;
+                    clearIntervalTime();
+                    //重复运动
+                    return;
+                }
+                // 到达下一个点了 需要变化
+                const nextPosition = nextPoint();
+                const passedPath = movingPath.slice(0, currentIndex + 1).concat([movingPoint]);
+                const passedPathWithR = movingPath.slice(0, currentIndex + 1).concat({ lng: movingPoint[0], lat: movingPoint[1] });
+                // if (marker && marker.label && animationOptions.marker.label.content) {
+                //   marker.label.setPosition(movingPoint);
+                // }
+                animation.emit("moving", {
+                    index: currentIndex,
+                    passedPath,
+                    passedPathWithR,
+                    target: {
+                        getPosition: () => {
+                            return movingPoint;
+                        },
+                    },
+                });
+                if (nextPosition === movingPath[currentIndex + 1]) {
+                    currentIndex++;
+                    animation.emit("moveend", "这是测试");
+                }
+                //改变坐标点
+                changePosition(nextPosition);
+                timeoutTimer = setTimeout(time, timer);
+            };
+            time();
+        };
+        //计算下一个点的位置
+        //这里的算法是计算了两点之间的点   两点之间的连线可能存在很多个计算出来的点
+        const nextPoint = () => {
+            let routeIndex = currentIndex;
+            let p1 = movingPoint; //获取在屏幕的像素位置
+            let p2 = movingPath[routeIndex + 1];
+            let dx = p2[0] - p1[0];
+            let dy = p2[1] - p1[1];
+            //在没有走到下一个点之前，下一个点是不变的，前一个点以这个点为终点向其靠近
+            // 步长
+            const distanceBetween = getDistance(movingPath[routeIndex], movingPath[routeIndex + 1]);
+            const dis = getDistance(p1, p2);
+            const step = (distanceBetween / duration) * timer;
+            const count = Math.round(dis / step);
+            if (step === 0 || count < 1) {
+                movingPoint = movingPath[routeIndex + 1];
+                return movingPath[routeIndex + 1];
+            }
+            else {
+                let x = p1[0] + dx / count;
+                let y = p1[1] + dy / count;
+                let coor = [x, y];
+                movingPoint = coor; //这里会将前一个点重新赋值  要素利用这个坐标变化进行移动
+                return coor;
+            }
+        };
+        timeStart();
+    };
+    const clearIntervalTime = () => {
+        if (timeoutTimer)
+            clearTimeout(timeoutTimer);
+        timeout = true;
+    };
+    animationObserver._pauseMove = () => {
+        clearIntervalTime();
+    };
+    animationObserver._stopMove = () => {
+        clearIntervalTime();
+    };
+    return animationObserver;
+};
 
 /**
  * DOM操作相关的工具函数
@@ -288,43 +437,41 @@ function createDomContent(input) {
     emptyDiv.setAttribute("data-fallback", "true");
     return emptyDiv;
 }
-/**
- * 安全地设置元素的innerHTML
- * @param element 目标元素
- * @param content HTML内容
- */
-function safeSetInnerHTML(element, content) {
-    if (!isValidHTMLElement(element)) {
-        throw new DOMError("Invalid HTMLElement provided");
-    }
-    if (typeof content !== "string") {
-        throw new DOMError("Content must be a string");
-    }
-    try {
-        element.innerHTML = content;
-    }
-    catch (error) {
-        throw new DOMError(`Failed to set innerHTML: ${error instanceof Error ? error.message : "Unknown error"}`);
-    }
-}
-/**
- * 安全地克隆DOM元素
- * @param element 要克隆的元素
- * @param deep 是否深度克隆
- * @returns 克隆的元素
- */
-function safeCloneElement(element, deep = true) {
-    if (!isValidHTMLElement(element)) {
-        throw new DOMError("Invalid HTMLElement provided for cloning");
-    }
-    try {
-        const cloned = element.cloneNode(deep);
-        return cloned;
-    }
-    catch (error) {
-        throw new DOMError(`Failed to clone element: ${error instanceof Error ? error.message : "Unknown error"}`);
-    }
-}
+// /**
+//  * 安全地设置元素的innerHTML
+//  * @param element 目标元素
+//  * @param content HTML内容
+//  */
+// export function safeSetInnerHTML(element: HTMLElement, content: string): void {
+//   if (!isValidHTMLElement(element)) {
+//     throw new DOMError("Invalid HTMLElement provided");
+//   }
+//   if (typeof content !== "string") {
+//     throw new DOMError("Content must be a string");
+//   }
+//   try {
+//     element.innerHTML = content;
+//   } catch (error) {
+//     throw new DOMError(`Failed to set innerHTML: ${error instanceof Error ? error.message : "Unknown error"}`);
+//   }
+// }
+// /**
+//  * 安全地克隆DOM元素
+//  * @param element 要克隆的元素
+//  * @param deep 是否深度克隆
+//  * @returns 克隆的元素
+//  */
+// export function safeCloneElement(element: HTMLElement, deep = true): HTMLElement {
+//   if (!isValidHTMLElement(element)) {
+//     throw new DOMError("Invalid HTMLElement provided for cloning");
+//   }
+//   try {
+//     const cloned = element.cloneNode(deep) as HTMLElement;
+//     return cloned;
+//   } catch (error) {
+//     throw new DOMError(`Failed to clone element: ${error instanceof Error ? error.message : "Unknown error"}`);
+//   }
+// }
 
 class AMapProvider extends BaseMapProvider {
     /**
@@ -345,10 +492,7 @@ class AMapProvider extends BaseMapProvider {
                     plugins: [],
                 },
             };
-            const mergedOptions = {
-                ...defaultLoadOptions,
-                ...config,
-            };
+            const mergedOptions = merge(defaultLoadOptions, config);
             const newWindow = window;
             newWindow._AMapSecurityConfig = {
                 securityJsCode: mergedOptions.token,
@@ -387,10 +531,7 @@ class AMapProvider extends BaseMapProvider {
             pitch: 40,
             rotation: -15,
         };
-        const mergedOptions = {
-            ...defaultOptions,
-            ...config,
-        };
+        const mergedOptions = merge(defaultOptions, config);
         const container = typeof mergedOptions.container === "string" ? document.getElementById(mergedOptions.container) : mergedOptions.container;
         if (!container) {
             throw new Error("Container element not found");
@@ -418,10 +559,7 @@ class AMapProvider extends BaseMapProvider {
             data: {},
             anchor: "bottom-center",
         };
-        const mergedOptions = {
-            ...defaultOptions,
-            ...config,
-        };
+        const mergedOptions = merge(defaultOptions, config);
         const content = createDomContent(mergedOptions.content || "");
         const { position } = mergedOptions;
         // const markerOptions: any = {};
@@ -582,10 +720,7 @@ class AMapProvider extends BaseMapProvider {
             autoMove: true,
             // closeWhenClickMap: true,
         };
-        const mergedOptions = {
-            ...defaultOptions,
-            ...options,
-        };
+        const mergedOptions = merge(defaultOptions, options);
         const aMapInfoWindow = new window.AMap.InfoWindow({
             content: mergedOptions.content,
             position: mergedOptions.position,
@@ -680,10 +815,7 @@ class AMapProvider extends BaseMapProvider {
             opacity: 0.8,
             width: 3,
         };
-        const mergedOptions = {
-            ...defaultOptions,
-            ...options,
-        };
+        const mergedOptions = merge(defaultOptions, options);
         const line = new this.AMap.Polyline({
             map: this.map,
             path: mergedOptions.path,
@@ -756,7 +888,7 @@ class AMapProvider extends BaseMapProvider {
             editable: false,
             zIndex: 1,
         };
-        const mergedOptions = { ...defaultOptions, ...config };
+        const mergedOptions = merge(defaultOptions, config);
         const aMapPolygon = new this.AMap.Polygon({
             path: mergedOptions.path.map((p) => [...p]),
             strokeColor: mergedOptions.strokeColor,
@@ -899,10 +1031,7 @@ class AMapProvider extends BaseMapProvider {
                 setCenterRealTime: true,
             },
         };
-        const mergedOptions = {
-            ...defaultOptions,
-            ...config,
-        };
+        const mergedOptions = merge(defaultOptions, config);
         const allLineArr = mergedOptions.line.path;
         if (!allLineArr || !Array.isArray(allLineArr) || allLineArr?.length === 0)
             throw new Error("Animation path is required");
@@ -944,7 +1073,9 @@ class AMapProvider extends BaseMapProvider {
             passedLine.setPath(currentPoint.pathWithRInfo);
             const position = e.target.getPosition();
             if (typeof mergedOptions.animation?.setCenterRealTime === "function") {
-                mergedOptions.animation?.setCenterRealTime?.(position);
+                if (typeof mergedOptions.animation?.setCenterRealTime === "function") {
+                    mergedOptions.animation.setCenterRealTime(position);
+                }
             }
             else if (mergedOptions.animation?.setCenterRealTime !== false) {
                 this.setCenter(position, true);
@@ -1213,10 +1344,7 @@ class GoogleMapProvider extends BaseMapProvider {
             zoom: 11,
             center: [116.397428, 39.90923],
         };
-        const mergedOptions = {
-            ...defaultOptions,
-            ...config,
-        };
+        const mergedOptions = merge(defaultOptions, config);
         const container = typeof mergedOptions.container === "string" ? document.getElementById(mergedOptions.container) : mergedOptions.container;
         if (!container) {
             throw new Error("Container element not found");
@@ -1282,10 +1410,7 @@ class GoogleMapProvider extends BaseMapProvider {
             draggable: false,
             // icon: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
         };
-        const mergedOptions = {
-            ...defaultOptions,
-            ...config,
-        };
+        const mergedOptions = merge(defaultOptions, config);
         const { AdvancedMarkerElement } = await this.google.maps.importLibrary("marker");
         const content = createDomContent(mergedOptions.content || "");
         const { position } = mergedOptions;
@@ -1572,7 +1697,7 @@ class GoogleMapProvider extends BaseMapProvider {
             throw new Error("Map not initialized");
         }
         const defaultOptions = { open: false };
-        const mergedOptions = { ...defaultOptions, ...options };
+        const mergedOptions = merge(defaultOptions, options);
         const { InfoWindow } = await this.google.maps.importLibrary("maps");
         const googleInfoWindow = new InfoWindow({
             content: createDomContent(mergedOptions.content),
@@ -1648,18 +1773,7 @@ class GoogleMapProvider extends BaseMapProvider {
             opacity: 0.8,
             width: 3,
         };
-        // 合并顺序：默认样式 <- options.css(如果有) <- 直接传入的顶层样式与其他字段
-        // const mergedOptions = merge({}, defaultOptions, options?.css || {}, options) as {
-        //   path: [number, number][]
-        //   color: string
-        //   opacity: number
-        //   width: number
-        //   css?: unknown
-        // }
-        const mergedOptions = {
-            ...defaultOptions,
-            ...options,
-        };
+        const mergedOptions = merge(defaultOptions, options);
         const id = mergedOptions.id;
         const googlePolyline = new Polyline({
             id,
@@ -1735,7 +1849,7 @@ class GoogleMapProvider extends BaseMapProvider {
                 travelMode: this.google.maps.TravelMode.DRIVING,
                 optimizeWaypoints: false,
             };
-            const mergedOptions = { ...defaultOptions, ...options };
+            const mergedOptions = merge(defaultOptions, options);
             const origin = typeof mergedOptions.start === "string"
                 ? { query: mergedOptions.start }
                 : { lat: mergedOptions.start[1], lng: mergedOptions.start[0] };
@@ -1943,7 +2057,7 @@ class GoogleMapProvider extends BaseMapProvider {
             clickable: true,
             zIndex: 10,
         };
-        const mergedOptions = { ...defaultOptions, ...config };
+        const mergedOptions = merge(defaultOptions, config);
         // 创建Google Maps多边形
         const { Polygon } = await this.google.maps.importLibrary("maps");
         // 处理路径，确保至少有2个点
@@ -2155,7 +2269,7 @@ class GoogleMapProvider extends BaseMapProvider {
                 loop: false,
             },
         };
-        const mergedOptions = { ...defaultOptions, ...config };
+        const mergedOptions = merge(defaultOptions, config);
         // 创建移动标记
         const markerOptions = mergedOptions.marker || {
             position: mergedOptions.line.path[0],
@@ -49399,34 +49513,35 @@ class OpenLayersProvider extends BaseMapProvider {
             center: [104.06, 30.67],
             url: "http://webrd01.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scale=1&style=8",
         };
-        const mergedOptions = { ...defaultOptions, ...config };
+        const mergedOptions = merge(defaultOptions, config);
         const container = typeof mergedOptions.container === "string" ? document.getElementById(mergedOptions.container) : mergedOptions.container;
         if (!container) {
             throw new Error("Container element not found");
         }
-        console.log(`%c yqm this.ol::: `, "color: pink;", this.ol);
-        const openStreetMapLayer = new TileLayer({
+        console.log(`%c yqm mergedOptions::: `, "color: pink;", mergedOptions);
+        const tileLayer = new TileLayer({
             source: new XYZ({
                 // url: mergedOptions.url, // testtt
                 url: defaultOptions.url,
             }),
         });
+        // 创建矢量图层用于放置markers
+        this.vectorLayer = new VectorLayer({
+            source: new VectorSource(),
+        });
+        const view = new View({
+            center: mergedOptions.center,
+            projection: "EPSG:4326",
+            zoom: mergedOptions.zoom,
+            minZoom: 6, // 最小缩放级别
+            maxZoom: 18, // 最大缩放级别
+        });
         this.map = new Map$1({
-            layers: [openStreetMapLayer],
-            view: new View({
-                center: mergedOptions.center,
-                projection: "EPSG:4326",
-                zoom: mergedOptions.zoom,
-                minZoom: 6, // 最小缩放级别
-                maxZoom: 18, // 最大缩放级别
-            }),
+            layers: [tileLayer, this.vectorLayer],
+            view,
             target: container,
             controls: [],
         });
-        // // 创建矢量图层用于放置markers
-        // this.vectorLayer = new VectorLayer({
-        //   source: new VectorSource(),
-        // });
         // this.map = new Map({
         //   target: container,
         //   layers: [
@@ -49451,7 +49566,7 @@ class OpenLayersProvider extends BaseMapProvider {
         const defaultOptions = {
             id: markerId,
         };
-        const mergedOptions = { ...defaultOptions, ...config };
+        const mergedOptions = merge(defaultOptions, config);
         const olMarker = new Overlay({
             position: [...mergedOptions.position], // 例如，经纬度 [5, 48]
             element: createDomContent(mergedOptions.content || ""),
@@ -49633,10 +49748,10 @@ class OpenLayersProvider extends BaseMapProvider {
             this.removeClusterFromCollection(cluster.id);
         }
     }
-    setCenter(position) {
+    setCenter(position, immediately = false) {
         if (!this.map)
             return;
-        this.map.getView().setCenter(position);
+        this.map.getView().setCenter(position, immediately);
     }
     setZoom(zoom) {
         if (!this.map)
@@ -49646,39 +49761,69 @@ class OpenLayersProvider extends BaseMapProvider {
     setZoomAndCenter(zoom, center) {
         if (!this.map)
             return;
-        this.map.getView().setZoom(zoom);
-        this.map.getView().setCenter(center);
+        this.setZoom(zoom);
+        this.setCenter(center);
     }
-    setFitView(options) {
-        if (!this.map)
-            return;
-        this.map.fitView(options);
+    async setFitView(options) {
+        const defaultOptions = {
+            padding: [100, 100, 100, 100],
+            maxZoom: 18,
+        };
+        const mergedOptions = merge(defaultOptions, options);
+        // 获取所有矢量图层的 extent
+        const getAllVectorLayersExtent = () => {
+            let allExtents = [];
+            // 遍历所有图层
+            this.map.getLayers().forEach((layer) => {
+                // 判断图层是否为矢量图层
+                if (layer instanceof VectorLayer) {
+                    // 获取矢量图层的数据源
+                    const vectorSource = layer.getSource();
+                    // 获取数据源的 extent
+                    const extent = vectorSource.getExtent();
+                    // 将 extent 添加到数组
+                    allExtents.push(extent);
+                }
+            });
+            // 合并所有 extents
+            const mergedExtent = allExtents.reduce((acc, extent) => {
+                return acc ? this.ol.extentExtend(acc, extent) : extent;
+            }, null);
+            return mergedExtent;
+        };
+        const allLayerExtent = getAllVectorLayersExtent();
+        try {
+            const safeExtent = await this.calculateSafeExtent(allLayerExtent);
+            if (!safeExtent) {
+                return;
+            }
+            this.map.getView().fit(safeExtent, { padding: mergedOptions.padding });
+        }
+        catch (error) {
+            console.error("Error setting fit view:", error);
+        }
     }
-    // setFitView1() {
-    //   // 获取所有矢量图层的 extent
-    //   const getAllVectorLayersExtent = () => {
-    //     let allExtents: ol.Extent[] = [];
-    //     // 遍历所有图层
-    //     this.map.getLayers().forEach((layer) => {
-    //       // 判断图层是否为矢量图层
-    //       if (layer instanceof VectorLayer) {
-    //         // 获取矢量图层的数据源
-    //         const vectorSource = layer.getSource();
-    //         // 获取数据源的 extent
-    //         const extent: ol.Extent = vectorSource.getExtent();
-    //         // 将 extent 添加到数组
-    //         allExtents.push(extent);
-    //       }
-    //     });
-    //     // 合并所有 extents
-    //     const mergedExtent = allExtents.reduce((acc: any, extent) => {
-    //       return acc ? this.ol.extentExtend(acc, extent) : extent;
-    //     }, null);
-    //     return mergedExtent;
-    //   };
-    //   const allLayerExtent = getAllVectorLayersExtent();
-    //   this.map.getView().fit(allLayerExtent, { padding: [100, 100, 100, 100] });
-    // }
+    /**
+     * 检查范围是否有效
+     */
+    isEmptyExtent(extent) {
+        const [minX, minY, maxX, maxY] = extent;
+        return isNaN(minX) || isNaN(minY) || isNaN(maxX) || isNaN(maxY) || minX === maxX || minY === maxY;
+    }
+    async calculateSafeExtent(layersExtent) {
+        return new Promise((resolve) => {
+            // setTimeout(() => {
+            try {
+                const extent = layersExtent;
+                resolve(extent && !this.isEmptyExtent(extent) ? extent : null);
+            }
+            catch (error) {
+                console.error("Error calculating extent:", error);
+                resolve(null);
+            }
+            // }, 100); // 给地图一点时间加载
+        });
+    }
     async addInfoWindow(options) {
         if (!this.map) {
             throw new Error("Map not initialized");
@@ -49690,7 +49835,7 @@ class OpenLayersProvider extends BaseMapProvider {
             position: [0, 0],
             open: false,
         };
-        const mergedOptions = { ...defaultOptions, ...options };
+        const mergedOptions = merge(defaultOptions, options);
         const olInfoWindow = new Overlay({
             position: mergedOptions.position,
             element: createDomContent(mergedOptions.content),
@@ -49718,7 +49863,7 @@ class OpenLayersProvider extends BaseMapProvider {
                 this.removeInfoWindowFromCollection(olInfoWindow);
             },
         };
-        this.addInfoWindowToCollection(olInfoWindow);
+        this.addInfoWindowToCollection(infoWindow);
         return infoWindow;
     }
     destroy() {
@@ -49784,16 +49929,18 @@ class OpenLayersProvider extends BaseMapProvider {
             id: polylineId,
             path: [],
             color: "#FF0000",
-            opacity: 1,
-            width: 2,
+            opacity: 0.8,
+            width: 3,
             clickable: true,
             draggable: false,
             editable: false,
             zIndex: 1,
         };
-        const mergedOptions = { ...defaultOptions, ...options };
-        const polylineFeature = new Feature({
-            geometry: new LineString(mergedOptions.path.map((point) => [point[0], point[1]])),
+        const mergedOptions = merge(defaultOptions, options);
+        const lineString = new LineString(mergedOptions.path.map((item) => [item[0], item[1]]));
+        const olPolyline = new Feature({
+            type: "route",
+            geometry: lineString,
         });
         const polylineStyle = new Style({
             stroke: new Stroke({
@@ -49801,14 +49948,14 @@ class OpenLayersProvider extends BaseMapProvider {
                 width: mergedOptions.width,
             }),
         });
-        polylineFeature.setStyle(polylineStyle);
-        this.vectorLayer.getSource().addFeature(polylineFeature);
-        const olPolyline = {
+        olPolyline.setStyle(polylineStyle);
+        this.vectorLayer.getSource().addFeature(olPolyline);
+        const polyline = {
             id: polylineId,
             // path: mergedOptions.path.map((p) => [...p] as [number, number]),
-            googlePolyline: polylineFeature,
+            olPolyline,
             setPath: (path) => {
-                const geometry = polylineFeature.getGeometry();
+                const geometry = olPolyline.getGeometry();
                 geometry.setCoordinates(path.map(([lng, lat]) => [lng, lat]));
                 // olPolyline.path = path;
             },
@@ -49819,12 +49966,12 @@ class OpenLayersProvider extends BaseMapProvider {
                         width: options.width || mergedOptions.width,
                     }),
                 });
-                polylineFeature.setStyle(newStyle);
+                olPolyline.setStyle(newStyle);
             },
             setEditable: (editable) => {
                 // OpenLayers polyline editing implementation
                 if (editable) {
-                    polylineFeature.setStyle(new Style({
+                    olPolyline.setStyle(new Style({
                         stroke: new Stroke({
                             color: mergedOptions.color,
                             width: mergedOptions.width,
@@ -49835,7 +49982,7 @@ class OpenLayersProvider extends BaseMapProvider {
             setDraggable: (draggable) => {
                 // OpenLayers polyline dragging implementation
                 if (draggable) {
-                    polylineFeature.setStyle(new Style({
+                    olPolyline.setStyle(new Style({
                         stroke: new Stroke({
                             color: mergedOptions.color,
                         }),
@@ -49843,12 +49990,12 @@ class OpenLayersProvider extends BaseMapProvider {
                 }
             },
             remove: () => {
-                this.vectorLayer.getSource().removeFeature(polylineFeature);
-                this.removePolylineFromCollection(olPolyline);
+                this.vectorLayer.getSource().removeFeature(olPolyline);
+                this.removePolylineFromCollection(polyline);
             },
         };
-        this.addPolylinesToCollection(olPolyline);
-        return olPolyline;
+        this.addPolylinesToCollection(polyline);
+        return polyline;
     }
     clearPolylines(params) {
         if (!this.map)
@@ -49894,7 +50041,7 @@ class OpenLayersProvider extends BaseMapProvider {
             editable: false,
             zIndex: 1,
         };
-        const mergedOptions = { ...defaultOptions, ...config };
+        const mergedOptions = merge(defaultOptions, config);
         const polygonFeature = new Feature({
             geometry: new Polygon([mergedOptions.path.map((point) => [point[0], point[1]])]),
         });
@@ -50047,35 +50194,237 @@ class OpenLayersProvider extends BaseMapProvider {
     }
     async addAnimation(config) {
         const animationId = this.generateId(COVERING_TYPES.ANIMATION);
+        const defaultOptions = {
+            animation: {
+                duration: 5000,
+                autoStart: false,
+                loop: false,
+                setCenterRealTime: true,
+                startTimer: 700,
+                startZoom: 18,
+            },
+        };
+        const mergedOptions = merge(defaultOptions, config);
+        const allLineArr = mergedOptions.line.path;
+        if (!allLineArr || !Array.isArray(allLineArr) || allLineArr?.length === 0)
+            throw new Error("Animation path is required");
+        this.addPolyline(mergedOptions.line);
+        // this.addPolyline(mergedOptions.line);
+        const passedLine = (await this.addPolyline(mergedOptions.passedLine)).olPolyline;
+        const marker = await this.addMarker(mergedOptions.marker);
+        let currentPoint = {
+            betweenTwoPoint: false,
+            path: [allLineArr[0]], // 取线路的第一个点
+            pathWithRInfo: [allLineArr[0]], // 取线路的第一个点
+            allPath: allLineArr, // 线路
+            animationPath: allLineArr, // 线路
+            shouldConcatBefore: false,
+            oldPath: [],
+            animationStatus: AnimationStatus.IDLE,
+            duration: mergedOptions.animation.duration,
+            directResume: true,
+        };
+        let startAnimationTimeout;
+        const animationObserver = new Observer();
+        animationObserver.on("moving", (e) => {
+            // 移动过程中
+            // 从当前点开始运功，但是需要加上之前的轨迹
+            let passedPath;
+            if (currentPoint.shouldConcatBefore === true) {
+                currentPoint = {
+                    ...currentPoint,
+                    betweenTwoPoint: true,
+                    path: [...currentPoint.oldPath].concat(e.passedPathWithR.slice(0, e.passedPathWithR.length - 1)).filter((item) => item[2] !== 0),
+                    pathWithRInfo: [...currentPoint.oldPath].concat(e.passedPathWithR).filter((item) => item[2] !== 0),
+                };
+                passedPath = [...currentPoint.oldPath].concat(e.passedPath).filter((item) => item[2] !== 0);
+            }
+            else {
+                currentPoint = {
+                    ...currentPoint,
+                    betweenTwoPoint: true,
+                    path: e.passedPathWithR.slice(0, e.passedPathWithR.length - 1),
+                    pathWithRInfo: e.passedPathWithR,
+                };
+                passedPath = e.passedPath;
+            }
+            passedLine.getGeometry().setCoordinates(passedPath);
+            this.setCenter(e.target.getPosition(), true);
+            typeof mergedOptions.onMoving === "function" && mergedOptions.onMoving(e);
+        });
+        animationObserver.on("moveend", (e) => {
+            // 每走完一个point，就会执行moveend
+            typeof mergedOptions.onComplete === "function" && mergedOptions.onComplete();
+        });
+        animationObserver.on("movealong", () => {
+            currentPoint.shouldConcatBefore = false;
+            currentPoint.animationStatus = AnimationStatus.COMPLETED;
+            typeof mergedOptions.onStepEnd === "function" && mergedOptions.onStepEnd();
+        });
         const animation = {
             id: animationId,
             start: () => {
-                console.warn("OpenLayers does not support trajectory animation");
+                const timeoutTimer = mergedOptions.animation.startTimer;
+                if (!mergedOptions.line.path || mergedOptions.line.path.length === 0)
+                    return;
+                if (startAnimationTimeout)
+                    clearTimeout(startAnimationTimeout);
+                startAnimationTimeout = setTimeout(() => {
+                    animationMarker._moveAlong(mergedOptions.line.path, {
+                        duration: currentPoint.duration,
+                        autoRotation: false,
+                    });
+                    currentPoint = {
+                        ...currentPoint,
+                        animationStatus: AnimationStatus.PLAYING,
+                    };
+                    console.log(`%c yqm mergedOptions.line.path[0]::: `, "color: pink;", mergedOptions.animation.startZoom, mergedOptions.line.path[0]);
+                    this.setZoomAndCenter(mergedOptions.animation.startZoom, [...mergedOptions.line.path[0]]);
+                }, timeoutTimer);
+                typeof mergedOptions.onStart === "function" && mergedOptions.onStart();
             },
             pause: () => {
-                console.warn("OpenLayers does not support trajectory animation");
+                animationMarker._pauseMove();
+                currentPoint = {
+                    ...currentPoint,
+                    oldPath: currentPoint.path,
+                    animationStatus: AnimationStatus.PAUSED,
+                };
             },
             resume: () => {
-                console.warn("OpenLayers does not support trajectory animation");
+                let animationPath;
+                const pathWithRInfo = currentPoint.pathWithRInfo;
+                const pathWithRInfoLen = pathWithRInfo.length;
+                if (currentPoint.betweenTwoPoint) {
+                    let firstPos;
+                    const otherPos = currentPoint.allPath.slice(pathWithRInfo.length - 1);
+                    if (pathWithRInfo && !Array.isArray(pathWithRInfo[pathWithRInfoLen - 1])) {
+                        firstPos = [
+                            // @ts-ignore
+                            pathWithRInfo[pathWithRInfoLen - 1].lng,
+                            // @ts-ignore
+                            pathWithRInfo[pathWithRInfoLen - 1].lat,
+                            0,
+                        ];
+                        animationPath = [firstPos].concat(otherPos);
+                    }
+                    else {
+                        animationPath = otherPos;
+                    }
+                }
+                else {
+                    const firstPos = [pathWithRInfo[pathWithRInfoLen - 1][0], pathWithRInfo[pathWithRInfoLen - 1][1], 0];
+                    const otherPos = currentPoint.allPath.slice(pathWithRInfoLen);
+                    animationPath = [firstPos].concat(otherPos);
+                }
+                currentPoint = {
+                    ...currentPoint,
+                    animationPath,
+                    shouldConcatBefore: true,
+                };
+                animationMarker._moveAlong(animationPath, {
+                    duration: currentPoint.duration,
+                    autoRotation: false,
+                });
+                currentPoint = {
+                    ...currentPoint,
+                    directResume: true,
+                    animationStatus: AnimationStatus.RESUMED,
+                };
+                typeof mergedOptions.onResume === "function" &&
+                    mergedOptions.onResume({
+                        path: currentPoint.animationPath,
+                        status: currentPoint.animationStatus,
+                    });
             },
             stop: () => {
-                console.warn("OpenLayers does not support trajectory animation");
+                animationMarker._stopMove();
             },
             changeSteps: (step, callback) => {
-                if (typeof callback === "function") {
-                    callback({
-                        path: [0, 0],
-                        status: "status",
-                    });
+                if (step === 0)
+                    return;
+                // marker.pause();
+                animation.pause();
+                const allLen = allLineArr.length;
+                const len = currentPoint.path.length;
+                let stepPassedPath;
+                const currentLen = len + step;
+                if (step > 0) {
+                    stepPassedPath = allLineArr.slice(0, currentLen);
+                    if (currentLen > allLen) {
+                        stepPassedPath = allLineArr;
+                    }
                 }
+                else {
+                    if (currentPoint.betweenTwoPoint) {
+                        stepPassedPath = allLineArr.slice(0, currentLen + 1);
+                    }
+                    else {
+                        stepPassedPath = allLineArr.slice(0, currentLen);
+                    }
+                    if (currentLen === 0) {
+                        stepPassedPath = [allLineArr[0]];
+                    }
+                }
+                currentPoint = {
+                    ...currentPoint,
+                    shouldConcatBefore: true,
+                    betweenTwoPoint: false,
+                    path: stepPassedPath,
+                    pathWithRInfo: stepPassedPath,
+                    oldPath: stepPassedPath,
+                    directResume: false,
+                };
+                if (stepPassedPath.length === allLen) {
+                    currentPoint = {
+                        ...currentPoint,
+                        animationStatus: AnimationStatus.COMPLETED,
+                        shouldConcatBefore: false,
+                    };
+                    if (startAnimationTimeout)
+                        clearTimeout(startAnimationTimeout);
+                }
+                if (stepPassedPath.length === 1) {
+                    currentPoint = {
+                        ...currentPoint,
+                        animationStatus: AnimationStatus.IDLE,
+                        shouldConcatBefore: false,
+                    };
+                    if (startAnimationTimeout)
+                        clearTimeout(startAnimationTimeout);
+                }
+                if (stepPassedPath.length > 0) {
+                    passedLine.getGeometry().setCoordinates(stepPassedPath);
+                    const markerPosition = stepPassedPath[stepPassedPath.length - 1];
+                    // marker.olMarker.getGeometry().setCoordinates(markerPosition);
+                    marker.olMarker.setPosition(markerPosition);
+                    this.setCenter(markerPosition, true);
+                }
+                if (typeof callback === "function")
+                    callback({
+                        step,
+                        path: currentPoint.path,
+                        animationStatus: currentPoint.animationStatus,
+                    });
             },
             changeSpeed: (duration) => {
-                console.warn("OpenLayers does not support trajectory animation");
+                currentPoint = {
+                    ...currentPoint,
+                    directResume: false,
+                    duration,
+                    shouldConcatBefore: true,
+                    oldPath: currentPoint.path,
+                };
+                if (currentPoint.animationStatus === AnimationStatus.PLAYING || currentPoint.animationStatus === AnimationStatus.RESUMED) {
+                    // marker.pause();
+                    animation.pause();
+                    animation.resume();
+                }
             },
             getInfo: () => {
                 return {
-                    path: [0, 0],
-                    status: AnimationStatus.IDLE,
+                    path: currentPoint.path,
+                    status: currentPoint.animationStatus,
                 };
             },
             seek: (progress) => {
@@ -50100,6 +50449,10 @@ class OpenLayersProvider extends BaseMapProvider {
             //   this.removeAnimationFromCollection(animationId);
             // },
         };
+        const changePosition = (position) => {
+            marker.olMarker.setPosition(position);
+        };
+        const animationMarker = createAnimation(marker, animationObserver, getDistance, changePosition);
         this.addAnimationToCollection(animation);
         return animation;
     }
@@ -50572,5 +50925,5 @@ class MapSDK {
 
 // 主类
 
-export { AMapProvider, AnimationStatus, BaseMapProvider, COVERING_TYPES, CoveringType, DOMError, ERROR_CODES, GoogleMapProvider, MAP_PROVIDERS, MapProvider, MapProviderError, MapProviderFactory, MapSDK, MapSDKError, OpenLayersProvider, createDomContent, MapSDK as default, safeCloneElement, safeSetInnerHTML };
+export { AMapProvider, AnimationStatus, BaseMapProvider, COVERING_TYPES, CoveringType, ERROR_CODES, GoogleMapProvider, MAP_PROVIDERS, MapProvider, MapProviderError, MapProviderFactory, MapSDK, MapSDKError, OpenLayersProvider, MapSDK as default };
 //# sourceMappingURL=index.js.map

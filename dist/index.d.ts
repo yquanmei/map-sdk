@@ -5,6 +5,5 @@ export { GoogleMapProvider } from "./providers/GoogleMapProvider";
 export { OpenLayersProvider } from "./providers/OpenLayersProvider";
 export { BaseMapProvider } from "./providers/BaseMapProvider";
 export { MapProviderFactory, MapProviderError } from "./providers/MapProviderFactory";
-export { createDomContent, safeSetInnerHTML, safeCloneElement, DOMError } from "./utils";
 import { MapSDK } from "./MapSDK";
 export default MapSDK;

@@ -1,6 +1,6 @@
 import AMapLoader from "@amap/amap-jsapi-loader";
 import "@amap/amap-jsapi-types";
-import { merge } from "lodash";
+import { merge } from "lodash-es";
 import { BaseMapProvider } from "./BaseMapProvider";
 import {
   IMarker,
@@ -689,7 +689,9 @@ export class AMapProvider extends BaseMapProvider {
       passedLine.setPath(currentPoint.pathWithRInfo);
       const position = e.target.getPosition();
       if (typeof mergedOptions.animation?.setCenterRealTime === "function") {
-        mergedOptions.animation?.setCenterRealTime?.(position);
+        if (typeof mergedOptions.animation?.setCenterRealTime === "function") {
+          (mergedOptions.animation.setCenterRealTime as (position: [number, number]) => void)(position);
+        }
       } else if (mergedOptions.animation?.setCenterRealTime !== false) {
         this.setCenter(position, true);
       }

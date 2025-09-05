@@ -11,8 +11,9 @@ import { Point, LineString, Polygon } from "ol/geom";
 import { extend as extentExtend } from "ol/extent";
 import { getDistance, getArea } from "ol/sphere";
 import * as ol from "ol";
-import { fromLonLat, toLonLat } from "ol/proj";
-import { merge } from "lodash";
+import { toLonLat } from "ol/proj";
+import { Extent } from "ol/extent";
+import { merge } from "lodash-es";
 import { BaseMapProvider } from "./BaseMapProvider";
 import { createDomContent, createAnimation } from "../utils";
 import {
@@ -376,7 +377,7 @@ export class OpenLayersProvider extends BaseMapProvider {
     const mergedOptions = merge(defaultOptions, options);
     // 获取所有矢量图层的 extent
     const getAllVectorLayersExtent = () => {
-      let allExtents: ol.Extent[] = [];
+      let allExtents: Extent[] = [];
       // 遍历所有图层
       this.map.getLayers().forEach((layer: any) => {
         // 判断图层是否为矢量图层
@@ -384,7 +385,7 @@ export class OpenLayersProvider extends BaseMapProvider {
           // 获取矢量图层的数据源
           const vectorSource = layer.getSource();
           // 获取数据源的 extent
-          const extent: ol.Extent = vectorSource.getExtent();
+          const extent: Extent = vectorSource.getExtent();
           // 将 extent 添加到数组
           allExtents.push(extent);
         }
@@ -885,7 +886,7 @@ export class OpenLayersProvider extends BaseMapProvider {
         };
         passedPath = e.passedPath;
       }
-      passedLine.getGeometry().setCoordinates(passedPath);
+      (passedLine as any).getGeometry().setCoordinates(passedPath);
       this.setCenter(e.target.getPosition(), true);
       typeof mergedOptions.onMoving === "function" && mergedOptions.onMoving(e);
     });
@@ -921,7 +922,7 @@ export class OpenLayersProvider extends BaseMapProvider {
             mergedOptions.animation.startZoom,
             mergedOptions.line.path[0]
           );
-          this.setZoomAndCenter(mergedOptions.animation.startZoom, mergedOptions.line.path[0]);
+          this.setZoomAndCenter(mergedOptions.animation.startZoom, [...mergedOptions.line.path[0]]);
         }, timeoutTimer);
         typeof mergedOptions.onStart === "function" && mergedOptions.onStart();
       },
@@ -1030,14 +1031,14 @@ export class OpenLayersProvider extends BaseMapProvider {
           if (startAnimationTimeout) clearTimeout(startAnimationTimeout);
         }
         if (stepPassedPath.length > 0) {
-          passedLine.getGeometry().setCoordinates(stepPassedPath);
+          (passedLine as any).getGeometry().setCoordinates(stepPassedPath);
           const markerPosition = stepPassedPath[stepPassedPath.length - 1];
           // marker.olMarker.getGeometry().setCoordinates(markerPosition);
-          marker.olMarker.setPosition(markerPosition);
+          (marker.olMarker as any).setPosition(markerPosition);
           this.setCenter(markerPosition, true);
         }
-        if (typeof changeStepsCall === "function")
-          changeStepsCall({
+        if (typeof callback === "function")
+          callback({
             step,
             path: currentPoint.path,
             animationStatus: currentPoint.animationStatus,
@@ -1086,7 +1087,7 @@ export class OpenLayersProvider extends BaseMapProvider {
       // },
     };
     const changePosition = (position: [number, number]) => {
-      marker.olMarker.setPosition(position);
+      (marker.olMarker as any).setPosition(position);
     };
     const animationMarker = createAnimation(marker, animationObserver, getDistance, changePosition);
     this.addAnimationToCollection(animation);

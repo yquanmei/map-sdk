@@ -14,13 +14,18 @@ export declare class OpenLayersProvider extends BaseMapProvider {
     addMarkerCluster(points: MarkerClusterPoint[], options?: MarkerClusterOptions): Promise<IMarkerCluster>;
     removeMarker(marker: IMarker): void;
     removeMarkerCluster(cluster: IMarkerCluster): void;
-    setCenter(position: [number, number]): void;
+    setCenter(position: [number, number], immediately?: boolean): void;
     setZoom(zoom: number): void;
     setZoomAndCenter(zoom: number, center: [number, number]): void;
     setFitView(options?: {
         padding?: number;
         maxZoom?: number;
-    }): void;
+    }): Promise<void>;
+    /**
+     * 检查范围是否有效
+     */
+    isEmptyExtent(extent: number[]): boolean;
+    calculateSafeExtent(layersExtent: any): Promise<number[] | null>;
     addInfoWindow(options: {
         content: string | HTMLElement;
         position: [number, number];

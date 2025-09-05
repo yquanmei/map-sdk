@@ -1,4 +1,7 @@
 class Observer {
+  _moveAlong?: (path: any, options: any) => void;
+  _pauseMove?: () => void;
+  _stopMove?: () => void;
   message;
   constructor() {
     this.message = {}; // 消息队列
