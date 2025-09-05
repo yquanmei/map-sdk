@@ -137,6 +137,8 @@ export interface AnimationPlayConfig extends MarkerConfig {
   autoStart?: boolean; // 是否自动开始，默认false
   loop?: boolean; // 是否循环播放，默认false
   setCenterRealTime?: ((position: [number, number]) => void) | boolean; // 是否实时设置地图中心，默认true
+  startTimer?: number; // 动画延时开始时间，默认700ms
+  startZoom?: number; // 动画开始时的缩放级别，默认18
 }
 
 export interface AnimationInfo {

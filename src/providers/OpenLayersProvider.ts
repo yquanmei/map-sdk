@@ -13,7 +13,7 @@ import { getDistance, getArea } from "ol/sphere";
 import * as ol from "ol";
 import { fromLonLat, toLonLat } from "ol/proj";
 import { BaseMapProvider } from "./BaseMapProvider";
-import { createDomContent } from "../utils";
+import { createDomContent, createAnimation } from "../utils";
 import {
   IMarker,
   MapConfig,
@@ -31,6 +31,7 @@ import {
   AnimationInfo,
   AnimationStatus,
 } from "../types";
+import { Observer } from "../utils";
 
 interface OpenLayersMarker extends IMarker {
   olMarker: any;
@@ -91,7 +92,6 @@ export class OpenLayersProvider extends BaseMapProvider {
     if (!container) {
       throw new Error("Container element not found");
     }
-    console.log(`%c yqm this.ol::: `, "color: pink;", this.ol);
 
     const openStreetMapLayer = new TileLayer({
       source: new XYZ({
@@ -100,23 +100,25 @@ export class OpenLayersProvider extends BaseMapProvider {
       }),
     });
 
+    // // 创建矢量图层用于放置markers
+    this.vectorLayer = new VectorLayer({
+      source: new VectorSource(),
+    });
+
+    const view = new View({
+      center: mergedOptions.center as unknown as [number, number],
+      projection: "EPSG:4326",
+      zoom: mergedOptions.zoom,
+      minZoom: 6, // 最小缩放级别
+      maxZoom: 18, // 最大缩放级别
+    });
+
     this.map = new Map({
-      layers: [openStreetMapLayer],
-      view: new View({
-        center: mergedOptions.center as unknown as [number, number],
-        projection: "EPSG:4326",
-        zoom: mergedOptions.zoom,
-        minZoom: 6, // 最小缩放级别
-        maxZoom: 18, // 最大缩放级别
-      }),
+      layers: [openStreetMapLayer, this.vectorLayer],
+      view,
       target: container,
       controls: [],
     });
-
-    // // 创建矢量图层用于放置markers
-    // this.vectorLayer = new VectorLayer({
-    //   source: new VectorSource(),
-    // });
 
     // this.map = new Map({
     //   target: container,
@@ -365,39 +367,69 @@ export class OpenLayersProvider extends BaseMapProvider {
     this.map.getView().setCenter(center);
   }
 
-  setFitView(options?: { padding?: number; maxZoom?: number }): void {
-    if (!this.map) return;
-    this.map.fitView(options);
+  async setFitView(options?: { padding?: number; maxZoom?: number }): Promise<void> {
+    const defaultOptions = {
+      padding: [100, 100, 100, 100],
+      maxZoom: 18,
+    };
+    const mergedOptions = { ...defaultOptions, ...options };
+    // 获取所有矢量图层的 extent
+    const getAllVectorLayersExtent = () => {
+      let allExtents: ol.Extent[] = [];
+      // 遍历所有图层
+      this.map.getLayers().forEach((layer: any) => {
+        // 判断图层是否为矢量图层
+        if (layer instanceof VectorLayer) {
+          // 获取矢量图层的数据源
+          const vectorSource = layer.getSource();
+          // 获取数据源的 extent
+          const extent: ol.Extent = vectorSource.getExtent();
+          // 将 extent 添加到数组
+          allExtents.push(extent);
+        }
+      });
+
+      // 合并所有 extents
+      const mergedExtent = allExtents.reduce((acc: any, extent) => {
+        return acc ? this.ol.extentExtend(acc, extent) : extent;
+      }, null);
+
+      return mergedExtent;
+    };
+
+    const allLayerExtent = getAllVectorLayersExtent();
+    try {
+      const safeExtent = await this.calculateSafeExtent(allLayerExtent);
+      if (!safeExtent) {
+        return;
+      }
+      this.map.getView().fit(safeExtent, { padding: mergedOptions.padding });
+    } catch (error) {
+      console.error("Error setting fit view:", error);
+    }
   }
 
-  // setFitView1() {
-  //   // 获取所有矢量图层的 extent
-  //   const getAllVectorLayersExtent = () => {
-  //     let allExtents: ol.Extent[] = [];
-  //     // 遍历所有图层
-  //     this.map.getLayers().forEach((layer) => {
-  //       // 判断图层是否为矢量图层
-  //       if (layer instanceof VectorLayer) {
-  //         // 获取矢量图层的数据源
-  //         const vectorSource = layer.getSource();
-  //         // 获取数据源的 extent
-  //         const extent: ol.Extent = vectorSource.getExtent();
-  //         // 将 extent 添加到数组
-  //         allExtents.push(extent);
-  //       }
-  //     });
+  /**
+   * 检查范围是否有效
+   */
+  isEmptyExtent(extent: number[]): boolean {
+    const [minX, minY, maxX, maxY] = extent;
+    return isNaN(minX) || isNaN(minY) || isNaN(maxX) || isNaN(maxY) || minX === maxX || minY === maxY;
+  }
 
-  //     // 合并所有 extents
-  //     const mergedExtent = allExtents.reduce((acc: any, extent) => {
-  //       return acc ? this.ol.extentExtend(acc, extent) : extent;
-  //     }, null);
-
-  //     return mergedExtent;
-  //   };
-
-  //   const allLayerExtent = getAllVectorLayersExtent();
-  //   this.map.getView().fit(allLayerExtent, { padding: [100, 100, 100, 100] });
-  // }
+  async calculateSafeExtent(layersExtent): Promise<number[] | null> {
+    return new Promise((resolve) => {
+      // setTimeout(() => {
+      try {
+        const extent = layersExtent;
+        resolve(extent && !this.isEmptyExtent(extent) ? extent : null);
+      } catch (error) {
+        console.error("Error calculating extent:", error);
+        resolve(null);
+      }
+      // }, 100); // 给地图一点时间加载
+    });
+  }
 
   async addInfoWindow(options: { content: string | HTMLElement; position: [number, number]; open?: boolean }): Promise<any> {
     if (!this.map) {
@@ -443,7 +475,7 @@ export class OpenLayersProvider extends BaseMapProvider {
       },
     };
 
-    this.addInfoWindowToCollection(olInfoWindow);
+    this.addInfoWindowToCollection(infoWindow);
 
     return infoWindow;
   }
@@ -513,31 +545,36 @@ export class OpenLayersProvider extends BaseMapProvider {
       id: polylineId,
       path: [],
       color: "#FF0000",
-      opacity: 1,
-      width: 2,
+      opacity: 0.8,
+      width: 3,
       clickable: true,
       draggable: false,
       editable: false,
       zIndex: 1,
     };
     const mergedOptions = { ...defaultOptions, ...options };
-    const polylineFeature = new Feature({
-      geometry: new LineString(mergedOptions.path.map((point: any) => [point[0], point[1]])),
+    const lineString = new LineString(mergedOptions.path.map((item) => [item[0], item[1]]));
+    const olPolyline = new Feature({
+      type: "route",
+      geometry: lineString,
     });
+    // const polylineFeature = new Feature({
+    //   geometry: new LineString(mergedOptions.path.map((point: any) => [point[0], point[1]])),
+    // });
     const polylineStyle = new Style({
       stroke: new Stroke({
         color: mergedOptions.color,
         width: mergedOptions.width,
       }),
     });
-    polylineFeature.setStyle(polylineStyle);
-    this.vectorLayer.getSource().addFeature(polylineFeature);
-    const olPolyline: IPolyline = {
+    olPolyline.setStyle(polylineStyle);
+    this.vectorLayer.getSource().addFeature(olPolyline);
+    const polyline: IPolyline = {
       id: polylineId,
       // path: mergedOptions.path.map((p) => [...p] as [number, number]),
-      googlePolyline: polylineFeature,
+      olPolyline,
       setPath: (path: [number, number][]) => {
-        const geometry = polylineFeature.getGeometry() as any;
+        const geometry = olPolyline.getGeometry() as any;
         geometry.setCoordinates(path.map(([lng, lat]) => [lng, lat]));
         // olPolyline.path = path;
       },
@@ -548,12 +585,12 @@ export class OpenLayersProvider extends BaseMapProvider {
             width: options.width || mergedOptions.width,
           }),
         });
-        polylineFeature.setStyle(newStyle);
+        olPolyline.setStyle(newStyle);
       },
       setEditable: (editable: boolean) => {
         // OpenLayers polyline editing implementation
         if (editable) {
-          polylineFeature.setStyle(
+          olPolyline.setStyle(
             new Style({
               stroke: new Stroke({
                 color: mergedOptions.color,
@@ -566,7 +603,7 @@ export class OpenLayersProvider extends BaseMapProvider {
       setDraggable: (draggable: boolean) => {
         // OpenLayers polyline dragging implementation
         if (draggable) {
-          polylineFeature.setStyle(
+          olPolyline.setStyle(
             new Style({
               stroke: new Stroke({
                 color: mergedOptions.color,
@@ -576,12 +613,12 @@ export class OpenLayersProvider extends BaseMapProvider {
         }
       },
       remove: () => {
-        this.vectorLayer.getSource().removeFeature(polylineFeature);
-        this.removePolylineFromCollection(olPolyline);
+        this.vectorLayer.getSource().removeFeature(olPolyline);
+        this.removePolylineFromCollection(polyline);
       },
     };
-    this.addPolylinesToCollection(olPolyline);
-    return olPolyline;
+    this.addPolylinesToCollection(polyline);
+    return polyline;
   }
 
   clearPolylines(params?: { type?: string; polylines?: any[] }): void {
@@ -797,35 +834,232 @@ export class OpenLayersProvider extends BaseMapProvider {
 
   async addAnimation(config: AnimationConfig): Promise<IAnimation> {
     const animationId = this.generateId(COVERING_TYPES.ANIMATION);
+    const defaultOptions = {
+      animation: {
+        duration: 5000,
+        autoStart: false,
+        loop: false,
+        setCenterRealTime: true,
+        startTimer: 700,
+        startZoom: 18,
+      },
+    };
+    const mergedOptions = { ...defaultOptions, ...config };
+    const allLineArr = mergedOptions.line.path;
+    if (!allLineArr || !Array.isArray(allLineArr) || allLineArr?.length === 0) throw new Error("Animation path is required");
+    this.addPolyline(mergedOptions.line);
+    // this.addPolyline(mergedOptions.line);
+    const passedLine = (await this.addPolyline(mergedOptions.passedLine)).olPolyline;
+    // const passedLine = passedLine1.olPolyline;
+    // console.log(`%c yqm passedLine1,passedLine::: `, "color: pink;", passedLine1, passedLine);
+    const marker = await this.addMarker(mergedOptions.marker as MarkerConfig);
+    let currentPoint = {
+      betweenTwoPoint: false,
+      path: [allLineArr[0]], // 取线路的第一个点
+      pathWithRInfo: [allLineArr[0]], // 取线路的第一个点
+      allPath: allLineArr, // 线路
+      animationPath: allLineArr, // 线路
+      shouldConcatBefore: false,
+      oldPath: [],
+      animationStatus: AnimationStatus.IDLE,
+      duration: mergedOptions.animation.duration,
+      directResume: true,
+    };
+    let startAnimationTimeout: any;
+    const animationObserver = new Observer();
+
+    animationObserver.on("moving", (e) => {
+      // 移动过程中
+      // 从当前点开始运功，但是需要加上之前的轨迹
+      let passedPath;
+      if (currentPoint.shouldConcatBefore === true) {
+        currentPoint = {
+          ...currentPoint,
+          betweenTwoPoint: true,
+          path: [...currentPoint.oldPath].concat(e.passedPathWithR.slice(0, e.passedPathWithR.length - 1)).filter((item) => item[2] !== 0),
+          pathWithRInfo: [...currentPoint.oldPath].concat(e.passedPathWithR).filter((item) => item[2] !== 0),
+        };
+        passedPath = [...currentPoint.oldPath].concat(e.passedPath).filter((item) => item[2] !== 0);
+      } else {
+        currentPoint = {
+          ...currentPoint,
+          betweenTwoPoint: true,
+          path: e.passedPathWithR.slice(0, e.passedPathWithR.length - 1),
+          pathWithRInfo: e.passedPathWithR,
+        };
+        passedPath = e.passedPath;
+      }
+      passedLine.getGeometry().setCoordinates(passedPath);
+      this.setCenter(e.target.getPosition(), true);
+      typeof mergedOptions.onMoving === "function" && mergedOptions.onMoving(e);
+    });
+    animationObserver.on("moveend", (e) => {
+      // 每走完一个point，就会执行moveend
+      typeof mergedOptions.onComplete === "function" && mergedOptions.onComplete();
+    });
+    animationObserver.on("movealong", () => {
+      currentPoint.shouldConcatBefore = false;
+      currentPoint.animationStatus = AnimationStatus.COMPLETED;
+      typeof mergedOptions.onStepEnd === "function" && mergedOptions.onStepEnd();
+    });
+
     const animation: IAnimation = {
       id: animationId,
       start: () => {
-        console.warn("OpenLayers does not support trajectory animation");
+        const timeoutTimer = mergedOptions.animation.startTimer;
+        if (!mergedOptions.line.path || mergedOptions.line.path.length === 0) return;
+        if (startAnimationTimeout) clearTimeout(startAnimationTimeout);
+
+        startAnimationTimeout = setTimeout(() => {
+          console.log(`%c yqm animationMarker::: `, "color: pink;", animationMarker);
+          console.log(`%c yqm animationObserver::: `, "color: pink;", animationObserver);
+          animationMarker._moveAlong(mergedOptions.line.path, {
+            duration: currentPoint.duration,
+            autoRotation: false,
+          });
+          currentPoint = {
+            ...currentPoint,
+            animationStatus: AnimationStatus.PLAYING,
+          };
+          this.setZoomAndCenter(mergedOptions.animation.startZoom, mergedOptions.line.path[0]);
+        }, timeoutTimer);
+        typeof mergedOptions.onStart === "function" && mergedOptions.onStart();
       },
       pause: () => {
-        console.warn("OpenLayers does not support trajectory animation");
+        animationMarker._pauseMove();
+        currentPoint = {
+          ...currentPoint,
+          oldPath: currentPoint.path,
+          animationStatus: AnimationStatus.PAUSED,
+        };
       },
       resume: () => {
-        console.warn("OpenLayers does not support trajectory animation");
+        let animationPath;
+        const pathWithRInfo = currentPoint.pathWithRInfo;
+        const pathWithRInfoLen = pathWithRInfo.length;
+        if (currentPoint.betweenTwoPoint) {
+          let firstPos;
+          const otherPos = currentPoint.allPath.slice(pathWithRInfo.length - 1);
+          if (pathWithRInfo && !Array.isArray(pathWithRInfo[pathWithRInfoLen - 1])) {
+            firstPos = [
+              // @ts-ignore
+              pathWithRInfo[pathWithRInfoLen - 1].lng,
+              // @ts-ignore
+              pathWithRInfo[pathWithRInfoLen - 1].lat,
+              0,
+            ];
+            animationPath = [firstPos].concat(otherPos);
+          } else {
+            animationPath = otherPos;
+          }
+        } else {
+          const firstPos = [pathWithRInfo[pathWithRInfoLen - 1][0], pathWithRInfo[pathWithRInfoLen - 1][1], 0];
+          const otherPos = currentPoint.allPath.slice(pathWithRInfoLen);
+          animationPath = [firstPos].concat(otherPos);
+        }
+        currentPoint = {
+          ...currentPoint,
+          animationPath,
+          shouldConcatBefore: true,
+        };
+        animationMarker._moveAlong(animationPath, {
+          duration: currentPoint.duration,
+          autoRotation: false,
+        });
+        currentPoint = {
+          ...currentPoint,
+          directResume: true,
+          animationStatus: AnimationStatus.RESUMED,
+        };
+        typeof mergedOptions.onResume === "function" &&
+          mergedOptions.onResume({
+            path: currentPoint.animationPath,
+            status: currentPoint.animationStatus,
+          });
       },
       stop: () => {
-        console.warn("OpenLayers does not support trajectory animation");
+        animationMarker._stopMove();
       },
       changeSteps: (step: number, callback?: (params: any) => void) => {
-        if (typeof callback === "function") {
-          callback({
-            path: [0, 0],
-            status: "status",
-          });
+        if (step === 0) return;
+        // marker.pause();
+        animation.pause();
+
+        const allLen = allLineArr.length;
+        const len = currentPoint.path.length;
+        let stepPassedPath;
+        const currentLen = len + step;
+        if (step > 0) {
+          stepPassedPath = allLineArr.slice(0, currentLen);
+          if (currentLen > allLen) {
+            stepPassedPath = allLineArr;
+          }
+        } else {
+          if (currentPoint.betweenTwoPoint) {
+            stepPassedPath = allLineArr.slice(0, currentLen + 1);
+          } else {
+            stepPassedPath = allLineArr.slice(0, currentLen);
+          }
+          if (currentLen === 0) {
+            stepPassedPath = [allLineArr[0]];
+          }
         }
+        currentPoint = {
+          ...currentPoint,
+          shouldConcatBefore: true,
+          betweenTwoPoint: false,
+          path: stepPassedPath,
+          pathWithRInfo: stepPassedPath,
+          oldPath: stepPassedPath,
+          directResume: false,
+        };
+        if (stepPassedPath.length === allLen) {
+          currentPoint = {
+            ...currentPoint,
+            animationStatus: AnimationStatus.COMPLETED,
+            shouldConcatBefore: false,
+          };
+          if (startAnimationTimeout) clearTimeout(startAnimationTimeout);
+        }
+        if (stepPassedPath.length === 1) {
+          currentPoint = {
+            ...currentPoint,
+            animationStatus: AnimationStatus.IDLE,
+            shouldConcatBefore: false,
+          };
+          if (startAnimationTimeout) clearTimeout(startAnimationTimeout);
+        }
+        if (stepPassedPath.length > 0) {
+          passedLine.getGeometry().setCoordinates(stepPassedPath);
+          const markerPosition = stepPassedPath[stepPassedPath.length - 1];
+          marker.olMarker.getGeometry().setCoordinates(markerPosition);
+          this.setCenter(markerPosition, true);
+        }
+        if (typeof changeStepsCall === "function")
+          changeStepsCall({
+            step,
+            path: currentPoint.path,
+            animationStatus: currentPoint.animationStatus,
+          });
       },
       changeSpeed: (duration: number) => {
-        console.warn("OpenLayers does not support trajectory animation");
+        currentPoint = {
+          ...currentPoint,
+          directResume: false,
+          duration,
+          shouldConcatBefore: true,
+          oldPath: currentPoint.path,
+        };
+        if (currentPoint.animationStatus === AnimationStatus.PLAYING || currentPoint.animationStatus === AnimationStatus.RESUMED) {
+          // marker.pause();
+          animation.pause();
+          animation.resume();
+        }
       },
       getInfo: (): AnimationInfo => {
         return {
-          path: [0, 0] as unknown as [number, number][],
-          status: AnimationStatus.IDLE,
+          path: currentPoint.path,
+          status: currentPoint.animationStatus,
         };
       },
       seek: (progress: number) => {
@@ -850,6 +1084,7 @@ export class OpenLayersProvider extends BaseMapProvider {
       //   this.removeAnimationFromCollection(animationId);
       // },
     };
+    const animationMarker = createAnimation(marker, animationObserver, getDistance);
     this.addAnimationToCollection(animation);
     return animation;
   }

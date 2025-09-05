@@ -37,7 +37,7 @@ export { BaseMapProvider } from "./providers/BaseMapProvider";
 export { MapProviderFactory, MapProviderError } from "./providers/MapProviderFactory";
 
 // 工具函数
-export { createDomContent, safeSetInnerHTML, safeCloneElement, DOMError } from "./utils";
+// export { createDomContent, } from "./utils";
 
 // 默认导出
 import { MapSDK } from "./MapSDK";
