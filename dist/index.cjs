@@ -154,7 +154,8 @@ class BaseMapProvider {
     clearAllPolylines() {
         this.polylines.forEach((polyline) => {
             if (polyline && typeof polyline.setMap === "function") {
-                polyline.setMap(null);
+                // polyline.setMap(null);
+                polyline.remove();
             }
         });
         this.polylines.length = 0;
@@ -49522,11 +49523,9 @@ class OpenLayersProvider extends BaseMapProvider {
         if (!container) {
             throw new Error("Container element not found");
         }
-        console.log(`%c yqm mergedOptions::: `, "color: pink;", mergedOptions);
         const tileLayer = new TileLayer({
             source: new XYZ({
-                // url: mergedOptions.url, // testtt
-                url: defaultOptions.url,
+                url: mergedOptions.url,
             }),
         });
         // 创建矢量图层用于放置markers
@@ -50274,7 +50273,7 @@ class OpenLayersProvider extends BaseMapProvider {
                 if (startAnimationTimeout)
                     clearTimeout(startAnimationTimeout);
                 startAnimationTimeout = setTimeout(() => {
-                    animationMarker._moveAlong(mergedOptions.line.path, {
+                    animationMarker._moveAlong?.(mergedOptions.line.path, {
                         duration: currentPoint.duration,
                         autoRotation: false,
                     });
@@ -50282,13 +50281,12 @@ class OpenLayersProvider extends BaseMapProvider {
                         ...currentPoint,
                         animationStatus: exports.AnimationStatus.PLAYING,
                     };
-                    console.log(`%c yqm mergedOptions.line.path[0]::: `, "color: pink;", mergedOptions.animation.startZoom, mergedOptions.line.path[0]);
                     this.setZoomAndCenter(mergedOptions.animation.startZoom, [...mergedOptions.line.path[0]]);
                 }, timeoutTimer);
                 typeof mergedOptions.onStart === "function" && mergedOptions.onStart();
             },
             pause: () => {
-                animationMarker._pauseMove();
+                animationMarker._pauseMove?.();
                 currentPoint = {
                     ...currentPoint,
                     oldPath: currentPoint.path,
@@ -50326,7 +50324,7 @@ class OpenLayersProvider extends BaseMapProvider {
                     animationPath,
                     shouldConcatBefore: true,
                 };
-                animationMarker._moveAlong(animationPath, {
+                animationMarker._moveAlong?.(animationPath, {
                     duration: currentPoint.duration,
                     autoRotation: false,
                 });
@@ -50342,7 +50340,7 @@ class OpenLayersProvider extends BaseMapProvider {
                     });
             },
             stop: () => {
-                animationMarker._stopMove();
+                animationMarker._stopMove?.();
             },
             changeSteps: (step, callback) => {
                 if (step === 0)

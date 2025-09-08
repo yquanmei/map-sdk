@@ -150,7 +150,7 @@ export abstract class BaseMapProvider implements IMapProvider {
   protected clearAllPolylines(): void {
     this.polylines.forEach((polyline) => {
       if (polyline && typeof polyline.setMap === "function") {
-        polyline.setMap(null);
+        polyline.remove();
       }
     });
     this.polylines.length = 0;
