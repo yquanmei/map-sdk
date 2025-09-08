@@ -610,8 +610,7 @@ export class OpenLayersProvider extends BaseMapProvider {
         }
       },
       remove: () => {
-        // this.vectorLayer.getSource().removeFeature(olPolyline);
-        olPolyline.clear();
+        this.vectorLayer.getSource().removeFeature(olPolyline);
         this.removePolylineFromCollection(polyline);
       },
     };
@@ -630,18 +629,12 @@ export class OpenLayersProvider extends BaseMapProvider {
     if (typeToClear) {
       this.polylines.forEach((polyline: any) => {
         if (polyline?.type === typeToClear) {
-          if (polyline.setMap) {
-            polyline.setMap(null);
-          }
-          this.removePolylineFromCollection(polyline);
+          polyline.remove();
         }
       });
     }
     explicitPolylines.forEach((polyline) => {
-      if (polyline.setMap) {
-        polyline.setMap(null);
-      }
-      this.removePolylineFromCollection(polyline);
+      polyline.remove();
     });
   }
 
@@ -1037,7 +1030,21 @@ export class OpenLayersProvider extends BaseMapProvider {
             animationStatus: currentPoint.animationStatus,
           });
       },
-      changeSpeed: (duration: number) => {
+      changeProgress: (index: number) => {
+        const len = currentPoint.path.length;
+        const step = len - 1 - index;
+        animation.changeSteps(step);
+      },
+      getInfo: (): AnimationInfo => {
+        return {
+          path: currentPoint.path,
+          status: currentPoint.animationStatus,
+        };
+      },
+      seek: (progress: number) => {
+        console.warn("OpenLayers does not support trajectory animation");
+      },
+      setDuration: (duration: number) => {
         currentPoint = {
           ...currentPoint,
           directResume: false,
@@ -1050,26 +1057,11 @@ export class OpenLayersProvider extends BaseMapProvider {
           animation.resume();
         }
       },
-      getInfo: (): AnimationInfo => {
-        return {
-          path: currentPoint.path,
-          status: currentPoint.animationStatus,
-        };
-      },
-      seek: (progress: number) => {
-        console.warn("OpenLayers does not support trajectory animation");
-      },
-      setSpeed: (speed: number) => {
-        console.warn("OpenLayers does not support trajectory animation");
-      },
       getCurrentPosition: (): [number, number] => {
         return [0, 0];
       },
       getProgress: (): number => {
         return 0;
-      },
-      getStatus: (): "idle" | "playing" | "paused" | "stopped" | "completed" => {
-        return "idle";
       },
       remove: () => {
         this.removeAnimationFromCollection(animationId);
@@ -1081,7 +1073,7 @@ export class OpenLayersProvider extends BaseMapProvider {
     const changePosition = (position: [number, number]) => {
       (marker.olMarker as any).setPosition(position);
     };
-    const animationMarker = createAnimation(marker, animationObserver, getDistance, changePosition);
+    const animationMarker = createAnimation(animationObserver, getDistance, changePosition);
     this.addAnimationToCollection(animation);
     return animation;
   }

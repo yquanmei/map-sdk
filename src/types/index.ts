@@ -173,9 +173,9 @@ export interface IAnimation {
   getProgress(): number; // 获取当前进度(0-1)
   remove(): void; // 移除动画
   changeSteps(step: number, callback?: (data: any) => void): void; // 改变步数
-  changeSpeed(duration: number): void; // 改变速度  //
+  setDuration(duration: number): void; // 设置相邻2步之间的时长
   seek(progress: number): void; // 跳转到指定进度(0-1)
-  setSpeed(speed: number): void; // 设置倍速
+  changeProgress(index: number): void; // 跳转到指定某个index
   getInfo(): AnimationInfo; // 获取动画信息
   remove(): void; // 清除动画
   readonly [key: string]: unknown;

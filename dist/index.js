@@ -148,9 +148,11 @@ class BaseMapProvider {
         this.markerClusters.clear();
     }
     clearAllPolylines() {
+        console.log(`%c yqm base, 清除，clearAllPolylines::: `, "color: pink;");
         this.polylines.forEach((polyline) => {
-            if (polyline && typeof polyline.setMap === "function") {
-                // polyline.setMap(null);
+            console.log(`%c yqm polyline::: `, "color: pink;", polyline);
+            // if (polyline && typeof polyline.setMap === "function") {
+            if (polyline) {
                 polyline.remove();
             }
         });
@@ -242,7 +244,7 @@ class Observer {
         });
     }
 }
-const createAnimation = (marker, animation, getDistance, changePosition) => {
+const createAnimation = (animation, getDistance, changePosition) => {
     // 自定义动画
     let timeout = false;
     let timeoutTimer;
@@ -475,6 +477,10 @@ function createDomContent(input) {
 // }
 
 class AMapProvider extends BaseMapProvider {
+    constructor() {
+        super(...arguments);
+        this.plugins = [];
+    }
     /**
      * 动态加载高德地图SDK
      * @param apiKey 高德地图API密钥
@@ -756,8 +762,9 @@ class AMapProvider extends BaseMapProvider {
             this.map.destroy();
             this.map = null;
         }
-        this.clearMarkers();
-        this.clearMarkerClusters();
+        // this.clearMarkers();
+        // this.clearMarkerClusters();
+        this.plugins = [];
     }
     getZoom() {
         if (this.map) {
@@ -890,6 +897,22 @@ class AMapProvider extends BaseMapProvider {
             zIndex: 1,
         };
         const mergedOptions = merge(defaultOptions, config);
+        if (mergedOptions.editable) {
+            // 确保Editable插件已加载
+            if (!this.plugins.includes("AMap.Editable")) {
+                await new Promise((resolve, reject) => {
+                    this.AMap.plugin(["AMap.Editable"], (err) => {
+                        if (err) {
+                            reject(new Error(`Failed to load Editable plugin: ${err}`));
+                        }
+                        else {
+                            this.plugins.push("AMap.Editable");
+                            resolve(undefined);
+                        }
+                    });
+                });
+            }
+        }
         const aMapPolygon = new this.AMap.Polygon({
             path: mergedOptions.path.map((p) => [...p]),
             strokeColor: mergedOptions.strokeColor,
@@ -992,6 +1015,26 @@ class AMapProvider extends BaseMapProvider {
             this.removePathPlanningFromCollection(planning);
         });
     }
+    // ============================ 地址 =============================
+    /**
+     * 通过经纬度获取详细地址信息
+     * @param position 坐标 [lng, lat]
+     * @returns 地址信息
+     */
+    async getAddress(position) {
+        if (!this.map) {
+            throw new Error("Map not initialized");
+        }
+        const geocoder = new this.AMap.Geocoder();
+        geocoder.getAddress(position, function (status, result) {
+            if (status === "complete" && result.info === "OK") {
+                return result?.regeocode || "";
+            }
+        });
+    }
+    getAddressList() {
+        return Promise.resolve([]);
+    }
     clearInfoWindows(params) {
         if (!this.map)
             return;
@@ -1023,6 +1066,20 @@ class AMapProvider extends BaseMapProvider {
         this.map.clearMap();
     }
     async addAnimation(config) {
+        // 确保MoveAnimation插件已加载
+        if (!this.plugins.includes("AMap.MoveAnimation")) {
+            await new Promise((resolve, reject) => {
+                this.AMap.plugin(["AMap.MoveAnimation"], (err) => {
+                    if (err) {
+                        reject(new Error(`Failed to load MoveAnimation plugin: ${err}`));
+                    }
+                    else {
+                        this.plugins.push("AMap.MoveAnimation");
+                        resolve(undefined);
+                    }
+                });
+            });
+        }
         const animationId = this.generateId(COVERING_TYPES.ANIMATION);
         const defaultOptions = {
             animation: {
@@ -1235,7 +1292,16 @@ class AMapProvider extends BaseMapProvider {
                         status: currentPoint.status,
                     });
             },
-            changeSpeed: (duration) => {
+            // next: () => {
+            //   console.warn("AMap does not support trajectory animation");
+            // },
+            // previous: () => {
+            //   console.warn("AMap does not support trajectory animation");
+            // },
+            seek: (progress) => {
+                console.warn("AMap does not support trajectory animation");
+            },
+            setDuration: (duration) => {
                 currentPoint = {
                     ...currentPoint,
                     directResume: false,
@@ -1247,23 +1313,16 @@ class AMapProvider extends BaseMapProvider {
                     animation.resume();
                 }
             },
-            // next: () => {
-            //   console.warn("AMap does not support trajectory animation");
-            // },
-            // previous: () => {
-            //   console.warn("AMap does not support trajectory animation");
-            // },
-            seek: (progress) => {
-                console.warn("AMap does not support trajectory animation");
-            },
-            setSpeed: (speed) => {
-                console.warn("AMap does not support trajectory animation");
-            },
             getCurrentPosition: () => {
                 return [0, 0];
             },
             getProgress: () => {
                 return 0;
+            },
+            changeProgress: (index) => {
+                const len = currentPoint.path.length;
+                const step = len - 1 - index;
+                animation.changeSteps(step);
             },
             getInfo: () => {
                 return {
@@ -2392,8 +2451,8 @@ class GoogleMapProvider extends BaseMapProvider {
                     });
                 }
             },
-            changeSpeed: (duration) => {
-                console.warn("GoogleMap does not support trajectory animation");
+            changeProgress: (index) => {
+                console.warn("待实现", index);
             },
             getInfo: () => {
                 return {
@@ -2437,11 +2496,14 @@ class GoogleMapProvider extends BaseMapProvider {
                     mergedOptions.onStep(currentIndex, position);
                 }
             },
-            setSpeed: (speed) => {
-                currentSpeed = Math.max(0.1, speed);
-                if (status === "playing") {
-                    startTime = Date.now() - pausedTime;
-                }
+            // setSpeed: (speed: number) => {
+            //   currentSpeed = Math.max(0.1, speed);
+            //   if (status === "playing") {
+            //     startTime = Date.now() - pausedTime;
+            //   }
+            // },
+            setDuration: (duration) => {
+                console.warn("待实现", duration);
             },
             getCurrentPosition: () => {
                 return [...mergedOptions.line.path[Math.min(currentIndex, mergedOptions.line.path.length - 1)]];
@@ -49989,6 +50051,8 @@ class OpenLayersProvider extends BaseMapProvider {
                 }
             },
             remove: () => {
+                console.log(`%c yqm 清除::: `, "color: pink;", olPolyline);
+                // this.vectorLayer.getSource().removeFeature(olPolyline);
                 this.vectorLayer.getSource().removeFeature(olPolyline);
                 this.removePolylineFromCollection(polyline);
             },
@@ -49997,11 +50061,14 @@ class OpenLayersProvider extends BaseMapProvider {
         return polyline;
     }
     clearPolylines(params) {
+        console.log(`%c yqm 清除，clearPolylines::: `, "color: pink;");
         if (!this.map)
             return;
         const typeToClear = params?.type;
         const explicitPolylines = params?.polylines || [];
+        console.log(`%c yqm typeToClear::: `, "color: pink;", typeToClear, explicitPolylines.length);
         if (!typeToClear && explicitPolylines.length === 0) {
+            console.log(`%c yqm 全清除::: `, "color: pink;");
             this.clearAllPolylines();
             return;
         }
@@ -50405,19 +50472,10 @@ class OpenLayersProvider extends BaseMapProvider {
                         animationStatus: currentPoint.animationStatus,
                     });
             },
-            changeSpeed: (duration) => {
-                currentPoint = {
-                    ...currentPoint,
-                    directResume: false,
-                    duration,
-                    shouldConcatBefore: true,
-                    oldPath: currentPoint.path,
-                };
-                if (currentPoint.animationStatus === AnimationStatus.PLAYING || currentPoint.animationStatus === AnimationStatus.RESUMED) {
-                    // marker.pause();
-                    animation.pause();
-                    animation.resume();
-                }
+            changeProgress: (index) => {
+                const len = currentPoint.path.length;
+                const step = len - 1 - index;
+                animation.changeSteps(step);
             },
             getInfo: () => {
                 return {
@@ -50428,17 +50486,24 @@ class OpenLayersProvider extends BaseMapProvider {
             seek: (progress) => {
                 console.warn("OpenLayers does not support trajectory animation");
             },
-            setSpeed: (speed) => {
-                console.warn("OpenLayers does not support trajectory animation");
+            setDuration: (duration) => {
+                currentPoint = {
+                    ...currentPoint,
+                    directResume: false,
+                    duration,
+                    shouldConcatBefore: true,
+                    oldPath: currentPoint.path,
+                };
+                if (currentPoint.animationStatus === AnimationStatus.PLAYING || currentPoint.animationStatus === AnimationStatus.RESUMED) {
+                    animation.pause();
+                    animation.resume();
+                }
             },
             getCurrentPosition: () => {
                 return [0, 0];
             },
             getProgress: () => {
                 return 0;
-            },
-            getStatus: () => {
-                return "idle";
             },
             remove: () => {
                 this.removeAnimationFromCollection(animationId);
@@ -50450,7 +50515,7 @@ class OpenLayersProvider extends BaseMapProvider {
         const changePosition = (position) => {
             marker.olMarker.setPosition(position);
         };
-        const animationMarker = createAnimation(marker, animationObserver, getDistance, changePosition);
+        const animationMarker = createAnimation(animationObserver, getDistance, changePosition);
         this.addAnimationToCollection(animation);
         return animation;
     }

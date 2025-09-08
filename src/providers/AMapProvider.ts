@@ -31,6 +31,7 @@ interface AMapMarkerCluster extends IMarkerCluster {
 
 export class AMapProvider extends BaseMapProvider {
   private AMap: any;
+  private plugins: any[] = [];
 
   /**
    * 动态加载高德地图SDK
@@ -355,8 +356,9 @@ export class AMapProvider extends BaseMapProvider {
       this.map.destroy();
       this.map = null;
     }
-    this.clearMarkers();
-    this.clearMarkerClusters();
+    // this.clearMarkers();
+    // this.clearMarkerClusters();
+    this.plugins = [];
   }
 
   getZoom(): number {
@@ -493,6 +495,22 @@ export class AMapProvider extends BaseMapProvider {
       zIndex: 1,
     };
     const mergedOptions = merge(defaultOptions, config);
+    if (mergedOptions.editable) {
+      // 确保Editable插件已加载
+      if (!this.plugins.includes("AMap.Editable")) {
+        await new Promise((resolve, reject) => {
+          this.AMap.plugin(["AMap.Editable"], (err: any) => {
+            if (err) {
+              reject(new Error(`Failed to load Editable plugin: ${err}`));
+            } else {
+              this.plugins.push("AMap.Editable");
+              resolve(undefined);
+            }
+          });
+        });
+      }
+    }
+
     const aMapPolygon = new this.AMap.Polygon({
       path: mergedOptions.path.map((p) => [...p] as [number, number]),
       strokeColor: mergedOptions.strokeColor,
@@ -604,6 +622,50 @@ export class AMapProvider extends BaseMapProvider {
     });
   }
 
+  // ============================ 地址 =============================
+  /**
+   * 通过经纬度获取详细地址信息
+   * @param position 坐标 [lng, lat]
+   * @returns 地址信息
+   */
+  async getAddress(position: [number, number]): Promise<any> {
+    if (!this.map) {
+      throw new Error("Map not initialized");
+    }
+    const geocoder = new this.AMap.Geocoder();
+    geocoder.getAddress(position, function (status: string, result: any) {
+      if (status === "complete" && result.info === "OK") {
+        return result?.regeocode || "";
+      }
+    });
+  }
+
+  async getAddressList(value: string): Promise<any> {
+    if (!this.map) {
+      throw new Error("Map not initialized");
+    }
+    var keywords = value;
+    // 实例化Autocomplete
+    var autoOptions = {
+      city: "全国",
+    };
+    var autoComplete = this.AMap.addAutoComplete(autoOptions);
+    autoComplete.search(keywords, (_: any, result: any) => {
+      const results = result?.tips || [];
+      const addressList = results
+        .filter((item: any) => item.location && item.location.lat && item.location.lng)
+        .map((item: any) => {
+          const detailedAddress = item.district + item.address + item.name;
+          return {
+            value: detailedAddress,
+            label: detailedAddress,
+            lat: item.location.lat,
+            lng: item.location.lng,
+          };
+        });
+      return addressList;
+    });
+  }
   clearInfoWindows(params?: { type?: string; infoWindows?: any[] }): void {
     if (!this.map) return;
 
@@ -639,6 +701,19 @@ export class AMapProvider extends BaseMapProvider {
   }
 
   async addAnimation(config: AnimationConfig): Promise<IAnimation> {
+    // 确保MoveAnimation插件已加载
+    if (!this.plugins.includes("AMap.MoveAnimation")) {
+      await new Promise((resolve, reject) => {
+        this.AMap.plugin(["AMap.MoveAnimation"], (err: any) => {
+          if (err) {
+            reject(new Error(`Failed to load MoveAnimation plugin: ${err}`));
+          } else {
+            this.plugins.push("AMap.MoveAnimation");
+            resolve(undefined);
+          }
+        });
+      });
+    }
     const animationId = this.generateId(COVERING_TYPES.ANIMATION);
     const defaultOptions = {
       animation: {
@@ -844,7 +919,16 @@ export class AMapProvider extends BaseMapProvider {
             status: currentPoint.status,
           });
       },
-      changeSpeed: (duration: number) => {
+      // next: () => {
+      //   console.warn("AMap does not support trajectory animation");
+      // },
+      // previous: () => {
+      //   console.warn("AMap does not support trajectory animation");
+      // },
+      seek: (progress: number) => {
+        console.warn("AMap does not support trajectory animation");
+      },
+      setDuration: (duration: number) => {
         currentPoint = {
           ...currentPoint,
           directResume: false,
@@ -856,23 +940,16 @@ export class AMapProvider extends BaseMapProvider {
           animation.resume();
         }
       },
-      // next: () => {
-      //   console.warn("AMap does not support trajectory animation");
-      // },
-      // previous: () => {
-      //   console.warn("AMap does not support trajectory animation");
-      // },
-      seek: (progress: number) => {
-        console.warn("AMap does not support trajectory animation");
-      },
-      setSpeed: (speed: number) => {
-        console.warn("AMap does not support trajectory animation");
-      },
       getCurrentPosition: (): [number, number] => {
         return [0, 0];
       },
       getProgress: (): number => {
         return 0;
+      },
+      changeProgress: (index: number) => {
+        const len = currentPoint.path.length;
+        const step = len - 1 - index;
+        animation.changeSteps(step);
       },
       getInfo: () => {
         return {

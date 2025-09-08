@@ -1239,8 +1239,8 @@ export class GoogleMapProvider extends BaseMapProvider {
           });
         }
       },
-      changeSpeed: (duration: number) => {
-        console.warn("GoogleMap does not support trajectory animation");
+      changeProgress: (index: number): void => {
+        console.warn("待实现", index);
       },
       getInfo: (): AnimationInfo => {
         return {
@@ -1288,13 +1288,15 @@ export class GoogleMapProvider extends BaseMapProvider {
         }
       },
 
-      setSpeed: (speed: number) => {
-        currentSpeed = Math.max(0.1, speed);
-        if (status === "playing") {
-          startTime = Date.now() - pausedTime;
-        }
+      // setSpeed: (speed: number) => {
+      //   currentSpeed = Math.max(0.1, speed);
+      //   if (status === "playing") {
+      //     startTime = Date.now() - pausedTime;
+      //   }
+      // },
+      setDuration: (duration: number) => {
+        console.warn("待实现", duration);
       },
-
       getCurrentPosition: (): [number, number] => {
         return [...mergedOptions.line.path[Math.min(currentIndex, mergedOptions.line.path.length - 1)]] as [number, number];
       },

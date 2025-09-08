@@ -57,7 +57,7 @@ class Observer {
   }
 }
 
-const createAnimation = (marker: any, animation: any, getDistance: any, changePosition: (position: [number, number]) => void) => {
+const createAnimation = (animation: any, getDistance: any, changePosition: (position: [number, number]) => void) => {
   // 自定义动画
   let timeout = false;
   let timeoutTimer: any;

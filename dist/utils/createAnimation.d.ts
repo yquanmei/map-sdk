@@ -24,5 +24,5 @@ declare class Observer {
      */
     emit(type: string, ...arg: any[]): void;
 }
-declare const createAnimation: (marker: any, animation: any, getDistance: any, changePosition: (position: [number, number]) => void) => Observer;
+declare const createAnimation: (animation: any, getDistance: any, changePosition: (position: [number, number]) => void) => Observer;
 export { createAnimation, Observer };

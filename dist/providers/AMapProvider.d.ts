@@ -3,6 +3,7 @@ import { BaseMapProvider } from "./BaseMapProvider";
 import { IMarker, MapConfig, MarkerConfig, MarkerClusterPoint, MarkerClusterOptions, IMarkerCluster, PolygonConfig, IPolygon, AnimationConfig, IAnimation, PolylineConfig, IPolyline } from "../types";
 export declare class AMapProvider extends BaseMapProvider {
     private AMap;
+    private plugins;
     /**
      * 动态加载高德地图SDK
      * @param apiKey 高德地图API密钥
@@ -45,6 +46,13 @@ export declare class AMapProvider extends BaseMapProvider {
         type?: string;
         pathPlannings?: any[];
     }): void;
+    /**
+     * 通过经纬度获取详细地址信息
+     * @param position 坐标 [lng, lat]
+     * @returns 地址信息
+     */
+    getAddress(position: [number, number]): Promise<any>;
+    getAddressList(): Promise<any>;
     clearInfoWindows(params?: {
         type?: string;
         infoWindows?: any[];

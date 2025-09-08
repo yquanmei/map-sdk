@@ -159,9 +159,9 @@ export interface IAnimation {
     getProgress(): number;
     remove(): void;
     changeSteps(step: number, callback?: (data: any) => void): void;
-    changeSpeed(duration: number): void;
+    setDuration(duration: number): void;
     seek(progress: number): void;
-    setSpeed(speed: number): void;
+    changeProgress(index: number): void;
     getInfo(): AnimationInfo;
     remove(): void;
     readonly [key: string]: unknown;
