@@ -86,7 +86,7 @@ export class OpenLayersProvider extends BaseMapProvider {
       center: [104.06, 30.67],
       url: "http://webrd01.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scale=1&style=8",
     };
-    const mergedOptions = merge(defaultOptions, config);
+    const mergedOptions = merge(defaultOptions, config) as any;
 
     const container =
       typeof mergedOptions.container === "string" ? document.getElementById(mergedOptions.container) : mergedOptions.container;
@@ -119,21 +119,6 @@ export class OpenLayersProvider extends BaseMapProvider {
       target: container,
       controls: [],
     });
-
-    // this.map = new Map({
-    //   target: container,
-    //   layers: [
-    //     new TileLayer({
-    //       source: new OSM(),
-    //     }),
-    //     this.vectorLayer,
-    //   ],
-    //   view: new View({
-    //     center: fromLonLat(config.center || [116.397428, 39.90923]),
-    //     zoom: config.zoom || 11,
-    //   }),
-    //   // ...config,
-    // });
   }
 
   async addMarker(config: MarkerConfig): Promise<IMarker> {
@@ -146,7 +131,7 @@ export class OpenLayersProvider extends BaseMapProvider {
     const defaultOptions = {
       id: markerId,
     };
-    const mergedOptions = merge(defaultOptions, config);
+    const mergedOptions = merge(defaultOptions, config) as any;
     const olMarker = new Overlay({
       position: [...mergedOptions.position], // 例如，经纬度 [5, 48]
       element: createDomContent(mergedOptions.content || ""),
@@ -372,7 +357,7 @@ export class OpenLayersProvider extends BaseMapProvider {
       padding: [100, 100, 100, 100],
       maxZoom: 18,
     };
-    const mergedOptions = merge(defaultOptions, options);
+    const mergedOptions = merge(defaultOptions, options) as any;
     // 获取所有矢量图层的 extent
     const getAllVectorLayersExtent = () => {
       let allExtents: Extent[] = [];
@@ -409,6 +394,10 @@ export class OpenLayersProvider extends BaseMapProvider {
     }
   }
 
+  async getAddressList(value: string, config: any): Promise<any> {
+    console.warn("待实现");
+  }
+
   /**
    * 检查范围是否有效
    */
@@ -443,7 +432,7 @@ export class OpenLayersProvider extends BaseMapProvider {
       position: [0, 0],
       open: false,
     };
-    const mergedOptions = merge(defaultOptions, options);
+    const mergedOptions = merge(defaultOptions, options) as any;
 
     const olInfoWindow = new Overlay({
       position: mergedOptions.position,
@@ -552,7 +541,7 @@ export class OpenLayersProvider extends BaseMapProvider {
       editable: false,
       zIndex: 1,
     };
-    const mergedOptions = merge(defaultOptions, options);
+    const mergedOptions = merge(defaultOptions, options) as any;
     const lineString = new LineString(mergedOptions.path.map((item) => [item[0], item[1]]));
     const olPolyline = new Feature({
       type: "route",
@@ -656,7 +645,7 @@ export class OpenLayersProvider extends BaseMapProvider {
       editable: false,
       zIndex: 1,
     };
-    const mergedOptions = merge(defaultOptions, config);
+    const mergedOptions = merge(defaultOptions, config) as any;
     const polygonFeature = new Feature({
       geometry: new Polygon([mergedOptions.path.map((point: any) => [point[0], point[1]])]),
     });
@@ -835,7 +824,7 @@ export class OpenLayersProvider extends BaseMapProvider {
         startZoom: 18,
       },
     };
-    const mergedOptions = merge(defaultOptions, config);
+    const mergedOptions = merge(defaultOptions, config) as any;
     const allLineArr = mergedOptions.line.path;
     if (!allLineArr || !Array.isArray(allLineArr) || allLineArr?.length === 0) throw new Error("Animation path is required");
     this.addPolyline(mergedOptions.line);
@@ -908,7 +897,7 @@ export class OpenLayersProvider extends BaseMapProvider {
             ...currentPoint,
             animationStatus: AnimationStatus.PLAYING,
           };
-          this.setZoomAndCenter(mergedOptions.animation.startZoom, [...mergedOptions.line.path[0]]);
+          this.setZoomAndCenter(mergedOptions.animation.startZoom, mergedOptions.line.path[0] as [number, number]);
         }, timeoutTimer);
         typeof mergedOptions.onStart === "function" && mergedOptions.onStart();
       },

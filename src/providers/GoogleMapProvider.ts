@@ -84,7 +84,7 @@ export class GoogleMapProvider extends BaseMapProvider {
       zoom: 11,
       center: [116.397428, 39.90923],
     };
-    const mergedOptions = merge(defaultOptions, config);
+    const mergedOptions = merge(defaultOptions, config) as any;
 
     const container =
       typeof mergedOptions.container === "string" ? document.getElementById(mergedOptions.container) : mergedOptions.container;
@@ -155,7 +155,7 @@ export class GoogleMapProvider extends BaseMapProvider {
       draggable: false,
       // icon: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
     };
-    const mergedOptions = merge(defaultOptions, config);
+    const mergedOptions = merge(defaultOptions, config) as any;
     const { AdvancedMarkerElement } = await this.google.maps.importLibrary("marker");
     const content = createDomContent(mergedOptions.content || "");
     const { position } = mergedOptions;
@@ -462,7 +462,7 @@ export class GoogleMapProvider extends BaseMapProvider {
     }
 
     const defaultOptions = { open: false };
-    const mergedOptions = merge(defaultOptions, options);
+    const mergedOptions = merge(defaultOptions, options) as any;
     const { InfoWindow } = await this.google.maps.importLibrary("maps");
     const googleInfoWindow = new InfoWindow({
       content: createDomContent(mergedOptions.content),
@@ -546,7 +546,7 @@ export class GoogleMapProvider extends BaseMapProvider {
       opacity: 0.8,
       width: 3,
     };
-    const mergedOptions = merge(defaultOptions, options);
+    const mergedOptions = merge(defaultOptions, options) as any;
     const id = mergedOptions.id;
     const googlePolyline = new Polyline({
       id,
@@ -638,7 +638,7 @@ export class GoogleMapProvider extends BaseMapProvider {
         travelMode: this.google.maps.TravelMode.DRIVING,
         optimizeWaypoints: false,
       };
-      const mergedOptions = merge(defaultOptions, options);
+      const mergedOptions = merge(defaultOptions, options) as any;
       const origin =
         typeof mergedOptions.start === "string"
           ? { query: mergedOptions.start }
@@ -826,6 +826,10 @@ export class GoogleMapProvider extends BaseMapProvider {
     }
   }
 
+  async getAddressList(value: string, config: any): Promise<any> {
+    console.warn("待实现");
+  }
+
   async clearMap(): Promise<void> {
     this.clearMarkers();
     this.clearMarkerClusters();
@@ -859,7 +863,7 @@ export class GoogleMapProvider extends BaseMapProvider {
       zIndex: 10,
     };
 
-    const mergedOptions = merge(defaultOptions, config);
+    const mergedOptions = merge(defaultOptions, config) as any;
 
     // 创建Google Maps多边形
     const { Polygon } = await this.google.maps.importLibrary("maps");
@@ -1103,7 +1107,7 @@ export class GoogleMapProvider extends BaseMapProvider {
       },
     };
 
-    const mergedOptions = merge(defaultOptions, config);
+    const mergedOptions = merge(defaultOptions, config) as any;
 
     // 创建移动标记
     const markerOptions = mergedOptions.marker || {

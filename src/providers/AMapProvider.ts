@@ -92,13 +92,14 @@ export class AMapProvider extends BaseMapProvider {
       zoom: 11,
       center: [116.397428, 39.90923],
       viewMode: "3D",
-      mapStyle: "amap://styles/whitesmoke",
+      // mapStyle: "amap://styles/whitesmoke",
+      mapStyle: "amap://styles/normal",
       pitchEnable: true,
       pitch: 40,
       rotation: -15,
     };
 
-    const mergedOptions = merge(defaultOptions, config);
+    const mergedOptions = merge(defaultOptions, config) as any;
 
     const container =
       typeof mergedOptions.container === "string" ? document.getElementById(mergedOptions.container) : mergedOptions.container;
@@ -116,6 +117,18 @@ export class AMapProvider extends BaseMapProvider {
       pitch: mergedOptions.pitch,
       rotation: mergedOptions.rotation,
     });
+
+    if (typeof mergedOptions.onSuccess === "function") {
+      this.map.on("complete", (e: any) => {
+        mergedOptions.onSuccess!({ event: e });
+      });
+    }
+
+    if (typeof mergedOptions.onClick === "function") {
+      this.map.on("click", (e: any) => {
+        mergedOptions.onClick!({ event: e, position: [e.lnglat.getLng(), e.lnglat.getLat()] });
+      });
+    }
   }
 
   async addMarker(config: MarkerConfig): Promise<IMarker> {
@@ -134,7 +147,7 @@ export class AMapProvider extends BaseMapProvider {
       anchor: "bottom-center",
     };
 
-    const mergedOptions = merge(defaultOptions, config);
+    const mergedOptions = merge(defaultOptions, config) as any;
 
     const content = createDomContent(mergedOptions.content || "");
     const { position } = mergedOptions;
@@ -494,7 +507,7 @@ export class AMapProvider extends BaseMapProvider {
       editable: false,
       zIndex: 1,
     };
-    const mergedOptions = merge(defaultOptions, config);
+    const mergedOptions = merge(defaultOptions, config) as any;
     if (mergedOptions.editable) {
       // 确保Editable插件已加载
       if (!this.plugins.includes("AMap.Editable")) {
@@ -632,38 +645,78 @@ export class AMapProvider extends BaseMapProvider {
     if (!this.map) {
       throw new Error("Map not initialized");
     }
+    // 确保Geocoder插件已加载
+    if (!this.plugins.includes("AMap.Geocoder")) {
+      await new Promise((resolve, reject) => {
+        this.AMap.plugin(["AMap.Geocoder"], (err: any) => {
+          if (err) {
+            reject(new Error(`Failed to load Geocoder plugin: ${err}`));
+          } else {
+            this.plugins.push("AMap.Geocoder");
+            resolve(undefined);
+          }
+        });
+      });
+    }
+
     const geocoder = new this.AMap.Geocoder();
-    geocoder.getAddress(position, function (status: string, result: any) {
-      if (status === "complete" && result.info === "OK") {
-        return result?.regeocode || "";
-      }
+    return new Promise((resolve) => {
+      geocoder.getAddress(position, function (status: string, result: any) {
+        if (status === "complete" && result.info === "OK") {
+          resolve(result?.regeocode?.formattedAddress || "");
+        }
+      });
     });
   }
 
-  async getAddressList(value: string): Promise<any> {
+  async getAddressList(value: string, config: any): Promise<any> {
     if (!this.map) {
       throw new Error("Map not initialized");
     }
+    if (!value) {
+      return [];
+    }
+
     var keywords = value;
-    // 实例化Autocomplete
-    var autoOptions = {
+    const defaultOptions = {
       city: "全国",
     };
-    var autoComplete = this.AMap.addAutoComplete(autoOptions);
-    autoComplete.search(keywords, (_: any, result: any) => {
-      const results = result?.tips || [];
-      const addressList = results
-        .filter((item: any) => item.location && item.location.lat && item.location.lng)
-        .map((item: any) => {
-          const detailedAddress = item.district + item.address + item.name;
-          return {
-            value: detailedAddress,
-            label: detailedAddress,
-            lat: item.location.lat,
-            lng: item.location.lng,
-          };
+    // 实例化Autocomplete
+    var mergedOptions = merge(defaultOptions, config);
+
+    // 确保AutoComplete插件已加载
+    if (!this.plugins.includes("AMap.AutoComplete")) {
+      await new Promise((resolve, reject) => {
+        this.AMap.plugin(["AMap.AutoComplete"], (err: any) => {
+          if (err) {
+            reject(new Error(`Failed to load AutoComplete plugin: ${err}`));
+          } else {
+            this.plugins.push("AMap.AutoComplete");
+            resolve(undefined);
+          }
         });
-      return addressList;
+      });
+    }
+
+    var autoComplete = new this.AMap.AutoComplete({
+      city: mergedOptions.city,
+    });
+    return new Promise((resolve) => {
+      autoComplete.search(keywords, (_: any, result: any) => {
+        const results = result?.tips || [];
+        const addressList = results
+          .filter((item: any) => item.location && item.location.lat && item.location.lng)
+          .map((item: any) => {
+            const detailedAddress = item.district + item.address + item.name;
+            return {
+              value: detailedAddress,
+              label: detailedAddress,
+              lat: item.location.lat,
+              lng: item.location.lng,
+            };
+          });
+        resolve(addressList);
+      });
     });
   }
   clearInfoWindows(params?: { type?: string; infoWindows?: any[] }): void {
@@ -723,7 +776,7 @@ export class AMapProvider extends BaseMapProvider {
         setCenterRealTime: true,
       },
     };
-    const mergedOptions = merge(defaultOptions, config);
+    const mergedOptions = merge(defaultOptions, config) as any;
     const allLineArr = mergedOptions.line.path;
     if (!allLineArr || !Array.isArray(allLineArr) || allLineArr?.length === 0) throw new Error("Animation path is required");
     await this.addPolyline(mergedOptions.line);

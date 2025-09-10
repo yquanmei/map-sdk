@@ -354,6 +354,15 @@ export class MapSDK {
     }
   }
 
+  async getAddressList(value: string, config: any): Promise<any> {
+    this.ensureInitialized();
+    try {
+      return await this.provider.getAddressList(value, config);
+    } catch (error) {
+      throw new MapSDKError(`Failed to get address list: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
+  }
+
   /**
    * 清除轨迹动画
    */

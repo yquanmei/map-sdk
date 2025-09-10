@@ -1,0 +1,15 @@
+.cursor/
+.vscode/
+examples/
+node_modules/
+src/
+test/
+package-lock.json
+.eslintrc.js
+.gitignore
+.prettierrc.js
+.prettierignore
+.prettierignore
+rollup.config.js
+tsconfig.json
+

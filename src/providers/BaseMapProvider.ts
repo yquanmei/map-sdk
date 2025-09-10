@@ -43,6 +43,7 @@ export abstract class BaseMapProvider implements IMapProvider {
   abstract clearPolygons(params?: ClearParams<IPolygon>): void;
   abstract clearPathPlannings(params?: ClearParams<unknown>): void;
   abstract clearInfoWindows(params?: ClearParams<unknown>): void;
+  abstract getAddressList(value: string, config: any): Promise<any>;
   abstract addInfoWindow(options: { content: string | HTMLElement; position: readonly [number, number]; open?: boolean }): Promise<any>;
   abstract setCenter(position: readonly [number, number]): void;
   abstract setZoom(zoom: number): void;

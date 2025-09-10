@@ -113,6 +113,7 @@ export interface IMapProvider {
   clearPathPlannings(params?: ClearParams<any>): void;
   clearInfoWindows(params?: ClearParams<any>): void;
   addInfoWindow(options: { content: string | HTMLElement; position: readonly [number, number]; open?: boolean }): Promise<any>;
+  getAddressList(value: string, config: any): Promise<any>;
   setCenter(position: readonly [number, number]): void;
   setZoom(zoom: number): void;
   setZoomAndCenter(zoom: number, center: readonly [number, number]): void;
