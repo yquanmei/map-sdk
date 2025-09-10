@@ -628,7 +628,7 @@ export class AMapProvider extends BaseMapProvider {
    * @param position 坐标 [lng, lat]
    * @returns 地址信息
    */
-  async getAddress(position: [number, number]): Promise<any> {
+  async getAddressByLngLat(position: [number, number]): Promise<any> {
     if (!this.map) {
       throw new Error("Map not initialized");
     }

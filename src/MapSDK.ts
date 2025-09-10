@@ -238,7 +238,7 @@ export class MapSDK {
   /**
    * 通过经纬度获取详细地址信息
    */
-  async getAddress(position: readonly [number, number]): Promise<unknown> {
+  async getAddressByLngLat(position: readonly [number, number]): Promise<unknown> {
     this.ensureInitialized();
 
     if (!position || position.length !== 2) {
@@ -246,7 +246,7 @@ export class MapSDK {
     }
 
     try {
-      return await (this.provider as any).getAddress(position);
+      return await (this.provider as any).getAddressByLngLat(position);
     } catch (error) {
       throw new MapSDKError(`Failed to get address: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
