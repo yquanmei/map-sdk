@@ -4,7 +4,7 @@ import { IMarker, MapConfig, MarkerConfig, MarkerClusterPoint, MarkerClusterOpti
 export declare class OpenLayersProvider extends BaseMapProvider {
     private ol;
     private vectorLayer;
-    private clusterLayer;
+    private vectorSource;
     /**
      * 动态加载OpenLayers SDK
      */
@@ -12,8 +12,6 @@ export declare class OpenLayersProvider extends BaseMapProvider {
     init(config: MapConfig): Promise<void>;
     addMarker(config: MarkerConfig): Promise<IMarker>;
     addMarkerCluster(points: MarkerClusterPoint[], options?: MarkerClusterOptions): Promise<IMarkerCluster>;
-    removeMarker(marker: IMarker): void;
-    removeMarkerCluster(cluster: IMarkerCluster): void;
     setCenter(position: [number, number], immediately?: boolean): void;
     setZoom(zoom: number): void;
     setZoomAndCenter(zoom: number, center: [number, number]): void;

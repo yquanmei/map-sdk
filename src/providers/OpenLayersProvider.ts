@@ -13,6 +13,7 @@ import { getDistance, getArea } from "ol/sphere";
 import * as ol from "ol";
 import { toLonLat } from "ol/proj";
 import { Extent } from "ol/extent";
+import Draw from "ol/interaction/Draw.js";
 import { merge } from "lodash-es";
 import { BaseMapProvider } from "./BaseMapProvider";
 import { createDomContent, createAnimation } from "../utils";
@@ -48,8 +49,7 @@ interface OpenLayersMarkerCluster extends IMarkerCluster {
 export class OpenLayersProvider extends BaseMapProvider {
   private ol: any;
   private vectorLayer: any;
-  private clusterLayer: any;
-
+  private vectorSource: any;
   /**
    * 动态加载OpenLayers SDK
    */
@@ -100,9 +100,11 @@ export class OpenLayersProvider extends BaseMapProvider {
       }),
     });
 
+    this.vectorSource = new VectorSource();
+
     // 创建矢量图层用于放置markers
     this.vectorLayer = new VectorLayer({
-      source: new VectorSource(),
+      source: this.vectorSource,
     });
 
     const view = new View({
@@ -143,10 +145,8 @@ export class OpenLayersProvider extends BaseMapProvider {
       throw new Error("Map not initialized");
     }
 
-    const markerId = this.generateId(COVERING_TYPES.MARKER);
-    const defaultOptions = {
-      id: markerId,
-    };
+    const id = this.generateId(COVERING_TYPES.MARKER);
+    const defaultOptions = {};
     const mergedOptions = merge(defaultOptions, config) as any;
     const olMarker = new Overlay({
       position: [...mergedOptions.position], // 例如，经纬度 [5, 48]
@@ -183,7 +183,7 @@ export class OpenLayersProvider extends BaseMapProvider {
     }
 
     const marker: OpenLayersMarker = {
-      id: mergedOptions.id,
+      id,
       // position: [...position] as [number, number],
       olMarker: olMarker,
       setPosition: (newPosition: [number, number]) => {
@@ -203,7 +203,7 @@ export class OpenLayersProvider extends BaseMapProvider {
           olMarker.setElement(clone as HTMLElement);
         }
         this.map.removeOverlay(olMarker);
-        this.removeMarkerFromCollection(markerId);
+        this.removeMarkerFromCollection(id);
       },
     };
 
@@ -216,7 +216,7 @@ export class OpenLayersProvider extends BaseMapProvider {
       throw new Error("Map not initialized");
     }
 
-    const clusterId = this.generateId(COVERING_TYPES.CLUSTER);
+    const id = this.generateId(COVERING_TYPES.CLUSTER);
     const defaultOptions: MarkerClusterOptions = {
       gridSize: 60,
       maxZoom: 18,
@@ -287,7 +287,7 @@ export class OpenLayersProvider extends BaseMapProvider {
     this.map.addLayer(clusterLayer);
 
     const markerCluster: OpenLayersMarkerCluster = {
-      id: clusterId,
+      id,
       points: [...points],
       olClusterSource: clusterSource,
       olClusterLayer: clusterLayer,
@@ -327,29 +327,12 @@ export class OpenLayersProvider extends BaseMapProvider {
         features.forEach((feature) => clusterSource.removeFeature(feature));
         features.length = 0;
         markerCluster.points.length = 0;
-        this.removeClusterFromCollection(clusterId);
+        this.removeClusterFromCollection(id);
       },
     };
 
     this.addClusterToCollection(markerCluster);
     return markerCluster;
-  }
-
-  removeMarker(marker: IMarker): void {
-    const olMarker = (marker as OpenLayersMarker).olFeature;
-    if (olMarker && this.vectorLayer) {
-      // if (olMarker && this.vectorLayer) {
-      this.vectorLayer.getSource().removeFeature(olMarker);
-      this.removeMarkerFromCollection(marker.id);
-    }
-  }
-
-  removeMarkerCluster(cluster: IMarkerCluster): void {
-    const olCluster = (cluster as OpenLayersMarkerCluster).olClusterLayer;
-    if (olCluster) {
-      this.map.removeLayer(olCluster);
-      this.removeClusterFromCollection(cluster.id);
-    }
   }
 
   setCenter(position: [number, number], immediately: boolean = false): void {
@@ -401,7 +384,7 @@ export class OpenLayersProvider extends BaseMapProvider {
     const allLayerExtent = getAllVectorLayersExtent();
     try {
       const safeExtent = await this.calculateSafeExtent(allLayerExtent);
-      if (!safeExtent) {
+      if (!safeExtent || safeExtent.length === 0) {
         return;
       }
       this.map.getView().fit(safeExtent, { padding: mergedOptions.padding });
@@ -545,9 +528,8 @@ export class OpenLayersProvider extends BaseMapProvider {
     if (!this.map || !this.vectorLayer) {
       throw new Error("Map not initialized");
     }
-    const polylineId = this.generateId(COVERING_TYPES.POLYLINE);
+    const id = this.generateId(COVERING_TYPES.POLYLINE);
     const defaultOptions = {
-      id: polylineId,
       path: [],
       color: "#FF0000",
       opacity: 0.8,
@@ -572,7 +554,7 @@ export class OpenLayersProvider extends BaseMapProvider {
     olPolyline.setStyle(polylineStyle);
     this.vectorLayer.getSource().addFeature(olPolyline);
     const polyline: IPolyline = {
-      id: polylineId,
+      id,
       // path: mergedOptions.path.map((p) => [...p] as [number, number]),
       olPolyline,
       setPath: (path: [number, number][]) => {
@@ -647,40 +629,69 @@ export class OpenLayersProvider extends BaseMapProvider {
     if (!this.map || !this.vectorLayer) {
       throw new Error("Map not initialized");
     }
-    const polygonId = this.generateId(COVERING_TYPES.POLYGON);
+    const id = this.generateId(COVERING_TYPES.POLYGON);
     const defaultOptions = {
-      id: polygonId,
       path: [],
       strokeColor: "#FF0000",
       strokeOpacity: 1,
       strokeWeight: 2,
-      fillColor: "#FF0000",
+      fillColor: "#ee9e98",
       fillOpacity: 0.3,
       clickable: true,
       draggable: false,
       editable: false,
       zIndex: 1,
+      draw: false,
     };
     const mergedOptions = merge(defaultOptions, config) as any;
-    const polygonFeature = new Feature({
-      geometry: new Polygon([mergedOptions.path.map((point: any) => [point[0], point[1]])]),
-    });
-    const polygonStyle = new Style({
-      fill: new Fill({
-        color: `rgba(${this.hexToRgb(mergedOptions.fillColor)}, ${mergedOptions.fillOpacity})`,
-      }),
-      stroke: new Stroke({
-        color: mergedOptions.strokeColor,
-      }),
-    });
-    polygonFeature.setStyle(polygonStyle);
-    this.vectorLayer.getSource().addFeature(polygonFeature);
-    const olPolygon: IPolygon = {
-      id: polygonId,
+    let olPolygon: any;
+    let olPolygonEditor: any;
+    let olPolygonEditorPath: any;
+    let polygonStyle: any;
+    if (mergedOptions.draw) {
+      olPolygonEditor = new Draw({
+        source: this.vectorSource,
+        type: "Polygon",
+        style: {
+          "fill-color": mergedOptions.fillColor,
+          "stroke-color": mergedOptions.strokeColor,
+          "stroke-width": mergedOptions.strokeWeight,
+          "circle-radius": 5,
+          "circle-fill-color": mergedOptions.fillColor,
+          "shape-opacity": mergedOptions.fillOpacity,
+        },
+      });
+      this.map.addInteraction(olPolygonEditor);
+      olPolygonEditor.on("drawend", (e) => {
+        this.map.removeInteraction(olPolygonEditor);
+        const editorFeature = e.feature;
+        olPolygonEditorPath = editorFeature.getGeometry().getCoordinates();
+        // 保存绘制的Feature引用，用于后续移除
+        olPolygon = editorFeature;
+      });
+    } else {
+      olPolygon = new Feature({
+        geometry: new Polygon([mergedOptions.path.map((point: any) => [point[0], point[1]])]),
+      });
+      polygonStyle = new Style({
+        fill: new Fill({
+          color: `rgba(${this.hexToRgb(mergedOptions.fillColor)}, ${mergedOptions.fillOpacity})`,
+        }),
+        stroke: new Stroke({
+          color: mergedOptions.strokeColor,
+        }),
+      });
+      olPolygon.setStyle(polygonStyle);
+      this.vectorLayer.getSource().addFeature(olPolygon);
+    }
+
+    const polygon: IPolygon = {
+      id,
       // path: mergedOptions.path.map((p) => [...p] as [number, number]),
-      googlePolygon: polygonFeature,
+      olPolygon,
+      olPolygonEditor,
       setPath: (path: [number, number][]) => {
-        const geometry = polygonFeature.getGeometry() as any;
+        const geometry = olPolygon.getGeometry() as any;
         geometry.setCoordinates([path.map(([lng, lat]) => [lng, lat])]);
         // olPolygon.path = path;
       },
@@ -696,7 +707,7 @@ export class OpenLayersProvider extends BaseMapProvider {
             width: options.strokeWeight || mergedOptions.strokeWeight,
           }),
         });
-        polygonFeature.setStyle(newStyle);
+        olPolygon.setStyle(newStyle);
       },
       setEditable: (editable: boolean) => {
         // OpenLayers editable implementation would be complex
@@ -707,33 +718,53 @@ export class OpenLayersProvider extends BaseMapProvider {
         console.warn("OpenLayers polygon dragging not implemented");
       },
       getBounds: () => {
-        return polygonFeature.getGeometry().getExtent();
+        return olPolygon.getGeometry().getExtent();
+      },
+      getPath: () => {
+        if (olPolygonEditor) {
+          return olPolygonEditorPath[0].slice(0, -1);
+        } else if (olPolygon) {
+          return olPolygon
+            .getGeometry()
+            .getCoordinates()[0]
+            .map((item: any) => [item[0], item[1]]);
+        }
       },
       contains: (point: [number, number]) => {
-        const geometry = polygonFeature.getGeometry();
+        const geometry = olPolygon.getGeometry();
         return geometry.intersectsCoordinate(point);
       },
       getArea: () => {
-        const geometry = polygonFeature.getGeometry();
+        const geometry = olPolygon.getGeometry();
         return getArea(geometry);
       },
       show: () => {
-        polygonFeature.setStyle(polygonStyle);
+        olPolygon.setStyle(polygonStyle);
       },
       hide: () => {
-        polygonFeature.setStyle(new Style({}));
+        olPolygon.setStyle(new Style({}));
       },
       remove: () => {
-        this.vectorLayer.getSource().removeFeature(polygonFeature);
-        this.removePolygonFromCollection(polygonId);
+        if (olPolygonEditor) {
+          // 移除绘制交互
+          this.map.removeInteraction(olPolygonEditor);
+          olPolygonEditor = null;
+          olPolygonEditorPath = null;
+        }
+        if (olPolygon) {
+          // 移除绘制的Feature
+          this.vectorSource.removeFeature(olPolygon);
+          olPolygon = null;
+        }
+        this.removePolygonFromCollection(id);
       },
       // clear: () => {
       //   this.vectorLayer.getSource().removeFeature(polygonFeature);
       //   this.removePolygonFromCollection(polygonId);
       // },
     };
-    this.addPolygonToCollection(olPolygon);
-    return olPolygon;
+    this.addPolygonToCollection(polygon);
+    return polygon;
   }
 
   clearPolygons(params?: { type?: string; polygons?: Array<IPolygon> }): void {
@@ -829,7 +860,7 @@ export class OpenLayersProvider extends BaseMapProvider {
   }
 
   async addAnimation(config: AnimationConfig): Promise<IAnimation> {
-    const animationId = this.generateId(COVERING_TYPES.ANIMATION);
+    const id = this.generateId(COVERING_TYPES.ANIMATION);
     const defaultOptions = {
       animation: {
         duration: 5000,
@@ -898,7 +929,7 @@ export class OpenLayersProvider extends BaseMapProvider {
     });
 
     const animation: IAnimation = {
-      id: animationId,
+      id,
       start: () => {
         const timeoutTimer = mergedOptions.animation.startTimer;
         if (!mergedOptions.line.path || mergedOptions.line.path.length === 0) return;
@@ -1069,7 +1100,7 @@ export class OpenLayersProvider extends BaseMapProvider {
         return 0;
       },
       remove: () => {
-        this.removeAnimationFromCollection(animationId);
+        this.removeAnimationFromCollection(id);
       },
       // clear: () => {
       //   this.removeAnimationFromCollection(animationId);

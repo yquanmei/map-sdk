@@ -527,6 +527,7 @@ export class AMapProvider extends BaseMapProvider {
       draggable: false,
       editable: false,
       zIndex: 1,
+      draw: false,
     };
     const mergedOptions = merge(defaultOptions, config) as any;
     let aMapPolygon: any = null;
