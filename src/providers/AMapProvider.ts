@@ -136,7 +136,7 @@ export class AMapProvider extends BaseMapProvider {
       throw new Error("Map not initialized");
     }
 
-    const markerId = this.generateId(COVERING_TYPES.MARKER);
+    const id = this.generateId(COVERING_TYPES.MARKER);
 
     const defaultOptions = {
       map: true,
@@ -166,7 +166,7 @@ export class AMapProvider extends BaseMapProvider {
     });
 
     const marker: AMapMarker = {
-      id: markerId,
+      id,
       position: [...mergedOptions.position] as [number, number],
       aMapMarker,
       data: mergedOptions.data,
@@ -182,7 +182,7 @@ export class AMapProvider extends BaseMapProvider {
       },
       remove: () => {
         this.map.remove(aMapMarker);
-        this.removeMarkerFromCollection(markerId);
+        this.removeMarkerFromCollection(id);
       },
     };
     if (typeof mergedOptions.onClick === "function") {
@@ -201,7 +201,7 @@ export class AMapProvider extends BaseMapProvider {
       throw new Error("Map not initialized");
     }
 
-    const clusterId = this.generateId(COVERING_TYPES.CLUSTER);
+    const id = this.generateId(COVERING_TYPES.CLUSTER);
     const defaultOptions: MarkerClusterOptions = {
       gridSize: 60,
       maxZoom: 18,
@@ -240,7 +240,7 @@ export class AMapProvider extends BaseMapProvider {
     });
 
     const markerCluster: AMapMarkerCluster = {
-      id: clusterId,
+      id,
       points: [...points],
       aMapCluster: cluster,
       aMapMarkers: markers,
@@ -275,7 +275,7 @@ export class AMapProvider extends BaseMapProvider {
         markers.forEach((marker) => cluster.removeMarker(marker));
         markers.length = 0;
         markerCluster.points.length = 0;
-        this.removeClusterFromCollection(clusterId);
+        this.removeClusterFromCollection(id);
       },
     };
 
@@ -425,9 +425,8 @@ export class AMapProvider extends BaseMapProvider {
     if (!this.map) {
       throw new Error("Map not initialized");
     }
-    const polylineId = this.generateId(COVERING_TYPES.POLYLINE);
+    const id = this.generateId(COVERING_TYPES.POLYLINE);
     const defaultOptions = {
-      id: polylineId,
       color: "#f00",
       opacity: 0.8,
       width: 3,
@@ -442,7 +441,7 @@ export class AMapProvider extends BaseMapProvider {
     });
 
     const polyline = {
-      id: mergedOptions.id,
+      id,
       // path: mergedOptions.path.map((p: [number, number]) => [...p] as [number, number]),
       aMapPolyline: line,
       setPath: (path: [number, number][]) => {
@@ -457,6 +456,12 @@ export class AMapProvider extends BaseMapProvider {
       },
       setDraggable: (draggable: boolean) => {
         line.setOptions({ draggable });
+      },
+      remove: () => {
+        if (line) {
+          this.map.remove(line);
+          this.removePolylineFromCollection(id);
+        }
       },
     };
     this.addPolylinesToCollection([polyline]);
@@ -489,13 +494,29 @@ export class AMapProvider extends BaseMapProvider {
     });
   }
 
+  async _loadPlugins(pluginName: string[]): Promise<void> {
+    pluginName.forEach(async (name) => {
+      if (!this.plugins.includes(name)) {
+        await new Promise((resolve, reject) => {
+          this.AMap.plugin([name], (err: any) => {
+            if (err) {
+              reject(new Error(`Failed to load ${name} plugin: ${err}`));
+            } else {
+              this.plugins.push(name);
+              resolve(undefined);
+            }
+          });
+        });
+      }
+    });
+  }
+
   async addPolygon(config: PolygonConfig): Promise<IPolygon> {
     if (!this.map) {
       throw new Error("Map not initialized");
     }
-    const polygonId = this.generateId(COVERING_TYPES.POLYGON);
+    const id = this.generateId(COVERING_TYPES.POLYGON);
     const defaultOptions = {
-      id: polygonId,
       path: [],
       strokeColor: "#FF0000",
       strokeOpacity: 1,
@@ -508,54 +529,67 @@ export class AMapProvider extends BaseMapProvider {
       zIndex: 1,
     };
     const mergedOptions = merge(defaultOptions, config) as any;
-    if (mergedOptions.editable) {
-      // 确保Editable插件已加载
-      if (!this.plugins.includes("AMap.Editable")) {
-        await new Promise((resolve, reject) => {
-          this.AMap.plugin(["AMap.Editable"], (err: any) => {
-            if (err) {
-              reject(new Error(`Failed to load Editable plugin: ${err}`));
-            } else {
-              this.plugins.push("AMap.Editable");
-              resolve(undefined);
-            }
-          });
-        });
+    let aMapPolygon: any = null;
+    if (mergedOptions.draw || mergedOptions.editable) {
+      // 确保Editor插件已加载
+      await this._loadPlugins(["AMap.PolygonEditor"]);
+    }
+    let aMapPolygonEditor: any = null;
+    if (mergedOptions.draw) {
+      aMapPolygonEditor = new this.AMap.PolygonEditor(this.map);
+      aMapPolygonEditor.open();
+    } else {
+      aMapPolygon = new this.AMap.Polygon({
+        map: this.map,
+        path: mergedOptions.path.map((p: [number, number]) => [...p] as [number, number]),
+        strokeColor: mergedOptions.strokeColor,
+        strokeOpacity: mergedOptions.strokeOpacity,
+        strokeWeight: mergedOptions.strokeWeight,
+        fillColor: mergedOptions.fillColor,
+        fillOpacity: mergedOptions.fillOpacity,
+      });
+
+      if (mergedOptions.editable) {
+        aMapPolygonEditor = new this.AMap.PolygonEditor(this.map, aMapPolygon);
+        aMapPolygonEditor.open();
       }
     }
 
-    const aMapPolygon = new this.AMap.Polygon({
-      path: mergedOptions.path.map((p) => [...p] as [number, number]),
-      strokeColor: mergedOptions.strokeColor,
-      strokeOpacity: mergedOptions.strokeOpacity,
-      strokeWeight: mergedOptions.strokeWeight,
-      fillColor: mergedOptions.fillColor,
-      fillOpacity: mergedOptions.fillOpacity,
-      clickable: mergedOptions.clickable,
-      draggable: mergedOptions.draggable,
-      editable: mergedOptions.editable,
-      zIndex: mergedOptions.zIndex,
-    });
-    this.map.add(aMapPolygon);
     const polygon: IPolygon = {
-      id: polygonId,
-      path: mergedOptions.path.map((point) => [...point] as [number, number]),
+      id,
+      // path: mergedOptions.path.map((point: [number, number]) => [...point] as [number, number]),
       aMapPolygon,
+      aMapPolygonEditor,
       setPath: (path: [number, number][]) => {
         aMapPolygon.setPath(path);
-        polygon.path = path;
+        // polygon.path = path;
       },
       setOptions: (options: any) => {
         aMapPolygon.setOptions(options);
       },
-      setEditable: (editable: boolean) => {
-        aMapPolygon.setOptions({ editable });
+      setEditable: async (editable: boolean) => {
+        if (!aMapPolygonEditor) {
+          await this._loadPlugins(["AMap.PolygonEditor"]);
+          aMapPolygonEditor = new this.AMap.PolygonEditor(this.map, aMapPolygon);
+        }
+        if (editable) {
+          aMapPolygonEditor.open();
+        } else {
+          aMapPolygonEditor.addAdsorbPolygons(aMapPolygon);
+        }
       },
       setDraggable: (draggable: boolean) => {
         aMapPolygon.setOptions({ draggable });
       },
       getBounds: () => {
         return aMapPolygon.getBounds();
+      },
+      getPath: () => {
+        if (aMapPolygonEditor) {
+          return aMapPolygonEditor.getTarget()._opts.path;
+        } else if (aMapPolygon) {
+          return aMapPolygon.getTarget()._opts.path;
+        }
       },
       contains: (point: [number, number]) => {
         return aMapPolygon.contains(point);
@@ -570,8 +604,16 @@ export class AMapProvider extends BaseMapProvider {
         aMapPolygon.hide();
       },
       remove: () => {
-        this.map.remove(aMapPolygon);
-        this.removePolygonFromCollection(aMapPolygon);
+        if (aMapPolygon) {
+          this.map.remove(aMapPolygon);
+          aMapPolygon = null;
+        }
+        if (aMapPolygonEditor) {
+          aMapPolygonEditor.getTarget().remove();
+          aMapPolygonEditor.close();
+          aMapPolygonEditor = null;
+        }
+        this.removePolygonFromCollection(id);
       },
       // clear: () => {
       //   this.map.remove(polygon);
@@ -646,18 +688,7 @@ export class AMapProvider extends BaseMapProvider {
       throw new Error("Map not initialized");
     }
     // 确保Geocoder插件已加载
-    if (!this.plugins.includes("AMap.Geocoder")) {
-      await new Promise((resolve, reject) => {
-        this.AMap.plugin(["AMap.Geocoder"], (err: any) => {
-          if (err) {
-            reject(new Error(`Failed to load Geocoder plugin: ${err}`));
-          } else {
-            this.plugins.push("AMap.Geocoder");
-            resolve(undefined);
-          }
-        });
-      });
-    }
+    await this._loadPlugins(["AMap.Geocoder"]);
 
     const geocoder = new this.AMap.Geocoder();
     return new Promise((resolve) => {
@@ -685,18 +716,7 @@ export class AMapProvider extends BaseMapProvider {
     var mergedOptions = merge(defaultOptions, config);
 
     // 确保AutoComplete插件已加载
-    if (!this.plugins.includes("AMap.AutoComplete")) {
-      await new Promise((resolve, reject) => {
-        this.AMap.plugin(["AMap.AutoComplete"], (err: any) => {
-          if (err) {
-            reject(new Error(`Failed to load AutoComplete plugin: ${err}`));
-          } else {
-            this.plugins.push("AMap.AutoComplete");
-            resolve(undefined);
-          }
-        });
-      });
-    }
+    await this._loadPlugins(["AMap.AutoComplete"]);
 
     var autoComplete = new this.AMap.AutoComplete({
       city: mergedOptions.city,
@@ -755,19 +775,9 @@ export class AMapProvider extends BaseMapProvider {
 
   async addAnimation(config: AnimationConfig): Promise<IAnimation> {
     // 确保MoveAnimation插件已加载
-    if (!this.plugins.includes("AMap.MoveAnimation")) {
-      await new Promise((resolve, reject) => {
-        this.AMap.plugin(["AMap.MoveAnimation"], (err: any) => {
-          if (err) {
-            reject(new Error(`Failed to load MoveAnimation plugin: ${err}`));
-          } else {
-            this.plugins.push("AMap.MoveAnimation");
-            resolve(undefined);
-          }
-        });
-      });
-    }
-    const animationId = this.generateId(COVERING_TYPES.ANIMATION);
+    await this._loadPlugins(["AMap.MoveAnimation"]);
+
+    const id = this.generateId(COVERING_TYPES.ANIMATION);
     const defaultOptions = {
       animation: {
         duration: 5000,
@@ -838,7 +848,7 @@ export class AMapProvider extends BaseMapProvider {
     });
 
     const animation: IAnimation = {
-      id: animationId,
+      id,
       aMapMarker: marker,
       start: () => {
         if (!mergedOptions.line.path || mergedOptions.line.path.length === 0) return;
@@ -1011,7 +1021,7 @@ export class AMapProvider extends BaseMapProvider {
         };
       },
       remove: () => {
-        this.removeAnimationFromCollection(animationId);
+        this.removeAnimationFromCollection(id);
       },
       // clear: () => {
       //   this.removeAnimationFromCollection(animationId);

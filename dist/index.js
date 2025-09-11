@@ -565,7 +565,7 @@ class AMapProvider extends BaseMapProvider {
         if (!this.map) {
             throw new Error("Map not initialized");
         }
-        const markerId = this.generateId(COVERING_TYPES.MARKER);
+        const id = this.generateId(COVERING_TYPES.MARKER);
         const defaultOptions = {
             map: true,
             position: [],
@@ -588,7 +588,7 @@ class AMapProvider extends BaseMapProvider {
             anchor: mergedOptions.anchor,
         });
         const marker = {
-            id: markerId,
+            id,
             position: [...mergedOptions.position],
             aMapMarker,
             data: mergedOptions.data,
@@ -604,7 +604,7 @@ class AMapProvider extends BaseMapProvider {
             },
             remove: () => {
                 this.map.remove(aMapMarker);
-                this.removeMarkerFromCollection(markerId);
+                this.removeMarkerFromCollection(id);
             },
         };
         if (typeof mergedOptions.onClick === "function") {
@@ -620,7 +620,7 @@ class AMapProvider extends BaseMapProvider {
         if (!this.map) {
             throw new Error("Map not initialized");
         }
-        const clusterId = this.generateId(COVERING_TYPES.CLUSTER);
+        const id = this.generateId(COVERING_TYPES.CLUSTER);
         const defaultOptions = {
             gridSize: 60,
             maxZoom: 18,
@@ -655,7 +655,7 @@ class AMapProvider extends BaseMapProvider {
             },
         });
         const markerCluster = {
-            id: clusterId,
+            id,
             points: [...points],
             aMapCluster: cluster,
             aMapMarkers: markers,
@@ -690,7 +690,7 @@ class AMapProvider extends BaseMapProvider {
                 markers.forEach((marker) => cluster.removeMarker(marker));
                 markers.length = 0;
                 markerCluster.points.length = 0;
-                this.removeClusterFromCollection(clusterId);
+                this.removeClusterFromCollection(id);
             },
         };
         this.addClusterToCollection(markerCluster);
@@ -824,9 +824,8 @@ class AMapProvider extends BaseMapProvider {
         if (!this.map) {
             throw new Error("Map not initialized");
         }
-        const polylineId = this.generateId(COVERING_TYPES.POLYLINE);
+        const id = this.generateId(COVERING_TYPES.POLYLINE);
         const defaultOptions = {
-            id: polylineId,
             color: "#f00",
             opacity: 0.8,
             width: 3,
@@ -840,7 +839,7 @@ class AMapProvider extends BaseMapProvider {
             strokeWeight: mergedOptions.width,
         });
         const polyline = {
-            id: mergedOptions.id,
+            id,
             // path: mergedOptions.path.map((p: [number, number]) => [...p] as [number, number]),
             aMapPolyline: line,
             setPath: (path) => {
@@ -855,6 +854,12 @@ class AMapProvider extends BaseMapProvider {
             },
             setDraggable: (draggable) => {
                 line.setOptions({ draggable });
+            },
+            remove: () => {
+                if (line) {
+                    this.map.remove(line);
+                    this.removePolylineFromCollection(id);
+                }
             },
         };
         this.addPolylinesToCollection([polyline]);
@@ -886,13 +891,29 @@ class AMapProvider extends BaseMapProvider {
             this.removePolylineFromCollection(polyline);
         });
     }
+    async _loadPlugins(pluginName) {
+        pluginName.forEach(async (name) => {
+            if (!this.plugins.includes(name)) {
+                await new Promise((resolve, reject) => {
+                    this.AMap.plugin([name], (err) => {
+                        if (err) {
+                            reject(new Error(`Failed to load ${name} plugin: ${err}`));
+                        }
+                        else {
+                            this.plugins.push(name);
+                            resolve(undefined);
+                        }
+                    });
+                });
+            }
+        });
+    }
     async addPolygon(config) {
         if (!this.map) {
             throw new Error("Map not initialized");
         }
-        const polygonId = this.generateId(COVERING_TYPES.POLYGON);
+        const id = this.generateId(COVERING_TYPES.POLYGON);
         const defaultOptions = {
-            id: polygonId,
             path: [],
             strokeColor: "#FF0000",
             strokeOpacity: 1,
@@ -905,54 +926,68 @@ class AMapProvider extends BaseMapProvider {
             zIndex: 1,
         };
         const mergedOptions = merge(defaultOptions, config);
-        if (mergedOptions.editable) {
-            // 确保Editable插件已加载
-            if (!this.plugins.includes("AMap.Editable")) {
-                await new Promise((resolve, reject) => {
-                    this.AMap.plugin(["AMap.Editable"], (err) => {
-                        if (err) {
-                            reject(new Error(`Failed to load Editable plugin: ${err}`));
-                        }
-                        else {
-                            this.plugins.push("AMap.Editable");
-                            resolve(undefined);
-                        }
-                    });
-                });
+        let aMapPolygon = null;
+        if (mergedOptions.draw || mergedOptions.editable) {
+            // 确保Editor插件已加载
+            await this._loadPlugins(["AMap.PolygonEditor"]);
+        }
+        let aMapPolygonEditor = null;
+        if (mergedOptions.draw) {
+            aMapPolygonEditor = new this.AMap.PolygonEditor(this.map);
+            aMapPolygonEditor.open();
+        }
+        else {
+            aMapPolygon = new this.AMap.Polygon({
+                map: this.map,
+                path: mergedOptions.path.map((p) => [...p]),
+                strokeColor: mergedOptions.strokeColor,
+                strokeOpacity: mergedOptions.strokeOpacity,
+                strokeWeight: mergedOptions.strokeWeight,
+                fillColor: mergedOptions.fillColor,
+                fillOpacity: mergedOptions.fillOpacity,
+            });
+            if (mergedOptions.editable) {
+                aMapPolygonEditor = new this.AMap.PolygonEditor(this.map, aMapPolygon);
+                aMapPolygonEditor.open();
             }
         }
-        const aMapPolygon = new this.AMap.Polygon({
-            path: mergedOptions.path.map((p) => [...p]),
-            strokeColor: mergedOptions.strokeColor,
-            strokeOpacity: mergedOptions.strokeOpacity,
-            strokeWeight: mergedOptions.strokeWeight,
-            fillColor: mergedOptions.fillColor,
-            fillOpacity: mergedOptions.fillOpacity,
-            clickable: mergedOptions.clickable,
-            draggable: mergedOptions.draggable,
-            editable: mergedOptions.editable,
-            zIndex: mergedOptions.zIndex,
-        });
-        this.map.add(aMapPolygon);
         const polygon = {
-            id: polygonId,
-            path: mergedOptions.path.map((point) => [...point]),
+            id,
+            // path: mergedOptions.path.map((point: [number, number]) => [...point] as [number, number]),
             aMapPolygon,
+            aMapPolygonEditor,
             setPath: (path) => {
                 aMapPolygon.setPath(path);
-                polygon.path = path;
+                // polygon.path = path;
             },
             setOptions: (options) => {
                 aMapPolygon.setOptions(options);
             },
-            setEditable: (editable) => {
-                aMapPolygon.setOptions({ editable });
+            setEditable: async (editable) => {
+                if (!aMapPolygonEditor) {
+                    await this._loadPlugins(["AMap.PolygonEditor"]);
+                    aMapPolygonEditor = new this.AMap.PolygonEditor(this.map, aMapPolygon);
+                }
+                if (editable) {
+                    aMapPolygonEditor.open();
+                }
+                else {
+                    aMapPolygonEditor.addAdsorbPolygons(aMapPolygon);
+                }
             },
             setDraggable: (draggable) => {
                 aMapPolygon.setOptions({ draggable });
             },
             getBounds: () => {
                 return aMapPolygon.getBounds();
+            },
+            getPath: () => {
+                if (aMapPolygonEditor) {
+                    return aMapPolygonEditor.getTarget()._opts.path;
+                }
+                else if (aMapPolygon) {
+                    return aMapPolygon.getTarget()._opts.path;
+                }
             },
             contains: (point) => {
                 return aMapPolygon.contains(point);
@@ -967,8 +1002,16 @@ class AMapProvider extends BaseMapProvider {
                 aMapPolygon.hide();
             },
             remove: () => {
-                this.map.remove(aMapPolygon);
-                this.removePolygonFromCollection(aMapPolygon);
+                if (aMapPolygon) {
+                    this.map.remove(aMapPolygon);
+                    aMapPolygon = null;
+                }
+                if (aMapPolygonEditor) {
+                    aMapPolygonEditor.getTarget().remove();
+                    aMapPolygonEditor.close();
+                    aMapPolygonEditor = null;
+                }
+                this.removePolygonFromCollection(id);
             },
             // clear: () => {
             //   this.map.remove(polygon);
@@ -1034,19 +1077,7 @@ class AMapProvider extends BaseMapProvider {
             throw new Error("Map not initialized");
         }
         // 确保Geocoder插件已加载
-        if (!this.plugins.includes("AMap.Geocoder")) {
-            await new Promise((resolve, reject) => {
-                this.AMap.plugin(["AMap.Geocoder"], (err) => {
-                    if (err) {
-                        reject(new Error(`Failed to load Geocoder plugin: ${err}`));
-                    }
-                    else {
-                        this.plugins.push("AMap.Geocoder");
-                        resolve(undefined);
-                    }
-                });
-            });
-        }
+        await this._loadPlugins(["AMap.Geocoder"]);
         const geocoder = new this.AMap.Geocoder();
         return new Promise((resolve) => {
             geocoder.getAddress(position, function (status, result) {
@@ -1070,19 +1101,7 @@ class AMapProvider extends BaseMapProvider {
         // 实例化Autocomplete
         var mergedOptions = merge(defaultOptions, config);
         // 确保AutoComplete插件已加载
-        if (!this.plugins.includes("AMap.AutoComplete")) {
-            await new Promise((resolve, reject) => {
-                this.AMap.plugin(["AMap.AutoComplete"], (err) => {
-                    if (err) {
-                        reject(new Error(`Failed to load AutoComplete plugin: ${err}`));
-                    }
-                    else {
-                        this.plugins.push("AMap.AutoComplete");
-                        resolve(undefined);
-                    }
-                });
-            });
-        }
+        await this._loadPlugins(["AMap.AutoComplete"]);
         var autoComplete = new this.AMap.AutoComplete({
             city: mergedOptions.city,
         });
@@ -1136,20 +1155,8 @@ class AMapProvider extends BaseMapProvider {
     }
     async addAnimation(config) {
         // 确保MoveAnimation插件已加载
-        if (!this.plugins.includes("AMap.MoveAnimation")) {
-            await new Promise((resolve, reject) => {
-                this.AMap.plugin(["AMap.MoveAnimation"], (err) => {
-                    if (err) {
-                        reject(new Error(`Failed to load MoveAnimation plugin: ${err}`));
-                    }
-                    else {
-                        this.plugins.push("AMap.MoveAnimation");
-                        resolve(undefined);
-                    }
-                });
-            });
-        }
-        const animationId = this.generateId(COVERING_TYPES.ANIMATION);
+        await this._loadPlugins(["AMap.MoveAnimation"]);
+        const id = this.generateId(COVERING_TYPES.ANIMATION);
         const defaultOptions = {
             animation: {
                 duration: 5000,
@@ -1219,7 +1226,7 @@ class AMapProvider extends BaseMapProvider {
             typeof mergedOptions.onComplete === "function" && mergedOptions.onComplete?.();
         });
         const animation = {
-            id: animationId,
+            id,
             aMapMarker: marker,
             start: () => {
                 if (!mergedOptions.line.path || mergedOptions.line.path.length === 0)
@@ -1400,7 +1407,7 @@ class AMapProvider extends BaseMapProvider {
                 };
             },
             remove: () => {
-                this.removeAnimationFromCollection(animationId);
+                this.removeAnimationFromCollection(id);
             },
             // clear: () => {
             //   this.removeAnimationFromCollection(animationId);
@@ -50199,12 +50206,12 @@ class OpenLayersProvider extends BaseMapProvider {
         this.vectorLayer.getSource().addFeature(polygonFeature);
         const olPolygon = {
             id: polygonId,
-            path: mergedOptions.path.map((p) => [...p]),
+            // path: mergedOptions.path.map((p) => [...p] as [number, number]),
             googlePolygon: polygonFeature,
             setPath: (path) => {
                 const geometry = polygonFeature.getGeometry();
                 geometry.setCoordinates([path.map(([lng, lat]) => [lng, lat])]);
-                olPolygon.path = path;
+                // olPolygon.path = path;
             },
             setOptions: (options) => {
                 const newStyle = new Style({

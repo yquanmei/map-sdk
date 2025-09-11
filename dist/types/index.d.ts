@@ -219,7 +219,6 @@ export interface PolygonEditEventParams extends PolygonEventParams {
 }
 export interface IPolygon {
     readonly id: string;
-    path: [number, number][];
     setPath(path: readonly (readonly [number, number])[]): void;
     setOptions(options: Partial<PolygonConfig>): void;
     setEditable(editable: boolean): void;

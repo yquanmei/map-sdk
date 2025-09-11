@@ -37,6 +37,7 @@ export declare class AMapProvider extends BaseMapProvider {
         type?: string;
         polylines?: any[];
     }): void;
+    _loadPlugins(pluginName: string[]): Promise<void>;
     addPolygon(config: PolygonConfig): Promise<IPolygon>;
     clearPolygons(params?: {
         type?: string;

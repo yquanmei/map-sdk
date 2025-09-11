@@ -677,12 +677,12 @@ export class OpenLayersProvider extends BaseMapProvider {
     this.vectorLayer.getSource().addFeature(polygonFeature);
     const olPolygon: IPolygon = {
       id: polygonId,
-      path: mergedOptions.path.map((p) => [...p] as [number, number]),
+      // path: mergedOptions.path.map((p) => [...p] as [number, number]),
       googlePolygon: polygonFeature,
       setPath: (path: [number, number][]) => {
         const geometry = polygonFeature.getGeometry() as any;
         geometry.setCoordinates([path.map(([lng, lat]) => [lng, lat])]);
-        olPolygon.path = path;
+        // olPolygon.path = path;
       },
       setOptions: (options: any) => {
         const newStyle = new Style({
