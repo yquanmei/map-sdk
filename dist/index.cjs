@@ -152,10 +152,7 @@ class BaseMapProvider {
         this.markerClusters.clear();
     }
     clearAllPolylines() {
-        console.log(`%c yqm base, 清除，clearAllPolylines::: `, "color: pink;");
         this.polylines.forEach((polyline) => {
-            console.log(`%c yqm polyline::: `, "color: pink;", polyline);
-            // if (polyline && typeof polyline.setMap === "function") {
             if (polyline) {
                 polyline.remove();
             }
@@ -537,7 +534,8 @@ class AMapProvider extends BaseMapProvider {
             zoom: 11,
             center: [116.397428, 39.90923],
             viewMode: "3D",
-            mapStyle: "amap://styles/whitesmoke",
+            // mapStyle: "amap://styles/whitesmoke",
+            mapStyle: "amap://styles/normal",
             pitchEnable: true,
             pitch: 40,
             rotation: -15,
@@ -556,6 +554,16 @@ class AMapProvider extends BaseMapProvider {
             pitch: mergedOptions.pitch,
             rotation: mergedOptions.rotation,
         });
+        if (typeof mergedOptions.onSuccess === "function") {
+            this.map.on("complete", (e) => {
+                mergedOptions.onSuccess({ event: e });
+            });
+        }
+        if (typeof mergedOptions.onClick === "function") {
+            this.map.on("click", (e) => {
+                mergedOptions.onClick({ event: e, position: [e.lnglat.getLng(), e.lnglat.getLat()] });
+            });
+        }
     }
     async addMarker(config) {
         if (!this.map) {
@@ -1025,19 +1033,80 @@ class AMapProvider extends BaseMapProvider {
      * @param position 坐标 [lng, lat]
      * @returns 地址信息
      */
-    async getAddress(position) {
+    async getAddressByLngLat(position) {
         if (!this.map) {
             throw new Error("Map not initialized");
         }
+        // 确保Geocoder插件已加载
+        if (!this.plugins.includes("AMap.Geocoder")) {
+            await new Promise((resolve, reject) => {
+                this.AMap.plugin(["AMap.Geocoder"], (err) => {
+                    if (err) {
+                        reject(new Error(`Failed to load Geocoder plugin: ${err}`));
+                    }
+                    else {
+                        this.plugins.push("AMap.Geocoder");
+                        resolve(undefined);
+                    }
+                });
+            });
+        }
         const geocoder = new this.AMap.Geocoder();
-        geocoder.getAddress(position, function (status, result) {
-            if (status === "complete" && result.info === "OK") {
-                return result?.regeocode || "";
-            }
+        return new Promise((resolve) => {
+            geocoder.getAddress(position, function (status, result) {
+                if (status === "complete" && result.info === "OK") {
+                    resolve(result?.regeocode?.formattedAddress || "");
+                }
+            });
         });
     }
-    getAddressList() {
-        return Promise.resolve([]);
+    async getAddressList(value, config) {
+        if (!this.map) {
+            throw new Error("Map not initialized");
+        }
+        if (!value) {
+            return [];
+        }
+        var keywords = value;
+        const defaultOptions = {
+            city: "全国",
+        };
+        // 实例化Autocomplete
+        var mergedOptions = lodashEs.merge(defaultOptions, config);
+        // 确保AutoComplete插件已加载
+        if (!this.plugins.includes("AMap.AutoComplete")) {
+            await new Promise((resolve, reject) => {
+                this.AMap.plugin(["AMap.AutoComplete"], (err) => {
+                    if (err) {
+                        reject(new Error(`Failed to load AutoComplete plugin: ${err}`));
+                    }
+                    else {
+                        this.plugins.push("AMap.AutoComplete");
+                        resolve(undefined);
+                    }
+                });
+            });
+        }
+        var autoComplete = new this.AMap.AutoComplete({
+            city: mergedOptions.city,
+        });
+        return new Promise((resolve) => {
+            autoComplete.search(keywords, (_, result) => {
+                const results = result?.tips || [];
+                const addressList = results
+                    .filter((item) => item.location && item.location.lat && item.location.lng)
+                    .map((item) => {
+                    const detailedAddress = item.district + item.address + item.name;
+                    return {
+                        value: detailedAddress,
+                        label: detailedAddress,
+                        lat: item.location.lat,
+                        lng: item.location.lng,
+                    };
+                });
+                resolve(addressList);
+            });
+        });
     }
     clearInfoWindows(params) {
         if (!this.map)
@@ -1422,6 +1491,16 @@ class GoogleMapProvider extends BaseMapProvider {
             zoom: mergedOptions.zoom,
             mapId: mergedOptions.container,
         });
+        // 添加地图点击事件处理
+        if (typeof mergedOptions.onClick === "function") {
+            this.map.addListener("click", (event) => {
+                const position = [event.latLng.lng(), event.latLng.lat()];
+                mergedOptions.onClick({
+                    event: event.domEvent,
+                    position: position
+                });
+            });
+        }
     }
     setCenter(position) {
         if (!this.map)
@@ -2010,7 +2089,7 @@ class GoogleMapProvider extends BaseMapProvider {
      * @param position 坐标 [lng, lat]
      * @returns 地址信息
      */
-    async getAddress(position) {
+    async getAddressByLngLat(position) {
         if (!this.map || !this.google) {
             throw new Error("Map not initialized");
         }
@@ -2090,6 +2169,9 @@ class GoogleMapProvider extends BaseMapProvider {
         catch (error) {
             throw new Error(`Failed to get address from position: ${error}`);
         }
+    }
+    async getAddressList(value, config) {
+        console.warn("待实现");
     }
     async clearMap() {
         this.clearMarkers();
@@ -49607,20 +49689,22 @@ class OpenLayersProvider extends BaseMapProvider {
             target: container,
             controls: [],
         });
-        // this.map = new Map({
-        //   target: container,
-        //   layers: [
-        //     new TileLayer({
-        //       source: new OSM(),
-        //     }),
-        //     this.vectorLayer,
-        //   ],
-        //   view: new View({
-        //     center: fromLonLat(config.center || [116.397428, 39.90923]),
-        //     zoom: config.zoom || 11,
-        //   }),
-        //   // ...config,
-        // });
+        // 添加地图点击事件处理
+        if (typeof mergedOptions.onClick === "function") {
+            this.map.on("click", (event) => {
+                const position = event.coordinate;
+                mergedOptions.onClick({
+                    event: event.originalEvent,
+                    position: position,
+                });
+            });
+        }
+        // 添加地图初始化成功事件处理
+        if (typeof mergedOptions.onSuccess === "function") {
+            this.map.once("rendercomplete", (event) => {
+                mergedOptions.onSuccess();
+            });
+        }
     }
     async addMarker(config) {
         // if (!this.map || !this.vectorLayer) {
@@ -49868,6 +49952,9 @@ class OpenLayersProvider extends BaseMapProvider {
             console.error("Error setting fit view:", error);
         }
     }
+    async getAddressList(value, config) {
+        console.warn("待实现");
+    }
     /**
      * 检查范围是否有效
      */
@@ -50055,8 +50142,6 @@ class OpenLayersProvider extends BaseMapProvider {
                 }
             },
             remove: () => {
-                console.log(`%c yqm 清除::: `, "color: pink;", olPolyline);
-                // this.vectorLayer.getSource().removeFeature(olPolyline);
                 this.vectorLayer.getSource().removeFeature(olPolyline);
                 this.removePolylineFromCollection(polyline);
             },
@@ -50065,32 +50150,23 @@ class OpenLayersProvider extends BaseMapProvider {
         return polyline;
     }
     clearPolylines(params) {
-        console.log(`%c yqm 清除，clearPolylines::: `, "color: pink;");
         if (!this.map)
             return;
         const typeToClear = params?.type;
         const explicitPolylines = params?.polylines || [];
-        console.log(`%c yqm typeToClear::: `, "color: pink;", typeToClear, explicitPolylines.length);
         if (!typeToClear && explicitPolylines.length === 0) {
-            console.log(`%c yqm 全清除::: `, "color: pink;");
             this.clearAllPolylines();
             return;
         }
         if (typeToClear) {
             this.polylines.forEach((polyline) => {
                 if (polyline?.type === typeToClear) {
-                    if (polyline.setMap) {
-                        polyline.setMap(null);
-                    }
-                    this.removePolylineFromCollection(polyline);
+                    polyline.remove();
                 }
             });
         }
         explicitPolylines.forEach((polyline) => {
-            if (polyline.setMap) {
-                polyline.setMap(null);
-            }
-            this.removePolylineFromCollection(polyline);
+            polyline.remove();
         });
     }
     async addPolygon(config) {
@@ -50348,7 +50424,7 @@ class OpenLayersProvider extends BaseMapProvider {
                         ...currentPoint,
                         animationStatus: exports.AnimationStatus.PLAYING,
                     };
-                    this.setZoomAndCenter(mergedOptions.animation.startZoom, [...mergedOptions.line.path[0]]);
+                    this.setZoomAndCenter(mergedOptions.animation.startZoom, mergedOptions.line.path[0]);
                 }, timeoutTimer);
                 typeof mergedOptions.onStart === "function" && mergedOptions.onStart();
             },
@@ -50811,13 +50887,13 @@ class MapSDK {
     /**
      * 通过经纬度获取详细地址信息
      */
-    async getAddress(position) {
+    async getAddressByLngLat(position) {
         this.ensureInitialized();
         if (!position || position.length !== 2) {
             throw new MapSDKError("Invalid position format", ERROR_CODES.INVALID_CONFIG);
         }
         try {
-            return await this.provider.getAddress(position);
+            return await this.provider.getAddressByLngLat(position);
         }
         catch (error) {
             throw new MapSDKError(`Failed to get address: ${error instanceof Error ? error.message : "Unknown error"}`);
@@ -50903,6 +50979,15 @@ class MapSDK {
         }
         catch (error) {
             throw new MapSDKError(`Failed to add animation: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
+    }
+    async getAddressList(value, config) {
+        this.ensureInitialized();
+        try {
+            return await this.provider.getAddressList(value, config);
+        }
+        catch (error) {
+            throw new MapSDKError(`Failed to get address list: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }
     /**

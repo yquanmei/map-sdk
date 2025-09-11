@@ -119,6 +119,22 @@ export class OpenLayersProvider extends BaseMapProvider {
       target: container,
       controls: [],
     });
+    // 添加地图点击事件处理
+    if (typeof mergedOptions.onClick === "function") {
+      this.map.on("click", (event: any) => {
+        const position = event.coordinate;
+        mergedOptions.onClick({
+          event: event.originalEvent,
+          position: position as [number, number],
+        });
+      });
+    }
+    // 添加地图初始化成功事件处理
+    if (typeof mergedOptions.onSuccess === "function") {
+      this.map.once("rendercomplete", (event: any) => {
+        mergedOptions.onSuccess();
+      });
+    }
   }
 
   async addMarker(config: MarkerConfig): Promise<IMarker> {

@@ -36,6 +36,7 @@ export interface MapConfig extends BaseConfig {
   readonly center?: readonly [number, number]; // [lng, lat] - 使用readonly确保不可变性
   readonly zoom?: number;
   readonly key?: string; // API密钥参数名统一为key
+  readonly onClick?: (params: { event: Event; position: readonly [number, number] }) => void; // 地图点击事件
   readonly [key: string]: unknown; // 使用unknown而不是any提高类型安全性
 }
 

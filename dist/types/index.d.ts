@@ -37,6 +37,10 @@ export interface MapConfig extends BaseConfig {
     readonly center?: readonly [number, number];
     readonly zoom?: number;
     readonly key?: string;
+    readonly onClick?: (params: {
+        event: Event;
+        position: readonly [number, number];
+    }) => void;
     readonly [key: string]: unknown;
 }
 export interface MarkerConfig extends BaseConfig {
@@ -103,6 +107,7 @@ export interface IMapProvider {
         position: readonly [number, number];
         open?: boolean;
     }): Promise<any>;
+    getAddressList(value: string, config: any): Promise<any>;
     setCenter(position: readonly [number, number]): void;
     setZoom(zoom: number): void;
     setZoomAndCenter(zoom: number, center: readonly [number, number]): void;

@@ -21,6 +21,7 @@ export declare class OpenLayersProvider extends BaseMapProvider {
         padding?: number;
         maxZoom?: number;
     }): Promise<void>;
+    getAddressList(value: string, config: any): Promise<any>;
     /**
      * 检查范围是否有效
      */

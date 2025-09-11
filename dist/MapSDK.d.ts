@@ -92,7 +92,7 @@ export declare class MapSDK {
     /**
      * 通过经纬度获取详细地址信息
      */
-    getAddress(position: readonly [number, number]): Promise<unknown>;
+    getAddressByLngLat(position: readonly [number, number]): Promise<unknown>;
     /**
      * 添加信息窗体（InfoWindow）
      */
@@ -131,6 +131,7 @@ export declare class MapSDK {
      * 添加轨迹动画
      */
     addAnimation(config: AnimationConfig): Promise<IAnimation>;
+    getAddressList(value: string, config: any): Promise<any>;
     /**
      * 清除轨迹动画
      */

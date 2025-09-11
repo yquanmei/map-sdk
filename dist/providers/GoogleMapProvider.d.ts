@@ -98,7 +98,8 @@ export declare class GoogleMapProvider extends BaseMapProvider {
      * @param position 坐标 [lng, lat]
      * @returns 地址信息
      */
-    getAddress(position: [number, number]): Promise<any>;
+    getAddressByLngLat(position: [number, number]): Promise<any>;
+    getAddressList(value: string, config: any): Promise<any>;
     clearMap(): Promise<void>;
     /**
      * 绘制多边形

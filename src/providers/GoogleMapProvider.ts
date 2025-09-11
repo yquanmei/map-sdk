@@ -101,7 +101,17 @@ export class GoogleMapProvider extends BaseMapProvider {
       zoom: mergedOptions.zoom,
       mapId: mergedOptions.container,
     });
-  }
+
+    // 添加地图点击事件处理
+    if (typeof mergedOptions.onClick === "function") {
+      this.map.addListener("click", (event) => {
+        const position = [event.latLng.lng(), event.latLng.lat()] as [number, number];
+        mergedOptions.onClick({
+          event: event.domEvent,
+          position: position
+        });
+      });
+    }  }
 
   setCenter(position: [number, number]): void {
     if (!this.map) return;
