@@ -149,7 +149,7 @@ class BaseMapProvider {
     }
     clearAllPolylines() {
         this.polylines.forEach((polyline) => {
-            if (polyline) {
+            if (polyline?.remove) {
                 polyline.remove();
             }
         });
@@ -530,8 +530,8 @@ class AMapProvider extends BaseMapProvider {
             zoom: 11,
             center: [116.397428, 39.90923],
             viewMode: "3D",
-            // mapStyle: "amap://styles/whitesmoke",
-            mapStyle: "amap://styles/normal",
+            mapStyle: "amap://styles/whitesmoke",
+            // mapStyle: "amap://styles/normal",
             pitchEnable: true,
             pitch: 40,
             rotation: -15,
@@ -572,7 +572,8 @@ class AMapProvider extends BaseMapProvider {
             content: "",
             clickable: true,
             data: {},
-            anchor: "bottom-center",
+            // anchor: "bottom-center",
+            zooms: [2, 20],
         };
         const mergedOptions = merge(defaultOptions, config);
         const content = createDomContent(mergedOptions.content || "");
@@ -585,7 +586,8 @@ class AMapProvider extends BaseMapProvider {
             map: this.map,
             position: [position[0], position[1]],
             content,
-            anchor: mergedOptions.anchor,
+            anchor: "bottom-center",
+            zooms: mergedOptions.zooms,
         });
         const marker = {
             id,
@@ -829,6 +831,14 @@ class AMapProvider extends BaseMapProvider {
             color: "#f00",
             opacity: 0.8,
             width: 3,
+            outlineColor: "#00b2d5",
+            borderWeight: 1,
+            isOutline: false,
+            showDir: false,
+            lineJoin: "miter",
+            lineCap: "butt",
+            height: 0,
+            geodesic: false,
         };
         const mergedOptions = merge(defaultOptions, options);
         const line = new this.AMap.Polyline({
@@ -837,6 +847,14 @@ class AMapProvider extends BaseMapProvider {
             strokeColor: mergedOptions.color,
             strokeOpacity: mergedOptions.opacity,
             strokeWeight: mergedOptions.width,
+            outlineColor: mergedOptions.outlineColor,
+            borderWeight: mergedOptions.borderWeight,
+            isOutline: mergedOptions.isOutline,
+            showDir: mergedOptions.showDir,
+            cursor: mergedOptions.cursor,
+            lineCap: mergedOptions.lineCap,
+            height: mergedOptions.height,
+            geodesic: mergedOptions.geodesic,
         });
         const polyline = {
             id,
@@ -862,7 +880,7 @@ class AMapProvider extends BaseMapProvider {
                 }
             },
         };
-        this.addPolylinesToCollection([polyline]);
+        this.addPolylinesToCollection(polyline);
         return Promise.resolve(polyline);
     }
     clearPolylines(params) {
@@ -1501,7 +1519,7 @@ class GoogleMapProvider extends BaseMapProvider {
                 const position = [event.latLng.lng(), event.latLng.lat()];
                 mergedOptions.onClick({
                     event: event.domEvent,
-                    position: position
+                    position: position,
                 });
             });
         }
@@ -1549,10 +1567,9 @@ class GoogleMapProvider extends BaseMapProvider {
         if (!this.map) {
             throw new Error("Map not initialized");
         }
-        const markerId = this.generateId(COVERING_TYPES.MARKER);
+        const id = this.generateId(COVERING_TYPES.MARKER);
         const defaultOptions = {
             map: true,
-            id: markerId,
             clickable: true,
             draggable: false,
             // icon: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
@@ -1590,7 +1607,7 @@ class GoogleMapProvider extends BaseMapProvider {
             });
         }
         const marker = {
-            id: markerId,
+            id,
             position: [...mergedOptions.position],
             googleMarker,
             data: mergedOptions.data,
@@ -1611,7 +1628,7 @@ class GoogleMapProvider extends BaseMapProvider {
             },
             remove: () => {
                 googleMarker.setMap(null);
-                this.removeMarkerFromCollection(markerId);
+                this.removeMarkerFromCollection(id);
             },
             // clear: () => {
             //   googleMarker.setMap(null);
@@ -1627,9 +1644,8 @@ class GoogleMapProvider extends BaseMapProvider {
         if (!this.map) {
             throw new Error("Map not initialized");
         }
-        const clusterId = this.generateId(COVERING_TYPES.CLUSTER);
+        const id = this.generateId(COVERING_TYPES.CLUSTER);
         const defaultOptions = {
-            id: clusterId,
             data: {},
             gridSize: 60,
             maxZoom: 18,
@@ -1715,7 +1731,6 @@ class GoogleMapProvider extends BaseMapProvider {
             //   }
             // }
         });
-        const id = mergedOptions.id;
         const markerCluster = {
             id,
             googleMarkerClusterer,
@@ -1913,15 +1928,13 @@ class GoogleMapProvider extends BaseMapProvider {
             throw new Error("Map not initialized");
         }
         const { Polyline } = await this.google.maps.importLibrary("maps");
-        const polylineId = this.generateId(COVERING_TYPES.POLYLINE);
+        const id = this.generateId(COVERING_TYPES.POLYLINE);
         const defaultOptions = {
-            id: polylineId,
             color: "#f00",
             opacity: 0.8,
             width: 3,
         };
         const mergedOptions = merge(defaultOptions, options);
-        const id = mergedOptions.id;
         const googlePolyline = new Polyline({
             id,
             map: this.map,
@@ -1984,9 +1997,8 @@ class GoogleMapProvider extends BaseMapProvider {
             throw new Error("Map not initialized");
         }
         try {
-            const pathPlanningId = this.generateId(COVERING_TYPES.PATH_PLANNING);
+            const id = this.generateId(COVERING_TYPES.PATH_PLANNING);
             const defaultOptions = {
-                id: pathPlanningId,
                 start: [0, 0],
                 end: [0, 0],
                 points: [],
@@ -2039,7 +2051,6 @@ class GoogleMapProvider extends BaseMapProvider {
                     }
                 }
             });
-            const id = mergedOptions.id;
             const planning = {
                 id,
                 result,
@@ -2194,9 +2205,8 @@ class GoogleMapProvider extends BaseMapProvider {
         if (!this.map || !this.google) {
             throw new Error("Map not initialized");
         }
-        const polygonId = this.generateId(COVERING_TYPES.POLYGON);
+        const id = this.generateId(COVERING_TYPES.POLYGON);
         const defaultOptions = {
-            id: polygonId,
             fillColor: "#00B2D5",
             fillOpacity: 0.5,
             strokeColor: "#00D3FC",
@@ -2224,12 +2234,12 @@ class GoogleMapProvider extends BaseMapProvider {
             });
             // 返回一个包装的polyline对象，模拟polygon接口
             const previewPolygon = {
-                id: polygonId,
-                path: mergedOptions.path.map((p) => [...p]),
+                id,
+                // path: mergedOptions.path.map((p) => [...p] as [number, number]),
                 googlePolygon: polyline,
                 setPath: (path) => {
                     polyline.setPath(path.map(([lng, lat]) => ({ lat, lng })));
-                    previewPolygon.path = path;
+                    // previewPolygon.path = path;
                 },
                 setOptions: () => { },
                 setEditable: () => { },
@@ -2241,7 +2251,7 @@ class GoogleMapProvider extends BaseMapProvider {
                 hide: () => polyline.setMap(null),
                 remove: () => {
                     polyline.setMap(null);
-                    this.removePolygonFromCollection(polygonId);
+                    this.removePolygonFromCollection(id);
                 },
                 // clear: () => {
                 //   polyline.setMap(null);
@@ -2305,12 +2315,12 @@ class GoogleMapProvider extends BaseMapProvider {
             });
         }
         const polygon = {
-            id: polygonId,
-            path: mergedOptions.path.map((p) => [...p]),
+            id,
+            // path: mergedOptions.path.map((p) => [...p] as [number, number]),
             googlePolygon,
             setPath: (path) => {
                 googlePolygon.setPaths(path.map(([lng, lat]) => ({ lat, lng })));
-                polygon.path = path;
+                // polygon.path = path;
             },
             setOptions: (options) => {
                 const newOptions = { ...mergedOptions, ...options };
@@ -2360,7 +2370,7 @@ class GoogleMapProvider extends BaseMapProvider {
             },
             remove: () => {
                 googlePolygon.setMap(null);
-                this.removePolygonFromCollection(polygonId);
+                this.removePolygonFromCollection(id);
             },
             // clear: () => {
             //   googlePolygon.setMap(null);
@@ -2410,7 +2420,7 @@ class GoogleMapProvider extends BaseMapProvider {
         if (!this.map || !this.google) {
             throw new Error("Map not initialized");
         }
-        const animationId = this.generateId(COVERING_TYPES.ANIMATION);
+        const id = this.generateId(COVERING_TYPES.ANIMATION);
         const defaultOptions = {
             animation: {
                 duration: 5000,
@@ -2434,7 +2444,7 @@ class GoogleMapProvider extends BaseMapProvider {
         let status = "idle";
         let currentSpeed = mergedOptions.animation.speed || 1;
         const googleAnimation = {
-            id: animationId,
+            id,
             googleMarker: movingMarker,
             start: () => {
                 if (status === "playing")
@@ -2612,7 +2622,7 @@ class GoogleMapProvider extends BaseMapProvider {
             remove: () => {
                 googleAnimation.stop();
                 movingMarker.remove();
-                this.removeAnimationFromCollection(animationId);
+                this.removeAnimationFromCollection(id);
             },
             // clear: () => {
             //   googleAnimation.remove();
@@ -2662,7 +2672,6 @@ class GoogleMapProvider extends BaseMapProvider {
         return `${type}_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
     }
 }
-// 扩展window对象以包含Google Maps和MarkerClusterer
 
 /**
  * @module ol/CollectionEventType
@@ -53614,7 +53623,7 @@ class OpenLayersProvider extends BaseMapProvider {
         }
         const defaultOptions = {
             container: "container",
-            zoom: 18,
+            zoom: 11,
             center: [104.06, 30.67],
             url: "http://webrd01.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scale=1&style=8",
         };
@@ -54118,7 +54127,6 @@ class OpenLayersProvider extends BaseMapProvider {
             strokeColor: "#FF0000",
             strokeOpacity: 1,
             strokeWeight: 2,
-            // fillColor: "#FF0000",
             fillColor: "#ee9e98",
             fillOpacity: 0.3,
             clickable: true,
@@ -54143,9 +54151,6 @@ class OpenLayersProvider extends BaseMapProvider {
                     "circle-radius": 5,
                     "circle-fill-color": mergedOptions.fillColor,
                     "shape-opacity": mergedOptions.fillOpacity,
-                    "circle-opacity": mergedOptions.fillOpacity,
-                    // "stroke-opacity": mergedOptions.strokeOpacity,
-                    // "fill-opacity": mergedOptions.fillOpacity,
                 },
             });
             this.map.addInteraction(olPolygonEditor);

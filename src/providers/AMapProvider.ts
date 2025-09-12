@@ -92,8 +92,8 @@ export class AMapProvider extends BaseMapProvider {
       zoom: 11,
       center: [116.397428, 39.90923],
       viewMode: "3D",
-      // mapStyle: "amap://styles/whitesmoke",
-      mapStyle: "amap://styles/normal",
+      mapStyle: "amap://styles/whitesmoke",
+      // mapStyle: "amap://styles/normal",
       pitchEnable: true,
       pitch: 40,
       rotation: -15,
@@ -144,7 +144,8 @@ export class AMapProvider extends BaseMapProvider {
       content: "",
       clickable: true,
       data: {},
-      anchor: "bottom-center",
+      // anchor: "bottom-center",
+      zooms: [2, 20],
     };
 
     const mergedOptions = merge(defaultOptions, config) as any;
@@ -162,7 +163,8 @@ export class AMapProvider extends BaseMapProvider {
       map: this.map,
       position: [position[0], position[1]],
       content,
-      anchor: mergedOptions.anchor,
+      anchor: "bottom-center",
+      zooms: mergedOptions.zooms,
     });
 
     const marker: AMapMarker = {
@@ -430,6 +432,14 @@ export class AMapProvider extends BaseMapProvider {
       color: "#f00",
       opacity: 0.8,
       width: 3,
+      outlineColor: "#00b2d5",
+      borderWeight: 1,
+      isOutline: false,
+      showDir: false,
+      lineJoin: "round",
+      lineCap: "round",
+      height: 0,
+      geodesic: false,
     };
     const mergedOptions = merge(defaultOptions, options);
     const line = new this.AMap.Polyline({
@@ -438,6 +448,14 @@ export class AMapProvider extends BaseMapProvider {
       strokeColor: mergedOptions.color,
       strokeOpacity: mergedOptions.opacity,
       strokeWeight: mergedOptions.width,
+      outlineColor: mergedOptions.outlineColor,
+      borderWeight: mergedOptions.borderWeight,
+      isOutline: mergedOptions.isOutline,
+      showDir: mergedOptions.showDir,
+      cursor: mergedOptions.cursor,
+      lineCap: mergedOptions.lineCap,
+      height: mergedOptions.height,
+      geodesic: mergedOptions.geodesic,
     });
 
     const polyline = {
@@ -464,7 +482,7 @@ export class AMapProvider extends BaseMapProvider {
         }
       },
     };
-    this.addPolylinesToCollection([polyline]);
+    this.addPolylinesToCollection(polyline);
     return Promise.resolve(polyline);
   }
 

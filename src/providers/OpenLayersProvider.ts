@@ -35,6 +35,7 @@ import {
   AnimationStatus,
 } from "../types";
 import { Observer } from "../utils";
+import { defaultLineJoin } from "ol/render/canvas";
 
 interface OpenLayersMarker extends IMarker {
   olMarker: any;
@@ -82,7 +83,7 @@ export class OpenLayersProvider extends BaseMapProvider {
 
     const defaultOptions = {
       container: "container",
-      zoom: 18,
+      zoom: 11,
       center: [104.06, 30.67],
       url: "http://webrd01.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scale=1&style=8",
     };
@@ -538,6 +539,8 @@ export class OpenLayersProvider extends BaseMapProvider {
       draggable: false,
       editable: false,
       zIndex: 1,
+      lineCap: "round",
+      lineJoin: "round",
     };
     const mergedOptions = merge(defaultOptions, options) as any;
     const lineString = new LineString(mergedOptions.path.map((item) => [item[0], item[1]]));
@@ -549,6 +552,8 @@ export class OpenLayersProvider extends BaseMapProvider {
       stroke: new Stroke({
         color: mergedOptions.color,
         width: mergedOptions.width,
+        lineCap: mergedOptions.lineCap,
+        lineJoin: mergedOptions.lineJoin,
       }),
     });
     olPolyline.setStyle(polylineStyle);

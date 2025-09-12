@@ -38,7 +38,7 @@ interface GoogleMarkerCluster extends IMarkerCluster {
 interface GooglePolygon extends IPolygon {
   googlePolygon: any;
   // 覆盖readonly属性为可写
-  path: [number, number][];
+  // path: [number, number][];
 }
 
 export class GoogleMapProvider extends BaseMapProvider {
@@ -108,10 +108,11 @@ export class GoogleMapProvider extends BaseMapProvider {
         const position = [event.latLng.lng(), event.latLng.lat()] as [number, number];
         mergedOptions.onClick({
           event: event.domEvent,
-          position: position
+          position: position,
         });
       });
-    }  }
+    }
+  }
 
   setCenter(position: [number, number]): void {
     if (!this.map) return;
@@ -157,10 +158,9 @@ export class GoogleMapProvider extends BaseMapProvider {
       throw new Error("Map not initialized");
     }
 
-    const markerId = this.generateId(COVERING_TYPES.MARKER);
+    const id = this.generateId(COVERING_TYPES.MARKER);
     const defaultOptions = {
       map: true,
-      id: markerId,
       clickable: true,
       draggable: false,
       // icon: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
@@ -199,7 +199,7 @@ export class GoogleMapProvider extends BaseMapProvider {
       });
     }
     const marker: GoogleMarker = {
-      id: markerId,
+      id,
       position: [...mergedOptions.position] as [number, number],
       googleMarker,
       data: mergedOptions.data,
@@ -220,7 +220,7 @@ export class GoogleMapProvider extends BaseMapProvider {
       },
       remove: () => {
         googleMarker.setMap(null);
-        this.removeMarkerFromCollection(markerId);
+        this.removeMarkerFromCollection(id);
       },
       // clear: () => {
       //   googleMarker.setMap(null);
@@ -237,9 +237,8 @@ export class GoogleMapProvider extends BaseMapProvider {
     if (!this.map) {
       throw new Error("Map not initialized");
     }
-    const clusterId = this.generateId(COVERING_TYPES.CLUSTER);
+    const id = this.generateId(COVERING_TYPES.CLUSTER);
     const defaultOptions = {
-      id: clusterId,
       data: {},
       gridSize: 60,
       maxZoom: 18,
@@ -335,7 +334,6 @@ export class GoogleMapProvider extends BaseMapProvider {
       //   }
       // }
     });
-    const id = mergedOptions.id;
     const markerCluster = {
       id,
       googleMarkerClusterer,
@@ -549,15 +547,13 @@ export class GoogleMapProvider extends BaseMapProvider {
       throw new Error("Map not initialized");
     }
     const { Polyline } = await this.google.maps.importLibrary("maps");
-    const polylineId = this.generateId(COVERING_TYPES.POLYLINE);
+    const id = this.generateId(COVERING_TYPES.POLYLINE);
     const defaultOptions = {
-      id: polylineId,
       color: "#f00",
       opacity: 0.8,
       width: 3,
     };
     const mergedOptions = merge(defaultOptions, options) as any;
-    const id = mergedOptions.id;
     const googlePolyline = new Polyline({
       id,
       map: this.map,
@@ -636,9 +632,8 @@ export class GoogleMapProvider extends BaseMapProvider {
     }
 
     try {
-      const pathPlanningId = this.generateId(COVERING_TYPES.PATH_PLANNING);
+      const id = this.generateId(COVERING_TYPES.PATH_PLANNING);
       const defaultOptions = {
-        id: pathPlanningId,
         start: [0, 0],
         end: [0, 0],
         points: [],
@@ -699,8 +694,6 @@ export class GoogleMapProvider extends BaseMapProvider {
           }
         }
       });
-      const id = mergedOptions.id;
-
       const planning = {
         id,
         result,
@@ -859,9 +852,8 @@ export class GoogleMapProvider extends BaseMapProvider {
       throw new Error("Map not initialized");
     }
 
-    const polygonId = this.generateId(COVERING_TYPES.POLYGON);
+    const id = this.generateId(COVERING_TYPES.POLYGON);
     const defaultOptions = {
-      id: polygonId,
       fillColor: "#00B2D5",
       fillOpacity: 0.5,
       strokeColor: "#00D3FC",
@@ -879,7 +871,7 @@ export class GoogleMapProvider extends BaseMapProvider {
     const { Polygon } = await this.google.maps.importLibrary("maps");
 
     // 处理路径，确保至少有2个点
-    const paths = mergedOptions.path.map(([lng, lat]) => ({ lat, lng }));
+    const paths = mergedOptions.path.map(([lng, lat]: [number, number]) => ({ lat, lng }));
 
     // 对于预览模式，根据点的数量决定显示效果
     if (paths.length === 2) {
@@ -894,12 +886,12 @@ export class GoogleMapProvider extends BaseMapProvider {
 
       // 返回一个包装的polyline对象，模拟polygon接口
       const previewPolygon: GooglePolygon = {
-        id: polygonId,
-        path: mergedOptions.path.map((p) => [...p] as [number, number]),
+        id,
+        // path: mergedOptions.path.map((p) => [...p] as [number, number]),
         googlePolygon: polyline,
         setPath: (path: [number, number][]) => {
           polyline.setPath(path.map(([lng, lat]) => ({ lat, lng })));
-          previewPolygon.path = path;
+          // previewPolygon.path = path;
         },
         setOptions: () => {},
         setEditable: () => {},
@@ -911,7 +903,7 @@ export class GoogleMapProvider extends BaseMapProvider {
         hide: () => polyline.setMap(null),
         remove: () => {
           polyline.setMap(null);
-          this.removePolygonFromCollection(polygonId);
+          this.removePolygonFromCollection(id);
         },
         // clear: () => {
         //   polyline.setMap(null);
@@ -983,15 +975,13 @@ export class GoogleMapProvider extends BaseMapProvider {
     }
 
     const polygon: GooglePolygon = {
-      id: polygonId,
-      path: mergedOptions.path.map((p) => [...p] as [number, number]),
+      id,
+      // path: mergedOptions.path.map((p) => [...p] as [number, number]),
       googlePolygon,
-
       setPath: (path: [number, number][]) => {
         googlePolygon.setPaths(path.map(([lng, lat]) => ({ lat, lng })));
-        polygon.path = path;
+        // polygon.path = path;
       },
-
       setOptions: (options: Partial<PolygonConfig>) => {
         const newOptions = { ...mergedOptions, ...options };
         googlePolygon.setOptions({
@@ -1049,7 +1039,7 @@ export class GoogleMapProvider extends BaseMapProvider {
 
       remove: () => {
         googlePolygon.setMap(null);
-        this.removePolygonFromCollection(polygonId);
+        this.removePolygonFromCollection(id);
       },
 
       // clear: () => {
@@ -1107,7 +1097,7 @@ export class GoogleMapProvider extends BaseMapProvider {
       throw new Error("Map not initialized");
     }
 
-    const animationId = this.generateId(COVERING_TYPES.ANIMATION);
+    const id = this.generateId(COVERING_TYPES.ANIMATION);
     const defaultOptions = {
       animation: {
         duration: 5000,
@@ -1136,7 +1126,7 @@ export class GoogleMapProvider extends BaseMapProvider {
     let currentSpeed: number = (mergedOptions.animation.speed as number) || 1;
 
     const googleAnimation: IAnimation = {
-      id: animationId,
+      id,
       googleMarker: movingMarker,
       start: () => {
         if (status === "playing") return;
@@ -1224,7 +1214,7 @@ export class GoogleMapProvider extends BaseMapProvider {
         googleAnimation.start();
         if (mergedOptions.onResume) {
           mergedOptions.onResume({
-            path: mergedOptions.line.path.map((p) => [p[0], p[1]] as [number, number]),
+            path: mergedOptions.line.path.map((p: number[]) => [p[0], p[1]] as [number, number]),
             status: status as AnimationStatus,
           });
         }
@@ -1331,7 +1321,7 @@ export class GoogleMapProvider extends BaseMapProvider {
       remove: () => {
         googleAnimation.stop();
         movingMarker.remove();
-        this.removeAnimationFromCollection(animationId);
+        this.removeAnimationFromCollection(id);
       },
 
       // clear: () => {
@@ -1390,5 +1380,3 @@ export class GoogleMapProvider extends BaseMapProvider {
     return `${type}_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
   }
 }
-
-// 扩展window对象以包含Google Maps和MarkerClusterer
